@@ -1,0 +1,419 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ════════════════════════════════════════════════════════════════
+   SHURU — pixel "cozy retro instrument" foundation
+   Rules enforced here:
+   - No blur, no smooth gradients. Depth = dithering + hard offsets.
+   - border-radius: 0 everywhere.
+   ════════════════════════════════════════════════════════════════ */
+
+:root {
+  --cream: #f4e9d8;
+  --paper: #fbf4e6;
+  --ink: #1b2a3a;
+  --amber: #ff7a3c;
+  --mint: #3fbfa0;
+  --grey: #8a8578;
+  --alert: #e5533d;
+}
+
+* {
+  border-radius: 0 !important;
+}
+
+html {
+  background: var(--ink); /* gutter around the 430px app frame on desktop */
+}
+
+body {
+  background: var(--cream);
+  color: var(--ink);
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+}
+
+/* Crisp keyboard focus — accessibility floor */
+:focus-visible {
+  outline: 3px solid var(--amber);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--amber);
+  color: var(--ink);
+}
+
+/* ── Pixel-notched corners (cuts a 4px step off each corner) ── */
+.pixel-corners {
+  clip-path: polygon(
+    0 4px, 4px 4px, 4px 0,
+    calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px,
+    100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px),
+    calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px),
+    0 calc(100% - 4px)
+  );
+}
+
+/* ── Dithering: 4×4 checkerboard tiles. This is our ONLY "gradient". ── */
+.dither-ink {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='2' height='2' fill='%231B2A3A'/><rect x='2' y='2' width='2' height='2' fill='%231B2A3A'/></svg>");
+  background-size: 4px 4px;
+}
+.dither-amber {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='2' height='2' fill='%23FF7A3C'/><rect x='2' y='2' width='2' height='2' fill='%23FF7A3C'/></svg>");
+  background-size: 4px 4px;
+}
+.dither-mint {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='2' height='2' fill='%233FBFA0'/><rect x='2' y='2' width='2' height='2' fill='%233FBFA0'/></svg>");
+  background-size: 4px 4px;
+}
+.dither-grey {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='2' height='2' fill='%238A8578'/><rect x='2' y='2' width='2' height='2' fill='%238A8578'/></svg>");
+  background-size: 4px 4px;
+}
+.dither-alert {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='2' height='2' fill='%23E5533D'/><rect x='2' y='2' width='2' height='2' fill='%23E5533D'/></svg>");
+  background-size: 4px 4px;
+}
+
+/* ── Signature motif: the low-frame-rate pixel sunrise ──
+   steps() = deliberately chunky. Cheap on mid-range Android:
+   one transform, one opacity, GPU-composited, no canvas, no WebGL. */
+@keyframes sun-rise {
+  from { transform: translateY(46px); }
+  to   { transform: translateY(0); }
+}
+@keyframes rays-in {
+  0%, 60% { opacity: 0; }
+  100%    { opacity: 1; }
+}
+.sun-rise {
+  animation: sun-rise 2.8s steps(7, end) both;
+}
+.sun-rays {
+  animation: rays-in 3.6s steps(3, end) both;
+}
+/* Idle bob after rising — 2 frames, very slow, barely-there */
+@keyframes sun-idle {
+  0%, 49%  { transform: translateY(0); }
+  50%, 100% { transform: translateY(-2px); }
+}
+.sun-idle {
+  animation: sun-rise 2.8s steps(7, end) both,
+    sun-idle 4s steps(1, end) 3s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sun-rise, .sun-rays, .sun-idle {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── Blinking terminal cursor (used by the abstention screen later) ── */
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.pixel-blink {
+  animation: blink 1s steps(1, end) infinite;
+}
+
+/* Hide scrollbars inside horizontal chip rows, keep them scrollable */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ════════════════════════════════════════════════════════════════
+   AMBIENT + INTERACTIVE PIXEL MOTION (Phase 3)
+   Every animation below is steps()-timed (chunky, low-FPS) and is fully
+   disabled under prefers-reduced-motion at the bottom of this block.
+   ════════════════════════════════════════════════════════════════ */
+
+/* 1 — Reality Check gauge: each filled segment SNAPS in, left→right, so the
+   number reads as COMPUTED. The number itself is never animated. Per-segment
+   stagger comes from an inline animation-delay. */
+@keyframes seg-fill {
+  0%   { opacity: 0; transform: scaleY(0.15); }
+  100% { opacity: 1; transform: scaleY(1); }
+}
+.seg-fill {
+  transform-origin: bottom;
+  animation: seg-fill 140ms steps(2, end) both;
+}
+
+/* 3 — Radar feed cards drop in one after another (stepped fade + slide). */
+@keyframes card-in {
+  0%   { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.card-in {
+  animation: card-in 220ms steps(3, end) both;
+}
+
+/* 4 — Deadline pulse: a slow 2-frame heartbeat, ONLY on the red < 3-days
+   badge. No blur/glow — just a held opacity toggle. */
+@keyframes deadline-pulse {
+  0%, 50%   { opacity: 1; }
+  51%, 100% { opacity: 0.72; }
+}
+.deadline-pulse {
+  animation: deadline-pulse 2s steps(2, end) infinite;
+}
+
+/* 5 — Loading skeleton: the dither tile MARCHES sideways in 4 hard steps,
+   a chunky pixel shimmer with no gradient. Pair with a .dither-* class. */
+@keyframes pixel-shimmer {
+  from { background-position: 0 0; }
+  to   { background-position: 16px 0; }
+}
+.pixel-shimmer {
+  animation: pixel-shimmer 640ms steps(4, end) infinite;
+}
+
+/* 6 — Sunrise idle: the dawn sky bands breathe on a slow 2-frame loop so the
+   header isn't frozen after the sun finishes rising. */
+@keyframes sky-shimmer {
+  0%, 50%   { opacity: var(--sky-hi, 0.5); }
+  51%, 100% { opacity: var(--sky-lo, 0.25); }
+}
+.sky-shimmer {
+  animation: sky-shimmer 3.2s steps(2, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seg-fill,
+  .card-in,
+  .deadline-pulse,
+  .pixel-shimmer,
+  .sky-shimmer {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    background-position: 0 0 !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   GLASS-SHATTER PORTAL + WORLD ARRIVAL
+   ════════════════════════════════════════════════════════════════ */
+@keyframes world-enter {
+  from { transform: scale(0.96); opacity: 0.45; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.world-enter {
+  animation: world-enter 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: 50% 40%;
+}
+
+@keyframes shatter-flash {
+  0%   { transform: translate(-50%, -50%) rotate(45deg) scale(0.2); opacity: 0.95; }
+  100% { transform: translate(-50%, -50%) rotate(45deg) scale(3); opacity: 0; }
+}
+.shatter-flash {
+  width: 90px;
+  height: 90px;
+  background: #ff9e45;
+  animation: shatter-flash 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes shatter-jolt {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(-3px, 2px); }
+  50%  { transform: translate(3px, -2px); }
+  75%  { transform: translate(-2px, -1px); }
+  100% { transform: translate(0, 0); }
+}
+.shatter-jolt {
+  animation: shatter-jolt 110ms steps(4) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .world-enter, .shatter-flash, .shatter-jolt { animation: none !important; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RESUME FORGE — the "new world" palette.
+   Same design family (fonts, hard borders, dithering, pixel corners),
+   deeper world: slate ground, molten amber, cool violet.
+   Scoped remap of the token classes the shared pixel components use,
+   so PixelCard/PixelButton/PixelInput/etc. cross the portal untouched.
+   ════════════════════════════════════════════════════════════════ */
+.world-forge { background: #1e2233; }
+
+.world-forge .bg-cream { background-color: #1e2233; }
+.world-forge .bg-paper { background-color: #2a3047; }
+.world-forge .bg-ink   { background-color: #12162a; }
+.world-forge .text-ink { color: #edeaf2; }
+/* opacity-modified ink variants are distinct classes — remap them too,
+   or they render as dark ink on the slate/panel surfaces (unreadable) */
+.world-forge .text-ink\/70 { color: rgb(237 234 242 / 0.7); }
+.world-forge .text-ink\/80 { color: rgb(237 234 242 / 0.8); }
+.world-forge .text-ink\/90 { color: rgb(237 234 242 / 0.9); }
+.world-forge .border-ink { border-color: #0c0f1a; }
+
+/* molten amber replaces sunrise amber inside the forge */
+.world-forge .bg-amber { background-color: #ff9e45; }
+.world-forge .text-amber { color: #ff9e45; }
+.world-forge .border-amber { border-color: #ff9e45; }
+
+/* keep dark text on solid accent fills (buttons/badges/panels) */
+.world-forge .bg-amber.text-ink,
+.world-forge .bg-mint.text-ink { color: #1e2233; }
+.world-forge .bg-amber .text-ink,
+.world-forge .bg-mint .text-ink { color: #1e2233; }
+.world-forge .bg-amber .text-ink\/70,
+.world-forge .bg-mint .text-ink\/70 { color: rgb(30 34 51 / 0.7); }
+.world-forge .bg-amber .text-ink\/80,
+.world-forge .bg-mint .text-ink\/80 { color: rgb(30 34 51 / 0.8); }
+.world-forge .bg-amber .text-ink\/90,
+.world-forge .bg-mint .text-ink\/90 { color: rgb(30 34 51 / 0.9); }
+
+/* hard offset shadows go near-black in the forge */
+.world-forge .shadow-pixel { box-shadow: 4px 4px 0 0 #0c0f1a; }
+.world-forge .shadow-pixel-sm { box-shadow: 2px 2px 0 0 #0c0f1a; }
+.world-forge .shadow-pixel-lg { box-shadow: 6px 6px 0 0 #0c0f1a; }
+.world-forge .shadow-pixel-amber { box-shadow: 4px 4px 0 0 #ff9e45; }
+
+/* dithering shifts to the molten hue */
+.world-forge .dither-amber {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='2' height='2' fill='%23FF9E45'/><rect x='2' y='2' width='2' height='2' fill='%23FF9E45'/></svg>");
+}
+.world-forge .dither-ink {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='2' height='2' fill='%230C0F1A'/><rect x='2' y='2' width='2' height='2' fill='%230C0F1A'/></svg>");
+}
+
+/* warm grey reads muddy on slate — lift it to a cool light grey */
+.world-forge .text-grey { color: #a9a4b8; }
+.world-forge .placeholder\:text-grey::placeholder { color: rgb(169 164 184 / 0.9); }
+
+.world-forge :focus-visible { outline-color: #ff9e45; }
+.world-forge ::selection { background: #7c6ff0; color: #edeaf2; }
+
+/* the document PREVIEW stays a real, light resume page — explicitly
+   exempt it from the world remap by resetting inside .resume-doc */
+.world-forge .resume-doc {
+  color: #1c1c1c; /* document text inherits; pixel-world elements inside
+                     (EntryToolbar) keep their own remapped token colors */
+}
+.resume-doc {
+  background: #ffffff;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   THE AGENT — its own pixel world + the CRT power-on reveal (Phase 5).
+   A phosphor "green terminal" world: distinct from cream (home) and from
+   Forge's slate/violet. Same design family; care taken for readable
+   contrast (no dark-on-dark). Scoped token remap like .world-forge so the
+   shared pixel components cross in untouched.
+   ════════════════════════════════════════════════════════════════ */
+.world-agent { background: #0e1a15; }
+
+.world-agent .bg-cream { background-color: #0e1a15; }
+.world-agent .bg-paper { background-color: #16261f; }
+.world-agent .bg-ink   { background-color: #071410; }
+.world-agent .text-ink { color: #e4f5ea; }
+.world-agent .text-ink\/70 { color: rgb(228 245 234 / 0.7); }
+.world-agent .text-ink\/80 { color: rgb(228 245 234 / 0.8); }
+.world-agent .text-ink\/90 { color: rgb(228 245 234 / 0.9); }
+.world-agent .text-cream { color: #eafaf0; }
+.world-agent .border-ink { border-color: #04100b; }
+
+/* phosphor amber is the agent's primary accent */
+.world-agent .bg-amber { background-color: #ffb454; }
+.world-agent .text-amber { color: #ffb454; }
+.world-agent .border-amber { border-color: #ffb454; }
+
+/* dark text stays on solid accent fills (chips/badges/buttons) */
+.world-agent .bg-amber.text-ink,
+.world-agent .bg-mint.text-ink { color: #071410; }
+.world-agent .bg-amber .text-ink,
+.world-agent .bg-mint .text-ink { color: #071410; }
+
+/* hard offset shadows go near-black green in the agent world */
+.world-agent .shadow-pixel { box-shadow: 4px 4px 0 0 #04100b; }
+.world-agent .shadow-pixel-sm { box-shadow: 2px 2px 0 0 #04100b; }
+.world-agent .shadow-pixel-lg { box-shadow: 6px 6px 0 0 #04100b; }
+.world-agent .shadow-pixel-amber { box-shadow: 4px 4px 0 0 #ffb454; }
+
+/* dithering shifts to phosphor hues */
+.world-agent .dither-amber {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='2' height='2' fill='%23FFB454'/><rect x='2' y='2' width='2' height='2' fill='%23FFB454'/></svg>");
+}
+.world-agent .dither-mint {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='2' height='2' fill='%234FD6AC'/><rect x='2' y='2' width='2' height='2' fill='%234FD6AC'/></svg>");
+}
+.world-agent .dither-grey {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='2' height='2' fill='%235C7A6C'/><rect x='2' y='2' width='2' height='2' fill='%235C7A6C'/></svg>");
+}
+
+/* warm grey reads muddy on green — lift to a cool light grey */
+.world-agent .text-grey { color: #9db3a8; }
+.world-agent .placeholder\:text-grey::placeholder { color: rgb(157 179 168 / 0.9); }
+
+.world-agent :focus-visible { outline-color: #ffb454; }
+.world-agent ::selection { background: #4fd6ac; color: #071410; }
+
+/* ── CRT power-on: a bright line snaps open to full height, flickers,
+      then fades to reveal the screen. steps() = chunky. ── */
+@keyframes crt-on {
+  0%   { transform: scaleX(0.15) scaleY(0.02); opacity: 1; }
+  18%  { transform: scaleX(1) scaleY(0.02);    opacity: 1; }
+  55%  { transform: scaleX(1) scaleY(1);       opacity: 1; }
+  66%  { opacity: 0.55; }
+  74%  { opacity: 1; }
+  86%  { opacity: 0.7; }
+  100% { transform: scaleX(1) scaleY(1);       opacity: 0; }
+}
+.crt-on {
+  transform-origin: center;
+  animation: crt-on 900ms steps(9, end) both;
+}
+
+/* ── avatar materializes from a dithered ghost into a solid orb ── */
+@keyframes avatar-materialize {
+  0%   { opacity: 0; }
+  35%  { opacity: 0.35; }
+  70%  { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+.avatar-materialize { animation: avatar-materialize 700ms steps(4, end) both; }
+
+/* ── chat slides up after the reveal ── */
+@keyframes agent-enter {
+  0%   { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.agent-enter { animation: agent-enter 320ms steps(3, end) both; }
+
+/* ── living avatar idle: a slow 2-frame bob + an occasional hard blink ── */
+@keyframes avatar-bob {
+  0%, 49%   { transform: translateY(0); }
+  50%, 100% { transform: translateY(-2px); }
+}
+.avatar-bob { animation: avatar-bob 2.4s steps(1, end) infinite; }
+
+@keyframes avatar-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  94%, 98%      { transform: scaleY(0.12); }
+}
+.avatar-blink {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: avatar-blink 4.2s steps(1, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crt-on,
+  .avatar-materialize,
+  .agent-enter,
+  .avatar-bob,
+  .avatar-blink {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
