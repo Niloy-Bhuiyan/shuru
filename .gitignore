@@ -12,3 +12,8 @@ next-env.d.ts
 
 # local verification scripts (not part of the app)
 .local-scripts/
+
+# playwright
+test-results/
+playwright-report/
+.playwright/
