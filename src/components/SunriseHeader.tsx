@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { cx } from "@/lib/cx";
 import { PixelSun } from "./PixelSun";
+import { NotificationBell } from "./NotificationBell";
 import { useLang } from "@/lib/i18n";
 
 /**
@@ -24,11 +25,13 @@ export function SunriseHeader() {
           </span>
         </Link>
 
-        <div
-          className="flex border-2 border-ink shadow-pixel-sm"
-          role="group"
-          aria-label="Language"
-        >
+        <div className="flex items-center gap-2">
+          <NotificationBell />
+          <div
+            className="flex border-2 border-ink shadow-pixel-sm"
+            role="group"
+            aria-label="Language"
+          >
           {(["en", "bn"] as const).map((l) => (
             <button
               key={l}
@@ -42,9 +45,10 @@ export function SunriseHeader() {
                 lang === l ? "bg-ink text-cream" : "bg-paper text-ink"
               )}
             >
-              {l === "en" ? "EN" : "বাং"}
-            </button>
-          ))}
+                {l === "en" ? "EN" : "বাং"}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </header>

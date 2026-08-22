@@ -318,6 +318,39 @@ const STRINGS = {
     "agent.attachedJd": "JD attached",
     "agent.remove": "Remove",
     "agent.cancel": "Cancel",
+
+    // ── notification centre ──
+    "nav.alerts": "Alerts",
+    "notif.title": "Notifications",
+    "notif.empty": "Nothing yet",
+    "notif.emptyHint":
+      "Updates on your applications and closing deadlines will appear here.",
+    "notif.markAll": "Mark all read",
+    "notif.unread": "unread",
+    "notif.dismiss": "Dismiss",
+    "notif.settings": "Alert settings",
+    "notif.inApp": "In-app",
+    "notif.email": "Email",
+    "notif.push": "Browser push",
+    "notif.minScore": "Minimum match score",
+    "notif.minScoreHint":
+      "Internship alerts below this score are suppressed. Listings we cannot score are never alerted on.",
+    "notif.maxPerDay": "Max alerts per day",
+    "notif.save": "Save settings",
+    "notif.saving": "Saving…",
+    "notif.savedOk": "Saved",
+    "notif.channelPending": "Not sent by this channel",
+    "notif.loadError": "Could not load your notifications.",
+    "notif.retry": "Try again",
+
+    // ── application history ──
+    "timeline.title": "History",
+    "timeline.empty": "No recorded changes yet.",
+    "timeline.byYou": "by you",
+    "timeline.byEmployer": "by the employer",
+    "timeline.byAdmin": "by an admin",
+    "timeline.bySystem": "recorded automatically",
+    "timeline.created": "Added to your tracker",
   },
   bn: {
     appName: "শুরু",
@@ -625,6 +658,39 @@ const STRINGS = {
     "agent.attachedJd": "জেডি সংযুক্ত",
     "agent.remove": "সরান",
     "agent.cancel": "বাতিল",
+
+    // ── notification centre ──
+    "nav.alerts": "অ্যালার্ট",
+    "notif.title": "নোটিফিকেশন",
+    "notif.empty": "এখনো কিছু নেই",
+    "notif.emptyHint":
+      "আপনার আবেদন ও ডেডলাইনের আপডেট এখানে দেখা যাবে।",
+    "notif.markAll": "সব পড়া হয়েছে",
+    "notif.unread": "অপঠিত",
+    "notif.dismiss": "সরান",
+    "notif.settings": "অ্যালার্ট সেটিংস",
+    "notif.inApp": "অ্যাপে",
+    "notif.email": "ইমেইল",
+    "notif.push": "ব্রাউজার পুশ",
+    "notif.minScore": "সর্বনিম্ন ম্যাচ স্কোর",
+    "notif.minScoreHint":
+      "এর নিচের স্কোরের অ্যালার্ট দেখানো হবে না। যেসব লিস্টিং স্কোর করা যায় না, সেগুলোর অ্যালার্ট কখনো যায় না।",
+    "notif.maxPerDay": "দিনে সর্বোচ্চ অ্যালার্ট",
+    "notif.save": "সেটিংস সেভ করুন",
+    "notif.saving": "সেভ হচ্ছে…",
+    "notif.savedOk": "সেভ হয়েছে",
+    "notif.channelPending": "এই চ্যানেলে পাঠানো হয়নি",
+    "notif.loadError": "নোটিফিকেশন লোড করা যায়নি।",
+    "notif.retry": "আবার চেষ্টা করুন",
+
+    // ── application history ──
+    "timeline.title": "ইতিহাস",
+    "timeline.empty": "এখনো কোনো পরিবর্তন রেকর্ড হয়নি।",
+    "timeline.byYou": "আপনার দ্বারা",
+    "timeline.byEmployer": "নিয়োগদাতার দ্বারা",
+    "timeline.byAdmin": "অ্যাডমিনের দ্বারা",
+    "timeline.bySystem": "স্বয়ংক্রিয়ভাবে রেকর্ড",
+    "timeline.created": "ট্র্যাকারে যোগ হয়েছে",
   },
 } as const;
 
