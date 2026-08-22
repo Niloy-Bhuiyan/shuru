@@ -22,9 +22,11 @@ import {
   runIngest,
 } from "@/lib/ingest/refresh";
 import { adapterAvailability } from "@/lib/ingest/adapters";
+import { assessSourceHealth, needsAttention } from "@/lib/ingest/health";
 import { supabaseServiceRole } from "@/lib/supabase/server";
+import type { SourceHealth } from "@/lib/ingest/health";
 import type { SourceReport } from "@/lib/ingest/refresh";
-import type { Opportunity } from "@/lib/types";
+import type { IngestionRun, Opportunity } from "@/lib/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
@@ -43,11 +45,37 @@ function secretOk(req: NextRequest): boolean {
 }
 
 export async function GET() {
+  const availability = adapterAvailability();
+
+  // Health is derived from recorded runs, so it is reported only when those
+  // runs are readable. A missing service-role key must not turn a status
+  // endpoint into a 500 — availability alone is still useful.
+  let health: SourceHealth[] | null = null;
+  let healthError: string | null = null;
+  try {
+    const db = supabaseServiceRole();
+    const { data, error } = await db
+      .from("ingestion_runs")
+      .select("*")
+      .order("started_at", { ascending: false })
+      .limit(100);
+    if (error) throw new Error(error.message);
+    health = assessSourceHealth(
+      (data ?? []) as IngestionRun[],
+      availability.filter((a) => a.available).map((a) => a.source)
+    );
+  } catch (e) {
+    healthError = (e as Error).message;
+  }
+
   return NextResponse.json({
     enabled: true,
     secret_required: secretRequired(),
     cooldown_remaining_s: Math.ceil(cooldownRemainingMs() / 1000),
-    sources: adapterAvailability(),
+    sources: availability,
+    health,
+    health_error: healthError,
+    needs_attention: health ? needsAttention(health) : null,
   });
 }
 

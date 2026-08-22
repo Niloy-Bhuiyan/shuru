@@ -2,6 +2,7 @@ import { adzunaAdapter } from "./adzuna";
 import { ashbyAdapter } from "./ashby";
 import { arbeitnowAdapter, remoteOkAdapter } from "./keyless";
 import { leverAdapter } from "./lever";
+import type { IngestSource } from "../normalize";
 import type { Adapter } from "./types";
 
 export type { Adapter, AdapterRunResult, FetchLike } from "./types";
@@ -19,7 +20,7 @@ export const ADAPTERS: Adapter[] = [
 ];
 
 export type AdapterAvailability = {
-  source: string;
+  source: IngestSource;
   available: boolean;
   reason: string | null;
 };
