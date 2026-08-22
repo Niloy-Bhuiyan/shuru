@@ -9,7 +9,15 @@ import { normalizeLever } from "@/lib/ingest/adapters/lever";
 import { normalizeAshby } from "@/lib/ingest/adapters/ashby";
 import { normalizeAdzuna } from "@/lib/ingest/adapters/adzuna";
 
-const BARE: NodeJS.ProcessEnv = {} as NodeJS.ProcessEnv;
+/**
+ * ProcessEnv declares NODE_ENV as required, but the adapters only ever read
+ * the ingest keys. Build the fixture through one helper rather than casting
+ * at each call site.
+ */
+const env = (vars: Record<string, string> = {}): NodeJS.ProcessEnv =>
+  ({ ...vars }) as unknown as NodeJS.ProcessEnv;
+
+const BARE = env();
 
 describe("availability gating", () => {
   it("keyless sources are on by default, keyed sources are not", () => {
@@ -30,18 +38,18 @@ describe("availability gating", () => {
   });
 
   it("a keyless source can be switched off", () => {
-    const env = { INGEST_REMOTEOK_ENABLED: "false" } as NodeJS.ProcessEnv;
-    expect(activeAdapters(env).map((a) => a.source)).not.toContain("remoteok");
+    const bare = env({ INGEST_REMOTEOK_ENABLED: "false" });
+    expect(activeAdapters(bare).map((a) => a.source)).not.toContain("remoteok");
   });
 
   it("configuring boards activates lever and ashby", () => {
-    const env = {
+    const configured = env({
       LEVER_COMPANIES: "acme",
       ASHBY_COMPANIES: "globex",
       ADZUNA_APP_ID: "id",
       ADZUNA_APP_KEY: "key",
-    } as NodeJS.ProcessEnv;
-    const active = activeAdapters(env).map((a) => a.source);
+    });
+    const active = activeAdapters(configured).map((a) => a.source);
     expect(active).toContain("lever");
     expect(active).toContain("ashby");
     expect(active).toContain("adzuna");
