@@ -69,3 +69,37 @@ job title is not evidence of requirements.
 - **Do not "fix" the null scores by weakening the threshold.** The regression
   test in `src/lib/__tests__/matching.test.ts` pins the real ingested shape; if
   it starts returning a number, that number is not backed by data.
+
+---
+
+## Addendum (2026-08-23) — descriptions are not requirements
+
+After `LEVER_COMPANIES` / `ASHBY_COMPANIES` were configured, the database
+gained 22 listings carrying full `description` text (14 Lever, 8 Ashby) while
+still carrying **zero** structured `skills_required`. That looked like the
+"sufficient evidence" threshold this ADR anticipated, so extracting skills
+from the description text was evaluated.
+
+**Rejected.** Reading the actual stored descriptions shows why:
+
+- **Most of the text is company marketing, not requirements.** Palantir's
+  postings open with *"Palantir builds the world's leading software for
+  data-driven decisions and operations…"*. A vocabulary match hits `data` and
+  `software` in a paragraph that states no requirement at all, so a student
+  listing "data" as a skill would score a match against boilerplate.
+- **The corpus is multilingual.** One Palantir internship posting is written
+  entirely in French. An English skill vocabulary silently under-matches it,
+  producing a *lower* score for a listing that is no worse a fit — bias
+  disguised as measurement.
+- **There is no reliably delimited requirements section** to scope extraction
+  to, so there is no way to separate "we use Kubernetes" from "you need
+  Kubernetes".
+
+A description proves a listing has prose. It does not establish that any
+particular skill is required. Extracting from it would reproduce the exact
+failure this ADR rejects, one layer down.
+
+**The threshold that actually matters is structured skills, not text.** It is
+met by employer-posted listings, where `/employer/listings/new` asks for
+required skills directly and the form says why. Scraped listings continue to
+abstain, and that remains correct.
