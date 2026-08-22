@@ -6,10 +6,13 @@
 
 1. <https://supabase.com> → **New project** (free tier is enough). Note the
    database password it asks you to set; the app never needs it.
-2. **SQL Editor** → run every file in `supabase/migrations/` **in filename
-   order**, `0001` through `0006`. Confirm each reports success.
+2. Apply the migrations. Either run `npm run migrate` (needs `SUPABASE_DB_URL`
+   in `.env.local`; tracks what has run in `public.schema_migrations`), or
+   paste each file in `supabase/migrations/` into the **SQL Editor** in
+   filename order, `0001` through `0007`.
    (If your project already ran the original `schema.sql`, that file is now
    `0001_baseline.sql` — skip it and start at `0002`.)
+   `npm run migrate:status` lists what is applied and what is pending.
 3. Optionally run `supabase/seed.sql` for the reference listing set. Its
    outcome history is illustrative, not observed — leave it out of production
    unless you want that sample data.
@@ -70,12 +73,12 @@ password-reset emails both depend on it.
 
 ## 5. Scheduled jobs
 
-Ingestion and re-verification are HTTP endpoints protected by `CRON_SECRET`.
+Ingestion and re-verification are HTTP endpoints protected by `INGEST_SECRET`.
 On Vercel, add a `vercel.json` cron entry or use any external scheduler:
 
 ```
 POST https://<origin>/api/ingest
-Header: x-ingest-secret: <CRON_SECRET>
+Header: x-ingest-secret: <INGEST_SECRET>
 ```
 
 Runs are recorded in `ingestion_runs`, including per-source partial failures.
@@ -96,7 +99,7 @@ generated from the codebase.
 | 3 | Anon public key | Supabase → Settings → API → `anon public` | Vercel env + `.env.local` | `NEXT_PUBLIC_SUPABASE_ANON_KEY` |
 | 4 | Service role key | Supabase → Settings → API → `service_role` | Vercel env **only** (server-side secret, never `NEXT_PUBLIC_`) | `SUPABASE_SERVICE_ROLE_KEY` |
 | 5 | Deployment origin | your Vercel URL or custom domain | Vercel env + `.env.local` | `NEXT_PUBLIC_SITE_URL` |
-| 6 | Migrations run | `supabase/migrations/0001`–`0006`, in order | Supabase SQL Editor | — |
+| 6 | Migrations run | `supabase/migrations/0001`–`0007`, in order | `npm run migrate`, or Supabase SQL Editor | — |
 | 7 | Auth redirect URLs | you configure them | Supabase → Auth → URL Configuration → `<origin>/auth/callback` | — |
 | 8 | First admin account | promote after registering | Supabase SQL Editor (`update public.user_roles set role='admin' …`) | — |
 
@@ -104,7 +107,7 @@ generated from the codebase.
 
 | # | What to provide | Where you get it | Where it goes | Env var |
 |---|---|---|---|---|
-| 9 | Cron/ingest secret | generate: `openssl rand -hex 32` | Vercel env + your scheduler's request header | `CRON_SECRET` |
+| 9 | Cron/ingest secret | generate: `openssl rand -hex 32` | Vercel env + your scheduler's request header | `INGEST_SECRET` |
 | 10 | A scheduler | Vercel Cron, GitHub Actions, or any cron host | calls `POST /api/ingest` with `x-ingest-secret` | — |
 
 ## Optional — each feature hides itself when unset
@@ -125,7 +128,7 @@ generated from the codebase.
 - `SUPABASE_SERVICE_ROLE_KEY` bypasses Row Level Security. It belongs only in
   server-side environment variables. Any variable prefixed `NEXT_PUBLIC_` is
   shipped to the browser — never put a secret behind that prefix.
-- Rotate `CRON_SECRET` if it is ever exposed; it is the only thing standing
+- Rotate `INGEST_SECRET` if it is ever exposed; it is the only thing standing
   between the public internet and a write-capable ingestion run.
 - OAuth client secrets live in Supabase, not in this repo or its environment.
 - `.env.local` is git-ignored. Keep it that way.
