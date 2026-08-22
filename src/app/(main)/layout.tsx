@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SunriseHeader } from "@/components/SunriseHeader";
 import { PixelNav } from "@/components/pixel/PixelNav";
+import { PixelSideNav } from "@/components/pixel/PixelSideNav";
 import { LoadingBlock } from "@/components/LoadingBlock";
 import { getProfile } from "@/lib/data";
 import { ForgePortal } from "@/components/ForgeTransition";
@@ -36,13 +37,23 @@ export default function MainLayout({
   return (
     <ForgePortal>
       <SunriseHeader />
-      {ready ? (
-        <div className="pb-20">{children}</div>
-      ) : (
-        <main className="px-4 pt-6">
-          <LoadingBlock />
-        </main>
-      )}
+      {/*
+        One shell, two shapes. Mobile stacks content above the fixed bottom
+        nav (pb-20 clears it); from `lg` the sidebar takes the left column and
+        that bottom padding is dropped, since PixelNav is hidden there.
+      */}
+      <div className="lg:flex lg:items-start">
+        <PixelSideNav />
+        <div className="min-w-0 flex-1">
+          {ready ? (
+            <div className="pb-20 lg:pb-8">{children}</div>
+          ) : (
+            <main className="px-4 pt-6">
+              <LoadingBlock />
+            </main>
+          )}
+        </div>
+      </div>
       <PixelNav />
     </ForgePortal>
   );

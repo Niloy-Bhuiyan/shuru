@@ -30,8 +30,14 @@ export default function RootLayout({
     <html lang="en" className={`${pixel.variable} ${mono.variable} ${bangla.variable}`}>
       <body className="font-mono">
         <LangProvider>
-          {/* Hard mobile frame: 390px design baseline, capped at 430px */}
-          <div className="relative mx-auto min-h-dvh max-w-app bg-cream">
+          {/*
+            Mobile keeps the hard 390/430px frame the design is built on.
+            From `lg` the frame widens to a desktop shell — the app shell
+            (src/app/(main)/layout.tsx) turns that extra width into a sidebar
+            plus content column rather than stretching mobile layouts across
+            a monitor.
+          */}
+          <div className="relative mx-auto min-h-dvh max-w-app bg-cream lg:max-w-[1120px] lg:border-x-3 lg:border-ink">
             {children}
           </div>
         </LangProvider>

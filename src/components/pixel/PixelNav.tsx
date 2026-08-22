@@ -17,6 +17,9 @@ const ITEMS: { href: string; icon: IconName; key: StringKey }[] = [
 /**
  * PixelNav — fixed bottom navigation. Active tab = solid amber block above
  * the icon + inverted colors. Sits inside the 430px app frame.
+ *
+ * Mobile only: hidden from `lg`, where PixelSideNav takes over. Exactly one
+ * of the two is visible at any width.
  */
 export function PixelNav() {
   const pathname = usePathname();
@@ -25,7 +28,7 @@ export function PixelNav() {
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-app border-t-3 border-ink bg-ink"
+      className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-app border-t-3 border-ink bg-ink lg:hidden"
     >
       <div className="grid grid-cols-4">
         {ITEMS.map((item) => {

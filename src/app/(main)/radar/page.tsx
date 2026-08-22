@@ -199,8 +199,9 @@ export default function RadarPage() {
           </PixelChip>
         </div>
 
-        {/* feed */}
-        <div className="mt-4 space-y-3">
+        {/* feed — single column on mobile, two on desktop where the width
+            would otherwise stretch each card into an unreadable line */}
+        <div className="mt-4 space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
           {loadError ? (
             <EmptyState icon="x" title={t("error.title")}>
               <p className="mb-3 font-mono text-xs text-ink/70">{t("error.body")}</p>
