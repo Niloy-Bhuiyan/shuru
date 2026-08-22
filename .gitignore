@@ -9,3 +9,6 @@ next-env.d.ts
 
 # Claude Code local settings
 .claude/
+
+# local verification scripts (not part of the app)
+.local-scripts/
