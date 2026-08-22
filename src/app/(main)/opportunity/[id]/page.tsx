@@ -17,6 +17,7 @@ import { PixelCard } from "@/components/pixel/PixelCard";
 import { PixelIcon } from "@/components/pixel/PixelIcon";
 import { DeadlineBadge } from "@/components/DeadlineBadge";
 import { EligibilityChecklist } from "@/components/EligibilityChecklist";
+import { ApplicationTimeline } from "@/components/ApplicationTimeline";
 import { LoadingBlock } from "@/components/LoadingBlock";
 import { EmptyState } from "@/components/EmptyState";
 import { useProfile } from "@/hooks/useProfile";
@@ -40,6 +41,8 @@ export default function OpportunityDetailPage() {
   const [op, setOp] = useState<Opportunity | null | undefined>(undefined);
   const [seniors, setSeniors] = useState(0);
   const [appStatus, setAppStatus] = useState<ApplicationStatus | null>(null);
+  /** Needed to load the append-only history for this application. */
+  const [appId, setAppId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [promptApplied, setPromptApplied] = useState(false);
 
@@ -51,7 +54,9 @@ export default function OpportunityDetailPage() {
       if (found) {
         setSeniors(await countSeniors(profile.university, found.company));
         const apps = await listApplications();
-        setAppStatus(apps.find((a) => a.opportunity_id === found.id)?.status ?? null);
+        const mine = apps.find((a) => a.opportunity_id === found.id);
+        setAppStatus(mine?.status ?? null);
+        setAppId(mine?.id ?? null);
       }
     })();
   }, [profile, id]);
@@ -202,6 +207,9 @@ export default function OpportunityDetailPage() {
           {t("detail.source")} ↗
         </a>
       )}
+
+      {/* history — only once an application exists to have a history */}
+      {appId && <ApplicationTimeline applicationId={appId} />}
 
       {/* actions */}
       <div className="mt-5 flex gap-3">

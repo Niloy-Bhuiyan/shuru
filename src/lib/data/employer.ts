@@ -286,18 +286,9 @@ export async function setApplicationStatus(
   if (error) throw error;
 }
 
-/** Append-only history for one application, oldest first. */
-export async function listApplicationEvents(
-  applicationId: string
-): Promise<ApplicationEvent[]> {
-  const { data, error } = await supabaseBrowser()
-    .from("application_events")
-    .select("*")
-    .eq("application_id", applicationId)
-    .order("created_at", { ascending: true });
-  if (error) throw error;
-  return (data ?? []) as ApplicationEvent[];
-}
+// Application history lives in ./applications — it is read by students and
+// employers alike, so it does not belong behind the employer module.
+export { listApplicationEvents } from "./applications";
 
 /** Counts per pipeline stage, for the board header. */
 export function summarisePipeline(
