@@ -123,7 +123,7 @@ generated from the codebase.
 
 **Board slugs worth knowing.** Not every well-known company has a public board,
 and a wrong slug returns 404 rather than an error you would notice. These were
-verified live (`.local-scripts/probe-boards.mjs` re-checks them):
+verified live (`scripts/probe-boards.mjs` re-checks them):
 
 - Lever — `palantir` resolves and carries intern postings **with full
   descriptions**. `netflix`, `brex`, `ramp`, `figma`, `shopify` return 404;

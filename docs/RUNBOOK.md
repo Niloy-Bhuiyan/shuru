@@ -113,7 +113,7 @@ before changing anything. Investigate only if a source that *was* healthy
 turns quiet, which suggests its payload shape changed.
 
 Do not tune `matchesFilters` against one source's number. Re-run
-`.local-scripts/probe-filters.mjs` against both live feeds first.
+`scripts/probe-source-filters.mjs` against both live feeds first.
 
 ## 5. Match scores read as blank
 

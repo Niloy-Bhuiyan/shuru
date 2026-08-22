@@ -32,7 +32,7 @@ matching to the title.
 ## Evidence
 
 Three candidate rules, measured against both live feeds
-(`.local-scripts/probe-filters.mjs`):
+(`scripts/probe-source-filters.mjs`):
 
 | rule | remoteok kept | arbeitnow kept |
 | --- | --- | --- |
@@ -65,5 +65,5 @@ produces listings.
 - **If RemoteOK needs fixing later, fix it per-adapter, not in shared
   `matchesFilters`.** Tag trustworthiness is a property of the source, so the
   knob belongs next to the source.
-- Re-run `.local-scripts/probe-filters.mjs` against both live feeds before
+- Re-run `scripts/probe-source-filters.mjs` against both live feeds before
   changing this. Do not tune the filter against a single source's number.
