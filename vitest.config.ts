@@ -15,5 +15,17 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
+    /**
+     * Threads, not the default forks pool.
+     *
+     * As the suite grew past ~200 tests, forks began failing intermittently on
+     * Windows with "Timeout waiting for worker to respond" and spurious 5s test
+     * timeouts — process-spawn overhead, not real failures: the same suite
+     * passes 198/198 under threads in ~28s versus ~119s under forks.
+     *
+     * These tests are pure and use vi.mock for their I/O, so none of them needs
+     * the process isolation forks buys.
+     */
+    pool: "threads",
   },
 });

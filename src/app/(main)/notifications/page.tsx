@@ -27,6 +27,12 @@ import {
   markNotificationRead,
   saveNotificationPreferences,
 } from "@/lib/data/notifications";
+import {
+  isPushSubscribed,
+  pushSupport,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from "@/lib/data/push";
 import { useLang } from "@/lib/i18n";
 import type { Notification, NotificationPreferences } from "@/lib/types";
 
@@ -50,6 +56,47 @@ export default function NotificationsPage() {
   const [prefs, setPrefs] = useState<NotificationPreferences | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState<"idle" | "saving" | "saved">("idle");
+
+  // push lives outside the preferences row: it is per-device browser state
+  const [pushAvailable, setPushAvailable] = useState(false);
+  const [pushOn, setPushOn] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushNote, setPushNote] = useState<string | null>(null);
+
+  useEffect(() => {
+    const support = pushSupport();
+    setPushAvailable(support.supported);
+    if (!support.supported) {
+      setPushNote(support.reason);
+      return;
+    }
+    isPushSubscribed().then(setPushOn);
+  }, []);
+
+  async function onTogglePush(e: React.ChangeEvent<HTMLInputElement>) {
+    const want = e.target.checked;
+    setPushBusy(true);
+    setPushNote(null);
+    try {
+      if (want) {
+        const result = await subscribeToPush();
+        if (!result.ok) {
+          setPushNote(result.reason);
+          setPushOn(false);
+        } else {
+          setPushOn(true);
+          // Mirror it into preferences so the sender honours it too.
+          patch({ browser_push: true });
+        }
+      } else {
+        await unsubscribeFromPush();
+        setPushOn(false);
+        patch({ browser_push: false });
+      }
+    } finally {
+      setPushBusy(false);
+    }
+  }
 
   const load = useCallback(async () => {
     setLoadError(false);
@@ -230,7 +277,6 @@ export default function NotificationsPage() {
             [
               ["in_app", "notif.inApp"],
               ["email", "notif.email"],
-              ["browser_push", "notif.push"],
             ] as const
           ).map(([key, label]) => (
             <label key={key} className="flex items-center gap-2">
@@ -243,6 +289,30 @@ export default function NotificationsPage() {
               <span className="font-mono text-xs text-ink">{t(label)}</span>
             </label>
           ))}
+
+          {/*
+            Push is not a plain preference: it needs a per-device browser
+            permission and subscription, so the toggle acts immediately
+            rather than waiting for Save, and reports why it cannot.
+          */}
+          <div className="flex items-start gap-2">
+            <input
+              id="push-toggle"
+              type="checkbox"
+              checked={pushOn}
+              disabled={!pushAvailable || pushBusy}
+              onChange={onTogglePush}
+              className="mt-0.5 h-4 w-4 accent-amber"
+            />
+            <label htmlFor="push-toggle" className="min-w-0">
+              <span className="font-mono text-xs text-ink">{t("notif.push")}</span>
+              {pushNote && (
+                <span className="block font-mono text-[10px] leading-relaxed text-grey">
+                  {pushNote}
+                </span>
+              )}
+            </label>
+          </div>
         </div>
 
         <div className="mt-4">

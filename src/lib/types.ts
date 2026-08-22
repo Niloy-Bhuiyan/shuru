@@ -328,6 +328,26 @@ export type NotificationPreferences = {
   max_alerts_per_day: number;
 };
 
+// ── Web Push subscriptions (0010) ───────────────────────────────
+export type PushSubscriptionRow = {
+  id: string;
+  user_id: string;
+  /** Push-service URL this device is reachable at. */
+  endpoint: string;
+  /** Client public key and auth secret, base64url — used to encrypt payloads. */
+  p256dh: string;
+  auth: string;
+  user_agent: string | null;
+  created_at: string;
+  last_used_at: string | null;
+  /**
+   * Set when the push service reported the subscription is gone (404/410).
+   * Retired rather than deleted, so an unsubscribed device stays
+   * distinguishable from one that never subscribed.
+   */
+  expired_at: string | null;
+};
+
 // ── Moderation + ingestion (0006) ───────────────────────────────
 export type ReportReason =
   | "fraudulent"

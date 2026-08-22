@@ -14,8 +14,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { selectEmailProvider } from "@/lib/notify/email";
 import { planEmailDispatch, renderNotificationEmail, type Recipient } from "@/lib/notify/dispatch";
+import { selectPushConfig, sendPush } from "@/lib/notify/push";
 import { supabaseServiceRole } from "@/lib/supabase/server";
-import type { Notification, NotificationPreferences } from "@/lib/types";
+import type {
+  Notification,
+  NotificationPreferences,
+  PushSubscriptionRow,
+} from "@/lib/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
@@ -34,11 +39,18 @@ function secretOk(req: NextRequest): boolean {
 }
 
 export async function GET() {
-  const selection = selectEmailProvider();
+  const email = selectEmailProvider();
+  const push = selectPushConfig();
   return NextResponse.json({
-    configured: selection.provider !== null,
-    provider: selection.provider?.name ?? null,
-    reason: selection.provider === null ? selection.reason : null,
+    email: {
+      configured: email.provider !== null,
+      provider: email.provider?.name ?? null,
+      reason: email.provider === null ? email.reason : null,
+    },
+    push: {
+      configured: push.config !== null,
+      reason: push.config === null ? push.reason : null,
+    },
     secret_required: Boolean(process.env.INGEST_SECRET),
   });
 }
@@ -49,11 +61,18 @@ export async function POST(req: NextRequest) {
   }
 
   const selection = selectEmailProvider();
-  if (selection.provider === null) {
-    // Not an error: email is an optional channel. Say so plainly so a
+  const pushSelection = selectPushConfig();
+
+  if (selection.provider === null && pushSelection.config === null) {
+    // Not an error: both are optional channels. Say so plainly so a
     // scheduler's logs show why nothing was sent.
     return NextResponse.json(
-      { skipped: true, reason: selection.reason, sent: 0 },
+      {
+        skipped: true,
+        email_reason: selection.reason,
+        push_reason: pushSelection.reason,
+        sent: 0,
+      },
       { status: 200 }
     );
   }
@@ -68,25 +87,53 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { data: pendingRows, error: readError } = await db
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+  const email =
+    selection.provider === null
+      ? { skipped: selection.reason }
+      : await dispatchEmail(db, selection.provider, siteUrl);
+
+  const push =
+    pushSelection.config === null
+      ? { skipped: pushSelection.reason }
+      : await dispatchPush(db, pushSelection.config, siteUrl);
+
+  return NextResponse.json({ email, push });
+}
+
+type ChannelReport =
+  | { skipped: string }
+  | {
+      provider?: string;
+      sent: number;
+      failed: number;
+      skipped: number;
+      skip_reasons?: Record<string, number>;
+      failures?: { id: string; error: string; retryable: boolean }[];
+    };
+
+/** Email pass: rows with no `emailed_at`, honouring preferences and caps. */
+async function dispatchEmail(
+  db: SupabaseClient,
+  provider: NonNullable<ReturnType<typeof selectEmailProvider>["provider"]>,
+  siteUrl: string
+): Promise<ChannelReport> {
+  const { data, error } = await db
     .from("notifications")
     .select("*")
     .is("emailed_at", null)
     .order("priority", { ascending: false })
     .limit(BATCH_LIMIT);
-  if (readError) {
-    return NextResponse.json({ error: "db_read_failed" }, { status: 502 });
-  }
+  if (error) return { skipped: `db_read_failed: ${error.message}` };
 
-  const pending = (pendingRows ?? []) as Notification[];
+  const pending = (data ?? []) as Notification[];
   if (pending.length === 0) {
-    return NextResponse.json({ sent: 0, failed: 0, skipped: 0, provider: selection.provider.name });
+    return { provider: provider.name, sent: 0, failed: 0, skipped: 0 };
   }
 
   const userIds = Array.from(new Set(pending.map((n) => n.user_id)));
   const recipients = await loadRecipients(db, userIds);
-
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const plan = planEmailDispatch(pending, recipients);
 
   let sent = 0;
@@ -94,7 +141,7 @@ export async function POST(req: NextRequest) {
 
   for (const item of plan.send) {
     const message = renderNotificationEmail(item.notification, siteUrl);
-    const result = await selection.provider.send({ to: item.email, ...message });
+    const result = await provider.send({ to: item.email, ...message });
 
     if (!result.ok) {
       failures.push({
@@ -107,17 +154,17 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
-    const { error } = await db
+    const { error: stampError } = await db
       .from("notifications")
       .update({ emailed_at: new Date().toISOString() })
       .eq("id", item.notification.id);
 
-    if (error) {
+    if (stampError) {
       // Sent but not stamped. Report it — this is the one case that can cause
       // a duplicate on the next run, and hiding it would make that a mystery.
       failures.push({
         id: item.notification.id,
-        error: `sent but not stamped: ${error.message}`,
+        error: `sent but not stamped: ${stampError.message}`,
         retryable: false,
       });
       continue;
@@ -125,14 +172,128 @@ export async function POST(req: NextRequest) {
     sent += 1;
   }
 
-  return NextResponse.json({
-    provider: selection.provider.name,
+  return {
+    provider: provider.name,
     sent,
     failed: failures.length,
     skipped: plan.skip.length,
     skip_reasons: countBy(plan.skip.map((s) => s.reason)),
     failures: failures.slice(0, 10),
-  });
+  };
+}
+
+/**
+ * Push pass: rows with no `pushed_at`, fanned out to each of the user's live
+ * devices.
+ *
+ * `pushed_at` is stamped when at least ONE device accepted. A user with a
+ * stale second device should not have the alert retried forever, and a user
+ * with no live device at all is left unstamped so it sends if they subscribe.
+ */
+async function dispatchPush(
+  db: SupabaseClient,
+  config: NonNullable<ReturnType<typeof selectPushConfig>["config"]>,
+  siteUrl: string
+): Promise<ChannelReport> {
+  const { data, error } = await db
+    .from("notifications")
+    .select("*")
+    .is("pushed_at", null)
+    .order("priority", { ascending: false })
+    .limit(BATCH_LIMIT);
+  if (error) return { skipped: `db_read_failed: ${error.message}` };
+
+  const pending = (data ?? []) as Notification[];
+  if (pending.length === 0) return { sent: 0, failed: 0, skipped: 0 };
+
+  const userIds = Array.from(new Set(pending.map((n) => n.user_id)));
+
+  const { data: prefRows } = await db
+    .from("notification_preferences")
+    .select("*")
+    .in("user_id", userIds);
+  const prefsById = new Map(
+    ((prefRows ?? []) as NotificationPreferences[]).map((p) => [p.user_id, p])
+  );
+
+  const { data: subRows } = await db
+    .from("push_subscriptions")
+    .select("*")
+    .in("user_id", userIds)
+    .is("expired_at", null);
+  const subsByUser = new Map<string, PushSubscriptionRow[]>();
+  for (const s of (subRows ?? []) as PushSubscriptionRow[]) {
+    const list = subsByUser.get(s.user_id) ?? [];
+    list.push(s);
+    subsByUser.set(s.user_id, list);
+  }
+
+  let sent = 0;
+  let skipped = 0;
+  const failures: { id: string; error: string; retryable: boolean }[] = [];
+  const now = Date.now();
+
+  for (const n of pending) {
+    // browser_push defaults to false — push is opt-in, like email.
+    if (!prefsById.get(n.user_id)?.browser_push) {
+      skipped += 1;
+      continue;
+    }
+    if (n.expires_at && new Date(n.expires_at).getTime() <= now) {
+      skipped += 1;
+      continue;
+    }
+    const subs = subsByUser.get(n.user_id) ?? [];
+    if (subs.length === 0) {
+      skipped += 1;
+      continue;
+    }
+
+    const opportunityId = n.data?.opportunity_id;
+    const payload = {
+      title: n.title,
+      body: n.body ?? "",
+      url:
+        typeof opportunityId === "string"
+          ? `${siteUrl.replace(/\/+$/, "")}/opportunity/${opportunityId}`
+          : `${siteUrl.replace(/\/+$/, "")}/notifications`,
+      tag: n.type,
+    };
+
+    let anyAccepted = false;
+    for (const sub of subs) {
+      const result = await sendPush(config, sub, payload);
+
+      if (result.ok) {
+        anyAccepted = true;
+        await db
+          .from("push_subscriptions")
+          .update({ last_used_at: new Date().toISOString() })
+          .eq("id", sub.id);
+        continue;
+      }
+
+      if (result.gone) {
+        // Retire the dead endpoint so it stops consuming attempts.
+        await db
+          .from("push_subscriptions")
+          .update({ expired_at: new Date().toISOString() })
+          .eq("id", sub.id);
+        continue;
+      }
+      failures.push({ id: n.id, error: result.error, retryable: result.retryable });
+    }
+
+    if (anyAccepted) {
+      await db
+        .from("notifications")
+        .update({ pushed_at: new Date().toISOString() })
+        .eq("id", n.id);
+      sent += 1;
+    }
+  }
+
+  return { sent, failed: failures.length, skipped, failures: failures.slice(0, 10) };
 }
 
 /**
