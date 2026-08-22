@@ -9,7 +9,7 @@
 2. Apply the migrations. Either run `npm run migrate` (needs `SUPABASE_DB_URL`
    in `.env.local`; tracks what has run in `public.schema_migrations`), or
    paste each file in `supabase/migrations/` into the **SQL Editor** in
-   filename order, `0001` through `0007`.
+   filename order, `0001` through `0009`.
    (If your project already ran the original `schema.sql`, that file is now
    `0001_baseline.sql` — skip it and start at `0002`.)
    `npm run migrate:status` lists what is applied and what is pending.
@@ -99,7 +99,7 @@ generated from the codebase.
 | 3 | Anon public key | Supabase → Settings → API → `anon public` | Vercel env + `.env.local` | `NEXT_PUBLIC_SUPABASE_ANON_KEY` |
 | 4 | Service role key | Supabase → Settings → API → `service_role` | Vercel env **only** (server-side secret, never `NEXT_PUBLIC_`) | `SUPABASE_SERVICE_ROLE_KEY` |
 | 5 | Deployment origin | your Vercel URL or custom domain | Vercel env + `.env.local` | `NEXT_PUBLIC_SITE_URL` |
-| 6 | Migrations run | `supabase/migrations/0001`–`0007`, in order | `npm run migrate`, or Supabase SQL Editor | — |
+| 6 | Migrations run | `supabase/migrations/0001`–`0009`, in order | `npm run migrate`, or Supabase SQL Editor | — |
 | 7 | Auth redirect URLs | you configure them | Supabase → Auth → URL Configuration → `<origin>/auth/callback` | — |
 | 8 | First admin account | promote after registering | Supabase SQL Editor (`update public.user_roles set role='admin' …`) | — |
 
@@ -120,6 +120,21 @@ generated from the codebase.
 | 14 | AI assistance | Gemini API key | aistudio.google.com/apikey (free) | `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`) |
 | 15 | Lever listings | public board slugs, comma-separated | the `<slug>` in `jobs.lever.co/<slug>` | `LEVER_COMPANIES` |
 | 16 | Ashby listings | public board names, comma-separated | the `<name>` in `jobs.ashbyhq.com/<name>` | `ASHBY_COMPANIES` |
+
+**Board slugs worth knowing.** Not every well-known company has a public board,
+and a wrong slug returns 404 rather than an error you would notice. These were
+verified live (`.local-scripts/probe-boards.mjs` re-checks them):
+
+- Lever — `palantir` resolves and carries intern postings **with full
+  descriptions**. `netflix`, `brex`, `ramp`, `figma`, `shopify` return 404;
+  `spotify` and `plaid` resolve but list no interns.
+- Ashby — `openai`, `notion`, `ramp`, `vanta`, `replit` all resolve and carry
+  intern postings. `deel` returns nothing; `linear` and `posthog` list no interns.
+
+Lever and Ashby matter beyond volume: they publish **structured descriptions**,
+which is the listing evidence the match engine needs. Keyless boards
+(RemoteOK, Arbeitnow) publish none, which is why match scores stay blank on
+their listings — see `docs/decisions/0002-match-abstention.md`.
 | 17 | Adzuna listings | app id + app key + country | developer.adzuna.com (free tier) | `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`, `ADZUNA_COUNTRY` |
 | 18 | Toggle keyless sources | on/off | — | `INGEST_REMOTEOK_ENABLED`, `INGEST_ARBEITNOW_ENABLED` |
 
