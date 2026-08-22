@@ -18,6 +18,7 @@ import { PixelIcon } from "@/components/pixel/PixelIcon";
 import { DeadlineBadge } from "@/components/DeadlineBadge";
 import { EligibilityChecklist } from "@/components/EligibilityChecklist";
 import { ApplicationTimeline } from "@/components/ApplicationTimeline";
+import { MatchBreakdown } from "@/components/MatchBreakdown";
 import { LoadingBlock } from "@/components/LoadingBlock";
 import { EmptyState } from "@/components/EmptyState";
 import { useProfile } from "@/hooks/useProfile";
@@ -207,6 +208,9 @@ export default function OpportunityDetailPage() {
           {t("detail.source")} ↗
         </a>
       )}
+
+      {/* match — abstains loudly rather than inventing a number */}
+      <MatchBreakdown profile={profile} opportunity={op} />
 
       {/* history — only once an application exists to have a history */}
       {appId && <ApplicationTimeline applicationId={appId} />}

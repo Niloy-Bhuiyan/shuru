@@ -422,6 +422,14 @@ const STRINGS = {
     "admin.health": "Source health",
     "admin.lastRun": "Last run",
     "admin.neverRun": "Never run",
+
+    // ── match breakdown ──
+    "match.title": "Match",
+    "match.abstain": "Not scored",
+    "match.abstainHint":
+      "This listing does not state enough — skills, requirements — to judge your fit. Showing a number here would be a guess, so we don't.",
+    "match.notStated": "Not stated by this listing",
+    "match.blocked": "You do not meet a hard requirement",
   },
   bn: {
     appName: "শুরু",
@@ -762,6 +770,14 @@ const STRINGS = {
     "timeline.byAdmin": "অ্যাডমিনের দ্বারা",
     "timeline.bySystem": "স্বয়ংক্রিয়ভাবে রেকর্ড",
     "timeline.created": "ট্র্যাকারে যোগ হয়েছে",
+
+    // ── match breakdown ──
+    "match.title": "ম্যাচ",
+    "match.abstain": "স্কোর করা হয়নি",
+    "match.abstainHint":
+      "এই লিস্টিংয়ে যথেষ্ট তথ্য নেই — দক্ষতা বা শর্ত — তাই আপনার ফিট বিচার করা যাচ্ছে না। অনুমান করে সংখ্যা দেখানো হবে না।",
+    "match.notStated": "এই লিস্টিংয়ে উল্লেখ নেই",
+    "match.blocked": "আপনি একটি আবশ্যক শর্ত পূরণ করছেন না",
   },
 } as const;
 
