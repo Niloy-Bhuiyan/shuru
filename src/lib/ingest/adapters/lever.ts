@@ -10,10 +10,26 @@ import { csv, type Adapter, type AdapterRunResult, type FetchLike } from "./type
  * until LEVER_COMPANIES names at least one slug.
  */
 
-const FETCH_TIMEOUT_MS = 8000;
+/**
+ * Timing, measured against a real board rather than guessed:
+ * `api.lever.co/v0/postings/palantir?mode=json` returns 308 postings with full
+ * descriptions and takes 33–79s. The original single unpaged request with an
+ * 8s budget aborted every time and was reported as "unreachable boards:
+ * palantir" — a live board misdiagnosed as dead.
+ *
+ * Paging fixes it: `limit=50` responds in ~9–10s. Each request gets a budget
+ * with headroom over that, and the whole board gets an overall budget so one
+ * slow customer cannot stall an ingestion run.
+ */
+const REQUEST_TIMEOUT_MS = 15_000;
+const BOARD_BUDGET_MS = 45_000;
+const PAGE_SIZE = 50;
 
-export function leverUrl(slug: string): string {
-  return `https://api.lever.co/v0/postings/${encodeURIComponent(slug)}?mode=json`;
+export function leverUrl(slug: string, skip = 0, limit = PAGE_SIZE): string {
+  return (
+    `https://api.lever.co/v0/postings/${encodeURIComponent(slug)}` +
+    `?mode=json&limit=${limit}&skip=${skip}`
+  );
 }
 
 type LeverPosting = {
@@ -76,23 +92,67 @@ export function normalizeLever(
   return out;
 }
 
-async function fetchBoard(
+async function fetchPage(
   slug: string,
+  skip: number,
   fetchImpl: FetchLike
-): Promise<unknown | null> {
+): Promise<unknown[] | null> {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const res = await fetchImpl(leverUrl(slug), {
+    const res = await fetchImpl(leverUrl(slug, skip), {
       signal: ctrl.signal,
       headers: { accept: "application/json" },
     });
     if (!res.ok) return null;
-    return await res.json();
+    const body = await res.json();
+    return Array.isArray(body) ? body : null;
   } catch {
     return null;
   } finally {
     clearTimeout(timer);
+  }
+}
+
+type BoardResult = {
+  postings: unknown[];
+  /** The first page failed — nothing was read from this board at all. */
+  unreachable: boolean;
+  /** Some pages were read, then the budget ran out. Not a failure. */
+  truncated: boolean;
+};
+
+/**
+ * Pages a board until it is exhausted or the budget runs out.
+ *
+ * `unreachable` and `truncated` are kept apart deliberately: a board that
+ * returned 150 of 308 postings is a partial read worth reporting as such, not
+ * the same event as one that never answered at all.
+ */
+async function fetchBoard(
+  slug: string,
+  fetchImpl: FetchLike
+): Promise<BoardResult> {
+  const startedAt = Date.now();
+  const postings: unknown[] = [];
+
+  for (let skip = 0; ; skip += PAGE_SIZE) {
+    const page = await fetchPage(slug, skip, fetchImpl);
+
+    if (page === null) {
+      // Failing on the very first page means the board gave us nothing.
+      return { postings, unreachable: skip === 0, truncated: skip > 0 };
+    }
+
+    postings.push(...page);
+
+    // A short page is the last page.
+    if (page.length < PAGE_SIZE) {
+      return { postings, unreachable: false, truncated: false };
+    }
+    if (Date.now() - startedAt > BOARD_BUDGET_MS) {
+      return { postings, unreachable: false, truncated: true };
+    }
   }
 }
 
@@ -111,30 +171,39 @@ export const leverAdapter: Adapter = {
     const slugs = csv(env.LEVER_COMPANIES);
     const listings: Opportunity[] = [];
     let fetched = 0;
-    const failures: string[] = [];
+    const unreachable: string[] = [];
+    const truncated: string[] = [];
 
     // Per-board budget so one large board cannot crowd out the rest.
     const perBoard = Math.max(1, Math.floor(MAX_PER_SOURCE / slugs.length));
 
     for (const slug of slugs) {
-      const raw = await fetchBoard(slug, fetchImpl);
-      if (raw === null) {
-        failures.push(slug);
+      const board = await fetchBoard(slug, fetchImpl);
+      if (board.unreachable) {
+        unreachable.push(slug);
         continue;
       }
-      if (Array.isArray(raw)) fetched += raw.length;
-      listings.push(...normalizeLever(raw, slug, perBoard));
+      if (board.truncated) truncated.push(slug);
+      fetched += board.postings.length;
+      listings.push(...normalizeLever(board.postings, slug, perBoard));
     }
 
-    // Every board failing is a source failure; some failing is partial.
-    const allFailed = failures.length === slugs.length;
+    // Every board failing is a source failure; some failing is partial. A
+    // truncated board is neither — it is a successful partial read, reported
+    // so a shrinking board is visible rather than silently normal.
+    const allFailed = unreachable.length === slugs.length;
+    const notes = [
+      unreachable.length ? `unreachable boards: ${unreachable.join(", ")}` : null,
+      truncated.length
+        ? `partially read (time budget): ${truncated.join(", ")}`
+        : null,
+    ].filter(Boolean);
+
     return {
       source: "lever",
       fetched: allFailed ? null : fetched,
       listings,
-      error: failures.length
-        ? `unreachable boards: ${failures.join(", ")}`
-        : null,
+      error: notes.length ? notes.join("; ") : null,
     };
   },
 };
