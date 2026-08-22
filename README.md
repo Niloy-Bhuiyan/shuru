@@ -44,8 +44,19 @@ reference set.
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | stack, directory map, authorization model, pipelines |
 | [docs/DATABASE.md](docs/DATABASE.md) | tables, RLS, the trigger-based column rules |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | provisioning, deployment, credentials checklist |
+| [docs/RUNBOOK.md](docs/RUNBOOK.md) | pre-release gate, grant verification, ingestion triage, known limitations |
+| [docs/decisions/](docs/decisions/) | engineering decision records (ADRs) |
 | [supabase/README.md](supabase/README.md) | migration order, promoting an admin |
 | [ISSUES.md](ISSUES.md) | prior independent security/quality audit and its remediation |
+
+Two decisions are load-bearing enough that changing the code without reading
+them first will look like fixing a bug and will actually be causing one:
+
+- [ADR 0001](docs/decisions/0001-source-filtering.md) — why RemoteOK keeping
+  **0** listings is correct, and why "fixing" the filter costs Arbeitnow five
+  real ones.
+- [ADR 0002](docs/decisions/0002-match-abstention.md) — why match scores are
+  blank on scraped listings, and why job-description text does not unlock them.
 
 ## 4. Scripts
 
@@ -53,8 +64,15 @@ reference set.
 |---|---|
 | `npm run dev` | dev server at :3000 |
 | `npm run build` / `npm start` | production build / serve |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm run lint` | ESLint |
 | `npm test` | Vitest suite |
+| `npm run test:e2e` | Playwright, run at 390px and 1440px |
+| `npm run migrate` / `npm run migrate:status` | apply / list migrations |
 | `node scripts/generate-seed.mjs` | regenerates `supabase/seed.sql` and `src/lib/data/seed.ts` from one deterministic source |
+
+The full pre-release gate — and what to do when one of these fails — is in
+[docs/RUNBOOK.md](docs/RUNBOOK.md).
 
 ## 5. Roles
 

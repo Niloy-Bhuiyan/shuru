@@ -36,13 +36,18 @@ test.describe("login", () => {
   });
 
   test("links to registration and password reset", async ({ page }) => {
+    // Each destination is compiled on first hit by the dev server, which can
+    // exceed the 5s default while other workers compile in parallel. The
+    // redirect itself is immediate — only the first paint is slow.
+    const NAV_TIMEOUT = 20_000;
+
     await page.goto("/login");
     await page.getByRole("link", { name: /forgot password/i }).click();
-    await expect(page).toHaveURL(/\/forgot-password/);
+    await expect(page).toHaveURL(/\/forgot-password/, { timeout: NAV_TIMEOUT });
 
     await page.goto("/login");
     await page.getByRole("link", { name: /create account/i }).click();
-    await expect(page).toHaveURL(/\/register/);
+    await expect(page).toHaveURL(/\/register/, { timeout: NAV_TIMEOUT });
   });
 });
 
