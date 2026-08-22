@@ -29,7 +29,7 @@ const COLUMNS: { status: ApplicationStatus; key: StringKey; tone: string }[] = [
   { status: "saved", key: "tracker.saved", tone: "bg-paper" },
   { status: "applied", key: "tracker.applied", tone: "bg-amber" },
   { status: "interview", key: "tracker.interview", tone: "bg-mint" },
-  { status: "offer", key: "tracker.offer", tone: "bg-mint" },
+  { status: "accepted", key: "tracker.accepted", tone: "bg-mint" },
   { status: "rejected", key: "tracker.rejected", tone: "bg-grey" },
 ];
 
@@ -77,7 +77,7 @@ export default function TrackerPage() {
       (rows ?? []).filter(
         (r) =>
           r.app.status !== "rejected" &&
-          r.app.status !== "offer" &&
+          r.app.status !== "accepted" &&
           daysLeft(r.op.deadline) >= 0 &&
           daysLeft(r.op.deadline) < 3
       ).length,
@@ -175,10 +175,10 @@ export default function TrackerPage() {
                           <div className="mt-1.5 flex gap-1.5">
                             <button
                               type="button"
-                              onClick={() => branch(row, "offer")}
+                              onClick={() => branch(row, "accepted")}
                               className="flex-1 border-2 border-ink bg-mint px-1 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-ink active:translate-x-[1px] active:translate-y-[1px]"
                             >
-                              {t("tracker.markOffer")}
+                              {t("tracker.markAccepted")}
                             </button>
                             <button
                               type="button"

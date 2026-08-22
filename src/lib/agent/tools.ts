@@ -118,7 +118,7 @@ export const TOOL_DEFS: ToolDef[] = [
         opportunity_id: { type: "string", description: "Listing id." },
         status: {
           type: "string",
-          enum: ["saved", "applied", "interview", "offer", "rejected"],
+          enum: ["saved", "applied", "interview", "accepted", "rejected"],
           description: "New status.",
         },
       },
@@ -299,7 +299,7 @@ const VALID_STATUSES: ApplicationStatus[] = [
   "saved",
   "applied",
   "interview",
-  "offer",
+  "accepted",
   "rejected",
 ];
 
