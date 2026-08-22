@@ -15,7 +15,7 @@
  *    produces the SAME ids (refresh upserts instead of duplicating).
  */
 
-import type { Opportunity } from "@/lib/types";
+import type { InternshipSource, Opportunity, WorkMode } from "@/lib/types";
 
 export const MAX_PER_SOURCE = 25;
 const DEADLINE_DAYS = 30;
@@ -125,8 +125,30 @@ function addDays(iso: string, days: number): string {
 
 const NOT_STATED = "Compensation not stated by source.";
 
-function baseRow(args: {
-  source: "remoteok" | "arbeitnow";
+/** Human-facing name for each external board. */
+export const SOURCE_LABELS: Record<IngestSource, string> = {
+  remoteok: "RemoteOK",
+  arbeitnow: "Arbeitnow",
+  lever: "Lever",
+  ashby: "Ashby",
+  adzuna: "Adzuna",
+};
+
+/** Every source Shuru ingests from. 'shuru' postings are not ingested. */
+export type IngestSource = Exclude<InternshipSource, "shuru">;
+
+/**
+ * Build a normalized listing from any adapter.
+ *
+ * Honesty rules encoded here, not in each adapter:
+ *  - none of these boards publishes a real closing date, so the deadline is
+ *    a rolling window and deadline_is_rolling marks it as such
+ *  - is_paid is true only with actual salary evidence; compensation_stated
+ *    records whether the source said anything at all
+ *  - no eligibility gates are invented, so Reality Check abstains on these
+ */
+export function buildListing(args: {
+  source: IngestSource;
   sourceId: string;
   company: string;
   role: string;
@@ -134,10 +156,16 @@ function baseRow(args: {
   postedIso: string;
   paidEvidence: boolean;
   url: string | null;
+  workMode?: WorkMode;
+  description?: string | null;
+  skills?: string[];
+  stipendText?: string | null;
 }): Opportunity | null {
   const deadline = addDays(args.postedIso, DEADLINE_DAYS);
   if (!deadline || !args.company.trim() || !args.role.trim()) return null;
-  const sourceLabel = args.source === "remoteok" ? "RemoteOK" : "Arbeitnow";
+  const sourceLabel = SOURCE_LABELS[args.source];
+  const workMode = args.workMode ?? "remote";
+  const placement = workMode === "remote" ? "Remote listing" : "Listing";
   return {
     id: deterministicId(args.source, args.sourceId),
     company: args.company.trim(),
@@ -151,14 +179,30 @@ function baseRow(args: {
       min_semester: null,
       allowed_departments: null,
       other_text: args.paidEvidence
-        ? `Remote listing via ${sourceLabel}. Requirements not structured — read the posting.`
-        : `Remote listing via ${sourceLabel}. ${NOT_STATED} Requirements not structured — read the posting.`,
+        ? `${placement} via ${sourceLabel}. Requirements not structured — read the posting.`
+        : `${placement} via ${sourceLabel}. ${NOT_STATED} Requirements not structured — read the posting.`,
     },
     source_url: args.url,
     is_verified: false,
     cycle_label: `Rolling · via ${sourceLabel}`,
+
+    // ── attribution + lifecycle (migration 0003) ──
+    status: "approved",
+    source: args.source,
+    source_ref: args.sourceId,
+    apply_url: args.url,
+    work_mode: workMode,
+    description: args.description ?? null,
+    skills_required: args.skills ?? [],
+    compensation_stated: args.paidEvidence,
+    stipend_text: args.stipendText ?? null,
+    deadline_is_rolling: true,
+    expires_at: `${addDays(deadline, 1)}T00:00:00.000Z`,
   };
 }
+
+/** Back-compat alias used by the two original normalizers. */
+const baseRow = buildListing;
 
 // ── RemoteOK: https://remoteok.com/api ──
 // Array whose FIRST element is a legal notice object; jobs follow with

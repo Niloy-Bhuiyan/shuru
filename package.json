@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "migrate": "node scripts/migrate.mjs",
+    "migrate:status": "node scripts/migrate.mjs --status"
   },
   "dependencies": {
     "@supabase/ssr": "0.5.2",
@@ -21,10 +23,12 @@
   },
   "devDependencies": {
     "@types/node": "20.19.43",
+    "@types/pg": "^8.23.1",
     "@types/react": "18.3.5",
     "@types/react-dom": "18.3.0",
     "@vitejs/plugin-react": "6.0.3",
     "autoprefixer": "10.4.20",
+    "pg": "^8.23.0",
     "postcss": "8.4.47",
     "tailwindcss": "3.4.13",
     "typescript": "5.6.2",

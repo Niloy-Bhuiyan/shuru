@@ -1,16 +1,18 @@
 /**
- * /api/ingest — manual refresh of remote listings (no cron; hit it when
- * you want fresh rows). POST triggers; GET reports status only.
+ * /api/ingest — refresh internship listings from every configured source.
+ * POST triggers a run; GET reports status and which adapters are active.
  *
- * Protection (approved call #3): if INGEST_SECRET is set in env, POST
- * requires it (x-ingest-secret header or ?secret=). Unset → open, but the
- * 15-minute in-memory cooldown still applies.
+ * Protection: if INGEST_SECRET is set, POST requires it (x-ingest-secret
+ * header or ?secret=). Unset → open, but the 15-minute in-memory cooldown
+ * still applies. Set it in any deployment reachable from the internet.
  *
- * Persistence:
- *  - Supabase mode: upsert accepted rows (onConflict id — deterministic
- *    ids make refresh idempotent), curated rows untouched.
- *  - Demo mode: the server can't write localStorage; accepted rows are
- *    RETURNED and the client (I4) merges them by id.
+ * Persistence: accepted rows are upserted onConflict id — deterministic ids
+ * make a refresh idempotent, so re-running updates rather than duplicates.
+ * Employer-posted rows are never touched (they carry source 'shuru').
+ *
+ * Every run is recorded in public.ingestion_runs, including per-source
+ * failures, so a silently dead source is visible instead of looking like a
+ * quiet day on the job boards.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -19,8 +21,9 @@ import {
   markSuccessfulRun,
   runIngest,
 } from "@/lib/ingest/refresh";
-import { SEED_OPPORTUNITIES } from "@/lib/data/seed";
+import { adapterAvailability } from "@/lib/ingest/adapters";
 import { supabaseServiceRole } from "@/lib/supabase/server";
+import type { SourceReport } from "@/lib/ingest/refresh";
 import type { Opportunity } from "@/lib/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -44,6 +47,7 @@ export async function GET() {
     enabled: true,
     secret_required: secretRequired(),
     cooldown_remaining_s: Math.ceil(cooldownRemainingMs() / 1000),
+    sources: adapterAvailability(),
   });
 }
 
@@ -81,9 +85,13 @@ export async function POST(req: NextRequest) {
 
   const result = await runIngest(existing);
 
-  if (result.fetched.remoteok === null && result.fetched.arbeitnow === null) {
+  if (result.allSourcesFailed) {
     // nothing reachable — do NOT burn the cooldown
-    return NextResponse.json({ error: "sources_unreachable" }, { status: 502 });
+    await recordRuns(db, result.sources, "failed");
+    return NextResponse.json(
+      { error: "sources_unreachable", sources: result.sources },
+      { status: 502 }
+    );
   }
   markSuccessfulRun();
 
@@ -92,15 +100,56 @@ export async function POST(req: NextRequest) {
       .from("opportunities")
       .upsert(result.accepted, { onConflict: "id" });
     if (error) {
+      await recordRuns(db, result.sources, "failed", error.message);
       return NextResponse.json({ error: "db_write_failed" }, { status: 502 });
     }
   }
+
+  await recordRuns(db, result.sources, "success");
+
   return NextResponse.json({
-    mode: "supabase",
     fetched: result.fetched,
+    sources: result.sources,
     normalized: result.normalized,
     inserted_or_refreshed: result.accepted.length,
     refreshed: result.refreshed,
     skipped: result.skipped,
   });
+}
+
+/**
+ * One ingestion_runs row per source. Bookkeeping must never fail the
+ * request: if the insert errors the listings are already persisted, and
+ * losing the audit row is strictly less bad than a 500.
+ */
+async function recordRuns(
+  db: SupabaseClient,
+  sources: SourceReport[],
+  overall: "success" | "failed",
+  extraError?: string
+): Promise<void> {
+  if (sources.length === 0) return;
+  const now = new Date().toISOString();
+  const rows = sources.map((s) => ({
+    source: s.source,
+    started_at: now,
+    finished_at: now,
+    status:
+      s.fetched === null
+        ? "failed"
+        : s.error
+          ? "partial"
+          : overall === "failed"
+            ? "failed"
+            : "success",
+    fetched: s.fetched ?? 0,
+    kept: s.kept,
+    error: extraError ?? s.error,
+    trigger_source: "manual" as const,
+  }));
+  try {
+    await db.from("ingestion_runs").insert(rows);
+  } catch {
+    /* bookkeeping is best-effort */
+  }
 }
