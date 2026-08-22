@@ -197,41 +197,20 @@ body {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   GLASS-SHATTER PORTAL + WORLD ARRIVAL
+   FORGE TRANSITION
+   Entering or leaving the Resume Forge. Two stepped frames, 160ms —
+   fast enough to read as a cut, not a journey.
    ════════════════════════════════════════════════════════════════ */
-@keyframes world-enter {
-  from { transform: scale(0.96); opacity: 0.45; }
-  to   { transform: scale(1); opacity: 1; }
+@keyframes forge-enter {
+  0%   { opacity: 0; transform: translateY(4px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
-.world-enter {
-  animation: world-enter 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  transform-origin: 50% 40%;
-}
-
-@keyframes shatter-flash {
-  0%   { transform: translate(-50%, -50%) rotate(45deg) scale(0.2); opacity: 0.95; }
-  100% { transform: translate(-50%, -50%) rotate(45deg) scale(3); opacity: 0; }
-}
-.shatter-flash {
-  width: 90px;
-  height: 90px;
-  background: #ff9e45;
-  animation: shatter-flash 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes shatter-jolt {
-  0%   { transform: translate(0, 0); }
-  25%  { transform: translate(-3px, 2px); }
-  50%  { transform: translate(3px, -2px); }
-  75%  { transform: translate(-2px, -1px); }
-  100% { transform: translate(0, 0); }
-}
-.shatter-jolt {
-  animation: shatter-jolt 110ms steps(4) both;
+.forge-enter {
+  animation: forge-enter 160ms steps(2, end) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .world-enter, .shatter-flash, .shatter-jolt { animation: none !important; }
+  .forge-enter { animation: none !important; }
 }
 
 /* ════════════════════════════════════════════════════════════════

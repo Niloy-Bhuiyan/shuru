@@ -12,7 +12,7 @@ import { SunriseHeader } from "@/components/SunriseHeader";
 import { PixelNav } from "@/components/pixel/PixelNav";
 import { LoadingBlock } from "@/components/LoadingBlock";
 import { getProfile } from "@/lib/data";
-import { ShatterPortal } from "@/components/GlassShatter";
+import { ForgePortal } from "@/components/ForgeTransition";
 
 export default function MainLayout({
   children,
@@ -34,7 +34,7 @@ export default function MainLayout({
   }, [router]);
 
   return (
-    <ShatterPortal>
+    <ForgePortal>
       <SunriseHeader />
       {ready ? (
         <div className="pb-20">{children}</div>
@@ -44,6 +44,6 @@ export default function MainLayout({
         </main>
       )}
       <PixelNav />
-    </ShatterPortal>
+    </ForgePortal>
   );
 }

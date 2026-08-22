@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation";
 import { PixelButton } from "@/components/pixel/PixelButton";
 import { PixelIcon } from "@/components/pixel/PixelIcon";
 import { LoadingBlock } from "@/components/LoadingBlock";
-import { breakTo } from "@/components/GlassShatter";
+import { transitionTo } from "@/components/ForgeTransition";
 import {
   WizardProgress,
   type WizardStep,
@@ -214,9 +214,7 @@ export default function ForgePage() {
         <div className="flex items-center justify-between gap-2">
           <button
             type="button"
-            onClick={(e) =>
-              breakTo(router, "/radar", { x: e.clientX, y: e.clientY, tint: "slate" })
-            }
+            onClick={() => transitionTo(router, "/radar")}
             className="flex items-center gap-1 font-mono text-xs font-bold uppercase text-ink"
           >
             <span className="inline-block rotate-180">

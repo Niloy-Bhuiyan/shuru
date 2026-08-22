@@ -18,7 +18,7 @@ import { PixelSearch } from "@/components/pixel/PixelSearch";
 import { PixelIcon } from "@/components/pixel/PixelIcon";
 import { useProfile } from "@/hooks/useProfile";
 import { useRouter } from "next/navigation";
-import { breakTo } from "@/components/GlassShatter";
+import { transitionTo } from "@/components/ForgeTransition";
 import { useAgentEnabled } from "@/hooks/useAgentEnabled";
 import {
   countSeniorsByCompany,
@@ -144,7 +144,7 @@ export default function RadarPage() {
         {/* RESUME FORGE entry — brick-break into the forge */}
         <button
           type="button"
-          onClick={(e) => breakTo(router, "/forge", { x: e.clientX, y: e.clientY, tint: "cream" })}
+          onClick={() => transitionTo(router, "/forge")}
           className="mt-3 block w-full border-3 border-ink bg-ink p-3 text-left shadow-pixel active:translate-x-[2px] active:translate-y-[2px] active:shadow-pixel-none"
         >
           <div className="flex items-center justify-between">
