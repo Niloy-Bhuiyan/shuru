@@ -4,21 +4,14 @@
  * layer); no scoring/matching/persistence logic is reimplemented here.
  *
  * Execution is server-side (/api/agent). Data access:
- *   - Supabase mode: query with the caller's session (supabaseServer()).
- *   - Demo mode: listings/outcomes come from the bundled seed (importable
- *     on the server), but USER data (profile / applications / resume)
- *     lives in the browser's localStorage — the client ships a snapshot as
- *     `demoContext` in the request. Mutations can't touch localStorage
- *     from the server, so in demo mode update_application_status returns a
- *     `mutation` for the chat UI to apply through the existing data layer.
+ *   All queries run with the caller's session (supabaseServer()), so RLS
+ *   scopes every result to what that user may see.
  */
 
 import type { ToolCall, ToolDef } from "./adapter";
 import { evaluateEligibility } from "@/lib/eligibility";
 import { realityCheck, snapshotFromProfile } from "@/lib/realityCheck";
 import { computeAts } from "@/lib/resume/ats";
-import { isDemoMode } from "@/lib/demoMode";
-import { SEED_OPPORTUNITIES, SEED_OUTCOMES } from "@/lib/data/seed";
 import { supabaseServer } from "@/lib/supabase/server";
 import type {
   Application,
@@ -31,16 +24,9 @@ import type {
 } from "@/lib/types";
 
 // ── context the route hands to every execution ──
-export type DemoContext = {
-  profile: Profile | null;
-  applications: Application[];
-  resume: Resume | null;
-};
-
 export type ToolContext = {
-  demoContext?: DemoContext;
   /** a resume attached in the agent chat (parsed via /api/parse-resume);
-   *  preferred by get_ats_analysis so an in-chat upload works in both modes */
+   *  preferred by get_ats_analysis over the saved resume */
   attachedResume?: ResumeContent | null;
 };
 
@@ -127,18 +113,15 @@ export const TOOL_DEFS: ToolDef[] = [
   },
 ];
 
-// ── server-side data access (seed in demo, session-scoped Supabase otherwise) ──
+// ── server-side data access (session-scoped Supabase) ──
 
 async function serverOpportunities(): Promise<Opportunity[]> {
-  if (isDemoMode()) return SEED_OPPORTUNITIES;
   const { data, error } = await supabaseServer().from("opportunities").select("*");
   if (error) throw error;
   return (data ?? []) as Opportunity[];
 }
 
 async function serverOutcomes(opportunityId: string): Promise<Outcome[]> {
-  if (isDemoMode())
-    return SEED_OUTCOMES.filter((o) => o.opportunity_id === opportunityId);
   const { data, error } = await supabaseServer()
     .from("outcomes")
     .select("*")
@@ -147,8 +130,7 @@ async function serverOutcomes(opportunityId: string): Promise<Outcome[]> {
   return (data ?? []) as Outcome[];
 }
 
-async function serverProfile(ctx: ToolContext): Promise<Profile | null> {
-  if (isDemoMode()) return ctx.demoContext?.profile ?? null;
+async function serverProfile(): Promise<Profile | null> {
   const sb = supabaseServer();
   const {
     data: { user },
@@ -162,8 +144,7 @@ async function serverProfile(ctx: ToolContext): Promise<Profile | null> {
   return (data as Profile) ?? null;
 }
 
-async function serverResume(ctx: ToolContext): Promise<Resume | null> {
-  if (isDemoMode()) return ctx.demoContext?.resume ?? null;
+async function serverResume(): Promise<Resume | null> {
   const { data } = await supabaseServer()
     .from("resumes")
     .select("*")
@@ -188,7 +169,7 @@ async function execSearch(
   const openOnly = input.open_only !== false; // default true
   const limit = Math.min(Math.max(Number(input.limit) || 8, 1), 15);
 
-  const profile = await serverProfile(ctx);
+  const profile = await serverProfile();
   const today = new Date().toISOString().slice(0, 10);
 
   const results = (await serverOpportunities())
@@ -217,7 +198,7 @@ async function execSearch(
 }
 
 async function execProfile(ctx: ToolContext): Promise<ToolExecution> {
-  const p = await serverProfile(ctx);
+  const p = await serverProfile();
   if (!p) return err("No profile found. The user needs to complete onboarding first.");
   return {
     result: JSON.stringify({
@@ -238,7 +219,7 @@ async function execRealityCheck(
 ): Promise<ToolExecution> {
   const id = typeof input.opportunity_id === "string" ? input.opportunity_id : "";
   if (!id) return err("opportunity_id is required.");
-  const profile = await serverProfile(ctx);
+  const profile = await serverProfile();
   if (!profile) return err("No profile found. The user needs to complete onboarding first.");
 
   const opp = (await serverOpportunities()).find((o) => o.id === id);
@@ -277,7 +258,7 @@ async function execAts(ctx: ToolContext): Promise<ToolExecution> {
   // an in-chat uploaded resume wins over the saved one, so ATS analysis
   // works even before the upload is saved (and in Supabase mode too)
   const content =
-    ctx.attachedResume ?? (await serverResume(ctx))?.content ?? null;
+    ctx.attachedResume ?? (await serverResume())?.content ?? null;
   if (!content?.order) {
     return err("No saved resume. The user should build one in Resume Forge first, or attach one in the chat.");
   }
@@ -310,25 +291,10 @@ async function execUpdateStatus(
   const id = typeof input.opportunity_id === "string" ? input.opportunity_id : "";
   const status = input.status as ApplicationStatus;
   if (!id || !VALID_STATUSES.includes(status)) {
-    return err("opportunity_id and a valid status (saved/applied/interview/offer/rejected) are required.");
+    return err("opportunity_id and a valid status (saved/applied/interview/accepted/rejected) are required.");
   }
   const opp = (await serverOpportunities()).find((o) => o.id === id);
   if (!opp) return err(`No opportunity with id ${id}.`);
-
-  if (isDemoMode()) {
-    // server can't write localStorage — hand the mutation to the client,
-    // which applies it through the existing data layer (upsertApplication)
-    return {
-      result: JSON.stringify({
-        ok: true,
-        company: opp.company,
-        role: opp.role,
-        status,
-        note: "Queued — applied on the user's device.",
-      }),
-      mutation: { type: "application_status", opportunity_id: id, status },
-    };
-  }
 
   const sb = supabaseServer();
   const {

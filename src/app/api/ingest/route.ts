@@ -19,7 +19,6 @@ import {
   markSuccessfulRun,
   runIngest,
 } from "@/lib/ingest/refresh";
-import { isDemoMode } from "@/lib/demoMode";
 import { SEED_OPPORTUNITIES } from "@/lib/data/seed";
 import { supabaseServiceRole } from "@/lib/supabase/server";
 import type { Opportunity } from "@/lib/types";
@@ -43,7 +42,6 @@ function secretOk(req: NextRequest): boolean {
 export async function GET() {
   return NextResponse.json({
     enabled: true,
-    demo: isDemoMode(),
     secret_required: secretRequired(),
     cooldown_remaining_s: Math.ceil(cooldownRemainingMs() / 1000),
   });
@@ -62,29 +60,24 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // everything already known, for dedup: seed (demo) / full table (supabase)
-  let existing: Opportunity[];
-  let db: SupabaseClient | null = null;
-  if (isDemoMode()) {
-    existing = SEED_OPPORTUNITIES;
-  } else {
-    // Supabase mode: writes to `opportunities` are RLS-blocked for the anon
-    // key, so ingestion MUST use the service-role client. Fail loudly with an
-    // actionable message if the key isn't configured.
-    try {
-      db = supabaseServiceRole();
-    } catch (e) {
-      return NextResponse.json(
-        { error: "service_role_key_missing", detail: (e as Error).message },
-        { status: 500 }
-      );
-    }
-    const { data, error } = await db.from("opportunities").select("*");
-    if (error) {
-      return NextResponse.json({ error: "db_read_failed" }, { status: 502 });
-    }
-    existing = (data ?? []) as Opportunity[];
+  // Everything already known, so dedup can tell a new listing from a
+  // refresh. Writes to `opportunities` are RLS-blocked for the anon key, so
+  // ingestion MUST use the service-role client; fail loudly with an
+  // actionable message if the key isn't configured.
+  let db: SupabaseClient;
+  try {
+    db = supabaseServiceRole();
+  } catch (e) {
+    return NextResponse.json(
+      { error: "service_role_key_missing", detail: (e as Error).message },
+      { status: 500 }
+    );
   }
+  const { data, error: readError } = await db.from("opportunities").select("*");
+  if (readError) {
+    return NextResponse.json({ error: "db_read_failed" }, { status: 502 });
+  }
+  const existing = (data ?? []) as Opportunity[];
 
   const result = await runIngest(existing);
 
@@ -94,20 +87,8 @@ export async function POST(req: NextRequest) {
   }
   markSuccessfulRun();
 
-  if (isDemoMode()) {
-    // client merges by id (I4)
-    return NextResponse.json({
-      mode: "demo",
-      fetched: result.fetched,
-      normalized: result.normalized,
-      accepted: result.accepted,
-      refreshed: result.refreshed,
-      skipped: result.skipped,
-    });
-  }
-
   if (result.accepted.length > 0) {
-    const { error } = await db!
+    const { error } = await db
       .from("opportunities")
       .upsert(result.accepted, { onConflict: "id" });
     if (error) {

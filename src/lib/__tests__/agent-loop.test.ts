@@ -11,7 +11,7 @@ import type { ToolCall } from "@/lib/agent/adapter";
 
 beforeEach(() => _resetAgentState());
 
-const ctx = { demoContext: { profile: null, applications: [], resume: null } };
+const ctx = {};
 
 function fakeAsk(script: AgentResult[]) {
   const seen: { messages: AgentMessage[]; tools: ToolDef[]; system?: string }[] = [];

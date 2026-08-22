@@ -9,7 +9,6 @@
  *   endpoint cleanly if streaming can't start.
  * - Uploads: attach a résumé (PDF/DOCX → /api/parse-resume) or paste a JD;
  *   the résumé feeds get_ats_analysis, the JD rides along for tailoring.
- * - Ships a demoContext snapshot with every request in demo mode; applies
  *   returned mutations through the EXISTING data layer (upsertApplication).
  * - Keeps a per-device sessionId for the soft rate limit; history is capped
  *   client- and server-side.
@@ -26,7 +25,6 @@ import { useAgentEnabled } from "@/hooks/useAgentEnabled";
 import { useProfile } from "@/hooks/useProfile";
 import {
   getResume,
-  isDemoMode,
   listApplications,
   upsertApplication,
 } from "@/lib/data";
@@ -119,7 +117,6 @@ export default function AgentPage() {
     history: { role: "user" | "assistant"; content: string }[];
     lang: "en" | "bn";
     sessionId: string;
-    demoContext?: unknown;
     attachedResume: ResumeContent | null;
   };
 
@@ -279,16 +276,11 @@ export default function AgentPage() {
     }
 
     try {
-      const demoContext = isDemoMode()
-        ? { profile, applications: await listApplications(), resume: await getResume() }
-        : undefined;
-
       const payload: Payload = {
         message: effective,
         history,
         lang,
         sessionId: sessionId(),
-        demoContext,
         attachedResume: current?.kind === "resume" ? current.content : null,
       };
 

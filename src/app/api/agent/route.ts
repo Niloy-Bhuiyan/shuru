@@ -19,9 +19,8 @@ import {
   runAgentTurn,
   runAgentTurnStream,
 } from "@/lib/agent/loop";
-import { isDemoMode } from "@/lib/demoMode";
 import { supabaseServer } from "@/lib/supabase/server";
-import type { ClientMutation, DemoContext, ToolContext } from "@/lib/agent/tools";
+import type { ClientMutation, ToolContext } from "@/lib/agent/tools";
 import type { ResumeContent } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -34,34 +33,27 @@ type AgentBody = {
   message?: string;
   history?: unknown;
   lang?: "en" | "bn";
-  /** demo mode only: client-generated id for rate limiting + caching */
+  /** client-generated id, used for rate limiting before a session exists */
   sessionId?: string;
-  /** demo mode only: localStorage snapshot the server can't otherwise see */
-  demoContext?: DemoContext;
   /** an in-chat attached resume (already parsed via /api/parse-resume) */
   attachedResume?: ResumeContent | null;
 };
 
 async function resolveUserKey(body: AgentBody): Promise<string> {
-  if (!isDemoMode()) {
-    try {
-      const {
-        data: { user },
-      } = await supabaseServer().auth.getUser();
-      if (user) return `sb:${user.id}`;
-    } catch {
-      /* fall through */
-    }
+  try {
+    const {
+      data: { user },
+    } = await supabaseServer().auth.getUser();
+    if (user) return `sb:${user.id}`;
+  } catch {
+    /* fall through to the client-supplied key */
   }
   const sid = typeof body.sessionId === "string" ? body.sessionId.slice(0, 64) : "";
-  return sid ? `demo:${sid}` : "anon";
+  return sid ? `sid:${sid}` : "anon";
 }
 
 function buildCtx(body: AgentBody): ToolContext {
-  return {
-    ...(isDemoMode() ? { demoContext: body.demoContext } : {}),
-    attachedResume: body.attachedResume ?? null,
-  };
+  return { attachedResume: body.attachedResume ?? null };
 }
 
 export async function POST(req: NextRequest) {

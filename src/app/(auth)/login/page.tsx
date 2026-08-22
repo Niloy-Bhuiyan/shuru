@@ -1,39 +1,42 @@
 "use client";
 
 /**
- * LOGIN. Demo mode: device profile is the "account" — offer to open Radar
- * or create the profile. Supabase mode: email + password with pixel errors;
- * attaches a parked onboarding profile on first confirmed login.
+ * LOGIN — email + password, plus any enabled OAuth provider.
+ *
+ * Attaches a parked onboarding profile on the first confirmed login, so a
+ * user who registered before confirming their email keeps what they entered.
  */
 
-import { useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { SunriseHeader } from "@/components/SunriseHeader";
 import { PixelSun } from "@/components/PixelSun";
+import { ConfigRequired } from "@/components/ConfigRequired";
+import { OAuthButtons } from "@/components/auth/OAuthButtons";
 import { PixelButton } from "@/components/pixel/PixelButton";
 import { PixelInput } from "@/components/pixel/PixelInput";
-import { getProfile, isDemoMode, saveProfile } from "@/lib/data";
+import { getProfile, saveProfile } from "@/lib/data";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { isSupabaseConfigured } from "@/lib/auth/config";
 import { useLang } from "@/lib/i18n";
 import type { Profile } from "@/lib/types";
 
 const PENDING_PROFILE_KEY = "shuru.pendingProfile";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const params = useSearchParams();
   const { t } = useLang();
-  const demo = isDemoMode();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [hasDeviceProfile, setHasDeviceProfile] = useState(false);
 
-  useEffect(() => {
-    if (demo) getProfile().then((p) => setHasDeviceProfile(!!p));
-  }, [demo]);
+  // /auth/callback redirects here with ?error= when a provider or an email
+  // link fails, so the failure is visible instead of a silent bounce.
+  const callbackError = params.get("error");
 
   async function onSubmit() {
     if (busy) return;
@@ -49,7 +52,6 @@ export default function LoginPage() {
         setError(t("auth.errCreds"));
         return;
       }
-      // First login after email confirmation: attach the parked profile.
       const existing = await getProfile();
       if (!existing) {
         const raw = window.localStorage.getItem(PENDING_PROFILE_KEY);
@@ -60,9 +62,70 @@ export default function LoginPage() {
         }
       }
       router.replace("/radar");
+    } catch {
+      setError(t("auth.errGeneric"));
     } finally {
       setBusy(false);
     }
+  }
+
+  return (
+    <div className="space-y-4">
+      {callbackError && (
+        <p className="border-3 border-alert bg-paper p-2 font-mono text-xs font-bold text-alert">
+          {t("auth.errGeneric")}
+        </p>
+      )}
+
+      <OAuthButtons next="/radar" />
+
+      <PixelInput
+        label={t("auth.email")}
+        name="email"
+        type="email"
+        value={email}
+        onChange={setEmail}
+        required
+        placeholder="you@university.edu"
+      />
+      <PixelInput
+        label={t("auth.password")}
+        name="password"
+        type="password"
+        value={password}
+        onChange={setPassword}
+        required
+        error={error ?? undefined}
+      />
+      <PixelButton full size="lg" onClick={onSubmit} disabled={busy}>
+        {busy ? "…" : t("auth.login")}
+      </PixelButton>
+
+      <p className="text-center font-mono text-xs text-ink">
+        <Link href="/forgot-password" className="font-bold text-amber underline">
+          {t("auth.forgot")}
+        </Link>
+      </p>
+      <p className="text-center font-mono text-xs text-ink">
+        {t("auth.noAccount")}{" "}
+        <Link href="/register" className="font-bold text-amber underline">
+          {t("auth.register")}
+        </Link>
+      </p>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  const { t } = useLang();
+
+  if (!isSupabaseConfigured()) {
+    return (
+      <>
+        <SunriseHeader />
+        <ConfigRequired />
+      </>
+    );
   }
 
   return (
@@ -77,36 +140,10 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {demo ? (
-          <div className="space-y-4">
-            <p className="border-3 border-ink bg-mint p-3 font-mono text-xs font-bold text-ink shadow-pixel-sm">
-              {t("auth.demoNote")}
-            </p>
-            {hasDeviceProfile ? (
-              <PixelButton full size="lg" onClick={() => router.replace("/radar")}>
-                {t("nav.radar")} →
-              </PixelButton>
-            ) : (
-              <PixelButton full size="lg" onClick={() => router.push("/register")}>
-                {t("auth.register")} →
-              </PixelButton>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <PixelInput label={t("auth.email")} name="email" type="email" value={email} onChange={setEmail} required placeholder="you@university.edu" />
-            <PixelInput label={t("auth.password")} name="password" type="password" value={password} onChange={setPassword} required error={error ?? undefined} />
-            <PixelButton full size="lg" onClick={onSubmit} disabled={busy}>
-              {busy ? "…" : t("auth.login")}
-            </PixelButton>
-            <p className="text-center font-mono text-xs text-ink">
-              {t("auth.noAccount")}{" "}
-              <Link href="/register" className="font-bold text-amber underline">
-                {t("auth.register")}
-              </Link>
-            </p>
-          </div>
-        )}
+        {/* useSearchParams needs a Suspense boundary for static prerender */}
+        <Suspense fallback={null}>
+          <LoginForm />
+        </Suspense>
       </main>
     </>
   );

@@ -2,7 +2,7 @@
 
 /**
  * YOU — view + edit the profile that powers eligibility and odds,
- * language preference, sign out, and (demo mode) a data reset.
+ * language preference, and sign out.
  */
 
 import { useEffect, useState } from "react";
@@ -11,7 +11,7 @@ import { PixelButton } from "@/components/pixel/PixelButton";
 import { PixelInput } from "@/components/pixel/PixelInput";
 import { LoadingBlock } from "@/components/LoadingBlock";
 import { useProfile } from "@/hooks/useProfile";
-import { isDemoMode, mergeIngested, saveProfile } from "@/lib/data";
+import { saveProfile } from "@/lib/data";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { useLang, type Lang } from "@/lib/i18n";
 
@@ -22,38 +22,6 @@ export default function YouPage() {
   const router = useRouter();
   const { profile, loading, refresh } = useProfile();
   const { t, lang, setLang } = useLang();
-  const demo = isDemoMode();
-  const [refreshing, setRefreshing] = useState(false);
-  const [refreshMsg, setRefreshMsg] = useState<string | null>(null);
-
-  async function onRefreshListings() {
-    if (refreshing) return;
-    setRefreshing(true);
-    setRefreshMsg(null);
-    try {
-      const res = await fetch("/api/ingest", { method: "POST" });
-      const d = await res.json();
-      if (res.status === 429) {
-        setRefreshMsg(t("you.refreshCooldown").replace("{s}", String(d.retry_after_s ?? 0)));
-      } else if (!res.ok) {
-        setRefreshMsg(t("you.refreshErr"));
-      } else if (demo) {
-        mergeIngested(d.accepted ?? []);
-        setRefreshMsg(
-          t("you.refreshOk").replace("{n}", String((d.accepted ?? []).length))
-        );
-      } else {
-        setRefreshMsg(
-          t("you.refreshOk").replace("{n}", String(d.inserted_or_refreshed ?? 0))
-        );
-      }
-    } catch {
-      setRefreshMsg(t("you.refreshErr"));
-    } finally {
-      setRefreshing(false);
-    }
-  }
-
   const [name, setName] = useState("");
   const [university, setUniversity] = useState("AIUB");
   const [department, setDepartment] = useState("CSE");
@@ -113,23 +81,8 @@ export default function YouPage() {
   }
 
   async function onSignOut() {
-    if (demo) {
-      // Clear ALL demo data (profile, applications, resume, ingested rows) —
-      // not just the profile — so it can't bleed into the next device profile.
-      Object.keys(window.localStorage)
-        .filter((k) => k.startsWith("shuru.demo."))
-        .forEach((k) => window.localStorage.removeItem(k));
-    } else {
-      await supabaseBrowser().auth.signOut();
-    }
+    await supabaseBrowser().auth.signOut();
     router.replace("/login");
-  }
-
-  function onResetDemo() {
-    Object.keys(window.localStorage)
-      .filter((k) => k.startsWith("shuru."))
-      .forEach((k) => window.localStorage.removeItem(k));
-    router.replace("/register");
   }
 
   if (loading || !profile) {
@@ -159,27 +112,9 @@ export default function YouPage() {
         </PixelButton>
 
         <div className="border-t-2 border-ink/20 pt-4">
-          <div className="mb-3 border-3 border-ink bg-paper p-3 shadow-pixel-sm">
-            <p className="font-pixel text-[9px] text-ink">{t("you.refreshTitle")}</p>
-            <p className="mt-1.5 font-mono text-[11px] leading-snug text-grey">
-              {t("you.refreshBody")}
-            </p>
-            <PixelButton size="sm" className="mt-2" onClick={onRefreshListings} disabled={refreshing}>
-              {refreshing ? t("you.refreshing") : t("you.refreshBtn")}
-            </PixelButton>
-            {refreshMsg && (
-              <p className="mt-2 font-mono text-[11px] font-bold text-ink">{refreshMsg}</p>
-            )}
-          </div>
-
           <PixelButton variant="secondary" full onClick={onSignOut}>
             {t("auth.signOut")}
           </PixelButton>
-          {demo && (
-            <PixelButton variant="danger" full className="mt-3" onClick={onResetDemo}>
-              {t("you.resetDemo")}
-            </PixelButton>
-          )}
         </div>
       </div>
     </main>

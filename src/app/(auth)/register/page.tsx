@@ -2,9 +2,10 @@
 
 /**
  * REGISTRATION — account + onboarding profile in ONE flow.
- * Demo mode: no email/password; profile saves to this device.
- * Supabase mode: signUp → save profile (or park it until first login
- * when email confirmation is enabled).
+ *
+ * signUp then save the profile immediately if a session came back. When
+ * email confirmation is enabled no session is issued, so the profile is
+ * parked locally and attached on the first confirmed login.
  */
 
 import { useState } from "react";
@@ -12,10 +13,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SunriseHeader } from "@/components/SunriseHeader";
 import { PixelSun } from "@/components/PixelSun";
+import { ConfigRequired } from "@/components/ConfigRequired";
+import { OAuthButtons } from "@/components/auth/OAuthButtons";
 import { PixelButton } from "@/components/pixel/PixelButton";
 import { PixelInput } from "@/components/pixel/PixelInput";
-import { isDemoMode, saveProfile } from "@/lib/data";
+import { saveProfile } from "@/lib/data";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { isSupabaseConfigured } from "@/lib/auth/config";
 import { useLang } from "@/lib/i18n";
 import type { Profile } from "@/lib/types";
 
@@ -26,7 +30,6 @@ const PENDING_PROFILE_KEY = "shuru.pendingProfile";
 export default function RegisterPage() {
   const router = useRouter();
   const { t } = useLang();
-  const demo = isDemoMode();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -46,10 +49,8 @@ export default function RegisterPage() {
     if (!name.trim()) e.name = t("auth.errRequired");
     const g = parseFloat(cgpa);
     if (Number.isNaN(g) || g < 0 || g > 4) e.cgpa = t("auth.errCgpa");
-    if (!demo) {
-      if (!email.trim()) e.email = t("auth.errRequired");
-      if (password.length < 8) e.password = t("auth.errPw");
-    }
+    if (!email.trim()) e.email = t("auth.errRequired");
+    if (password.length < 8) e.password = t("auth.errPw");
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -76,11 +77,6 @@ export default function RegisterPage() {
     setBusy(true);
     setNotice(null);
     try {
-      if (demo) {
-        await saveProfile(buildProfile("demo"));
-        router.replace("/radar");
-        return;
-      }
       const sb = supabaseBrowser();
       const { data, error } = await sb.auth.signUp({ email, password });
       if (error) {
@@ -96,11 +92,22 @@ export default function RegisterPage() {
           PENDING_PROFILE_KEY,
           JSON.stringify(buildProfile("pending"))
         );
-        setNotice(t("auth.checkEmail"));
+        router.replace("/verify-email");
       }
+    } catch {
+      setErrors({ email: t("auth.errGeneric") });
     } finally {
       setBusy(false);
     }
+  }
+
+  if (!isSupabaseConfigured()) {
+    return (
+      <>
+        <SunriseHeader />
+        <ConfigRequired />
+      </>
+    );
   }
 
   return (
@@ -115,12 +122,6 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {demo && (
-          <p className="mb-4 border-3 border-ink bg-mint p-3 font-mono text-xs font-bold text-ink shadow-pixel-sm">
-            {t("auth.demoNote")}
-          </p>
-        )}
-
         {notice && (
           <p className="mb-4 border-3 border-ink bg-amber p-3 font-mono text-xs font-bold text-ink shadow-pixel-sm">
             {notice}
@@ -128,14 +129,12 @@ export default function RegisterPage() {
         )}
 
         <div className="space-y-4">
+          <OAuthButtons next="/radar" />
+
           <PixelInput label={t("auth.name")} name="name" value={name} onChange={setName} required error={errors.name} placeholder="Rafid Hasan" />
 
-          {!demo && (
-            <>
-              <PixelInput label={t("auth.email")} name="email" type="email" value={email} onChange={setEmail} required error={errors.email} placeholder="you@university.edu" />
-              <PixelInput label={t("auth.password")} name="password" type="password" value={password} onChange={setPassword} required error={errors.password} hint={t("auth.pwHint")} />
-            </>
-          )}
+          <PixelInput label={t("auth.email")} name="email" type="email" value={email} onChange={setEmail} required error={errors.email} placeholder="you@university.edu" />
+          <PixelInput label={t("auth.password")} name="password" type="password" value={password} onChange={setPassword} required error={errors.password} hint={t("auth.pwHint")} />
 
           <PixelInput as="select" label={t("auth.university")} name="university" value={university} onChange={setUniversity} options={UNIVERSITIES.map((u) => ({ value: u, label: u }))} />
           <PixelInput as="select" label={t("auth.department")} name="department" value={department} onChange={setDepartment} options={DEPARTMENTS.map((d) => ({ value: d, label: d }))} />

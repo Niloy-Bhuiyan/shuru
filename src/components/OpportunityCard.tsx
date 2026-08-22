@@ -7,7 +7,7 @@ import { PixelBadge } from "@/components/pixel/PixelBadge";
 import { PixelIcon } from "@/components/pixel/PixelIcon";
 import { DeadlineBadge } from "@/components/DeadlineBadge";
 import { useLang } from "@/lib/i18n";
-import { isDemoMode, isSeededOpportunity } from "@/lib/data";
+import { isSeededOpportunity } from "@/lib/data";
 import type { Opportunity } from "@/lib/types";
 import type { EligibilityStatus } from "@/lib/eligibility";
 import type { RealityCheckResult } from "@/lib/realityCheck";
@@ -27,7 +27,7 @@ export function OpportunityCard({ item }: { item: EnrichedOpportunity }) {
   const { op, status, rc } = item;
   const urgent = !isEstimatedDeadline(op) && daysLeft(op.deadline) < 3;
   // Odds shown for a seeded row come from fabricated sample outcomes.
-  const illustrative = isDemoMode() || isSeededOpportunity(op.id);
+  const illustrative = isSeededOpportunity(op.id);
 
   return (
     <PixelCard

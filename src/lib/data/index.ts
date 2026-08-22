@@ -3,21 +3,14 @@
 /**
  * DATA LAYER — the only module screens talk to.
  *
- * Two backends behind one API:
- *  - DEMO MODE (no Supabase keys set): reads the bundled seed data and keeps
- *    profile + applications in localStorage. The whole app works OFFLINE.
- *  - SUPABASE MODE (keys present in .env.local): real tables, real auth.
- *
- * Switch is automatic — fill .env.local and restart, nothing else changes.
+ * Every read and write goes to Postgres through Supabase, scoped by Row
+ * Level Security. There is no local fallback: if the database is not
+ * configured the app says so (see ConfigRequired) rather than simulating
+ * one, so a screen showing data always means the data is real.
  */
 
 import { supabaseBrowser } from "@/lib/supabase/client";
-import {
-  SEED_MENTORS,
-  SEED_OPPORTUNITIES,
-  SEED_OUTCOMES,
-  SEED_REPORTS,
-} from "./seed";
+import { SEED_OPPORTUNITIES } from "./seed";
 import type {
   Application,
   ApplicationStatus,
@@ -30,71 +23,20 @@ import type {
   ResumeContent,
 } from "@/lib/types";
 import { emptyResumeContent } from "@/lib/types";
-import { isDemoMode } from "@/lib/demoMode";
 
-// ── mode detection ──────────────────────────────────────────────
-// isDemoMode lives in a server-safe module (not this "use client" file) so
-// server routes can import it without getting a client-reference stub. Kept
-// re-exported here so existing `@/lib/data` importers are unaffected.
-export { isDemoMode };
-
-// ── localStorage helpers (demo mode) ────────────────────────────
-const LS_PROFILE = "shuru.demo.profile";
-const LS_APPS = "shuru.demo.applications";
-
-function lsGet<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = window.localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-function lsSet(key: string, value: unknown) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(key, JSON.stringify(value));
-}
-
-// ── opportunities ───────────────────────────────────────────────
-const LS_INGESTED = "shuru.demo.ingested";
-
-/** demo-mode ingested rows (from /api/ingest), stored client-side */
-function getIngested(): Opportunity[] {
-  return lsGet<Opportunity[]>(LS_INGESTED, []);
-}
-
-/** merge curated seed with ingested rows; curated always wins on id clash */
-function demoOpportunities(): Opportunity[] {
-  const seedIds = new Set(SEED_OPPORTUNITIES.map((o) => o.id));
-  const extra = getIngested().filter((o) => !seedIds.has(o.id));
-  return [...SEED_OPPORTUNITIES, ...extra];
-}
-
+// ── sample-data flag ────────────────────────────────────────────
 /**
- * True when an opportunity is a curated SEED row. Any Reality Check number
- * for a seeded row is driven by fabricated SEED_OUTCOMES, so the UI must
- * flag it as illustrative sample data (see 1.2). Ingested rows are NOT
- * seeded and carry zero outcomes, so they abstain rather than show a number.
+ * True when an opportunity came from supabase/seed.sql. The outcome history
+ * behind a seeded row is illustrative, not observed, so any Reality Check
+ * number computed from it must be labelled as sample data. Real listings
+ * carry real outcomes or none at all — in which case Reality Check abstains.
  */
 const SEED_OPPORTUNITY_IDS = new Set(SEED_OPPORTUNITIES.map((o) => o.id));
 export function isSeededOpportunity(id: string): boolean {
   return SEED_OPPORTUNITY_IDS.has(id);
 }
 
-/** Store accepted ingested rows (upsert by id). Returns the new count. */
-export function mergeIngested(rows: Opportunity[]): number {
-  const byId = new Map(getIngested().map((o) => [o.id, o]));
-  for (const r of rows) byId.set(r.id, r);
-  const merged = Array.from(byId.values());
-  lsSet(LS_INGESTED, merged);
-  return merged.length;
-}
-
 export async function listOpportunities(): Promise<Opportunity[]> {
-  if (isDemoMode()) {
-    return demoOpportunities().sort((a, b) => a.deadline.localeCompare(b.deadline));
-  }
   const { data, error } = await supabaseBrowser()
     .from("opportunities")
     .select("*")
@@ -104,9 +46,6 @@ export async function listOpportunities(): Promise<Opportunity[]> {
 }
 
 export async function getOpportunity(id: string): Promise<Opportunity | null> {
-  if (isDemoMode()) {
-    return demoOpportunities().find((o) => o.id === id) ?? null;
-  }
   const { data, error } = await supabaseBrowser()
     .from("opportunities")
     .select("*")
@@ -118,9 +57,6 @@ export async function getOpportunity(id: string): Promise<Opportunity | null> {
 
 // ── outcomes (Reality Check fuel) ───────────────────────────────
 export async function listOutcomes(opportunityId: string): Promise<Outcome[]> {
-  if (isDemoMode()) {
-    return SEED_OUTCOMES.filter((o) => o.opportunity_id === opportunityId);
-  }
   const { data, error } = await supabaseBrowser()
     .from("outcomes")
     .select("*")
@@ -141,12 +77,6 @@ export async function listOutcomesForOpportunities(
   for (const id of ids) grouped[id] = [];
   if (ids.length === 0) return grouped;
 
-  if (isDemoMode()) {
-    for (const o of SEED_OUTCOMES) {
-      if (grouped[o.opportunity_id]) grouped[o.opportunity_id].push(o);
-    }
-    return grouped;
-  }
   const { data, error } = await supabaseBrowser()
     .from("outcomes")
     .select("*")
@@ -162,11 +92,6 @@ export async function listOutcomesForOpportunities(
 export async function listInterviewReports(
   company?: string
 ): Promise<InterviewReport[]> {
-  if (isDemoMode()) {
-    return company
-      ? SEED_REPORTS.filter((r) => r.company === company)
-      : SEED_REPORTS;
-  }
   let q = supabaseBrowser().from("interview_reports").select("*");
   if (company) q = q.eq("company", company);
   const { data, error } = await q;
@@ -179,14 +104,6 @@ export async function listMentors(filter?: {
   university?: string;
   company?: string;
 }): Promise<Mentor[]> {
-  if (isDemoMode()) {
-    return SEED_MENTORS.filter(
-      (m) =>
-        m.opt_in &&
-        (!filter?.university || m.university === filter.university) &&
-        (!filter?.company || m.company === filter.company)
-    );
-  }
   let q = supabaseBrowser().from("mentors").select("*").eq("opt_in", true);
   if (filter?.university) q = q.eq("university", filter.university);
   if (filter?.company) q = q.eq("company", filter.company);
@@ -217,14 +134,6 @@ export async function countSeniorsByCompany(
   for (const c of companies) counts[c] = 0;
   if (companies.length === 0) return counts;
 
-  if (isDemoMode()) {
-    for (const m of SEED_MENTORS) {
-      if (m.opt_in && m.university === university && counts[m.company] !== undefined) {
-        counts[m.company] += 1;
-      }
-    }
-    return counts;
-  }
   const { data, error } = await supabaseBrowser()
     .from("mentors")
     .select("company")
@@ -240,9 +149,6 @@ export async function countSeniorsByCompany(
 
 // ── profile ─────────────────────────────────────────────────────
 export async function getProfile(): Promise<Profile | null> {
-  if (isDemoMode()) {
-    return lsGet<Profile | null>(LS_PROFILE, null);
-  }
   const sb = supabaseBrowser();
   const {
     data: { user },
@@ -259,10 +165,6 @@ export async function getProfile(): Promise<Profile | null> {
 }
 
 export async function saveProfile(profile: Profile): Promise<void> {
-  if (isDemoMode()) {
-    lsSet(LS_PROFILE, profile);
-    return;
-  }
   const { error } = await supabaseBrowser()
     .from("profiles")
     .upsert(profile, { onConflict: "user_id" });
@@ -271,9 +173,6 @@ export async function saveProfile(profile: Profile): Promise<void> {
 
 // ── applications (the tracker) ──────────────────────────────────
 export async function listApplications(): Promise<Application[]> {
-  if (isDemoMode()) {
-    return lsGet<Application[]>(LS_APPS, []);
-  }
   const { data, error } = await supabaseBrowser()
     .from("applications")
     .select("*")
@@ -286,25 +185,6 @@ export async function upsertApplication(
   opportunityId: string,
   status: ApplicationStatus
 ): Promise<void> {
-  if (isDemoMode()) {
-    const apps = lsGet<Application[]>(LS_APPS, []);
-    const existing = apps.find((a) => a.opportunity_id === opportunityId);
-    const now = new Date().toISOString();
-    if (existing) {
-      existing.status = status;
-      existing.updated_at = now;
-    } else {
-      apps.push({
-        id: `local-${Date.now()}`,
-        user_id: "demo",
-        opportunity_id: opportunityId,
-        status,
-        updated_at: now,
-      });
-    }
-    lsSet(LS_APPS, apps);
-    return;
-  }
   const sb = supabaseBrowser();
   const {
     data: { user },
@@ -323,13 +203,6 @@ export async function upsertApplication(
 }
 
 export async function removeApplication(opportunityId: string): Promise<void> {
-  if (isDemoMode()) {
-    const apps = lsGet<Application[]>(LS_APPS, []).filter(
-      (a) => a.opportunity_id !== opportunityId
-    );
-    lsSet(LS_APPS, apps);
-    return;
-  }
   const sb = supabaseBrowser();
   const {
     data: { user },
@@ -344,13 +217,8 @@ export async function removeApplication(opportunityId: string): Promise<void> {
 }
 
 // ── resumes (Resume Forge) ──────────────────────────────────────
-const LS_RESUME = "shuru.demo.resume";
-
 /** Latest resume for this user, or null if none saved yet. */
 export async function getResume(): Promise<Resume | null> {
-  if (isDemoMode()) {
-    return lsGet<Resume | null>(LS_RESUME, null);
-  }
   const { data, error } = await supabaseBrowser()
     .from("resumes")
     .select("*")
@@ -367,18 +235,6 @@ export async function saveResume(
   title = "My Resume"
 ): Promise<Resume> {
   const now = new Date().toISOString();
-  if (isDemoMode()) {
-    const existing = lsGet<Resume | null>(LS_RESUME, null);
-    const resume: Resume = {
-      id: existing?.id ?? "local-resume",
-      user_id: "demo",
-      title,
-      content,
-      updated_at: now,
-    };
-    lsSet(LS_RESUME, resume);
-    return resume;
-  }
   const sb = supabaseBrowser();
   const {
     data: { user },

@@ -20,7 +20,6 @@ import { useProfile } from "@/hooks/useProfile";
 import {
   countSeniors,
   getOpportunity,
-  isDemoMode,
   isSeededOpportunity,
   listInterviewReports,
   listOutcomes,
@@ -145,7 +144,7 @@ export default function RealityCheckPage() {
         {op.role} · {op.company}
       </p>
 
-      {(isDemoMode() || isSeededOpportunity(op.id)) && (
+      {isSeededOpportunity(op.id) && (
         <div className="mt-3 flex items-start gap-2 border-3 border-ink bg-paper p-2.5 shadow-pixel-sm">
           <span className="mt-0.5 border-2 border-ink bg-grey px-1 py-0.5 font-mono text-[8px] font-bold uppercase tracking-wide text-cream">
             {t("reality.sampleBadge")}

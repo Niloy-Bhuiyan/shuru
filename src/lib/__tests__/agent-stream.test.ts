@@ -5,7 +5,7 @@ import type { AgentMessage, AgentResult, AskStreamFn, ToolCall } from "@/lib/age
 
 beforeEach(() => _resetAgentState());
 
-const ctx = { demoContext: { profile: null, applications: [], resume: null } };
+const ctx = {};
 
 /** Scripted streaming model: yields deltas, then RETURNS a result per turn. */
 function fakeStream(script: { deltas: string[]; result: AgentResult }[]) {
