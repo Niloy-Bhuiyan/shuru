@@ -37,7 +37,10 @@ export default function RootLayout({
             plus content column rather than stretching mobile layouts across
             a monitor.
           */}
-          <div className="relative mx-auto min-h-dvh max-w-app bg-cream lg:max-w-[1120px] lg:border-x-3 lg:border-ink">
+          <div
+            data-app-frame
+            className="relative mx-auto min-h-dvh max-w-app bg-cream lg:max-w-[1120px] lg:border-x-3 lg:border-ink"
+          >
             {children}
           </div>
         </LangProvider>

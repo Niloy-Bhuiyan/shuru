@@ -78,7 +78,16 @@ test.describe("password reset", () => {
 });
 
 test.describe("route guard", () => {
-  for (const path of ["/radar", "/saved", "/vault", "/you", "/employer", "/admin"]) {
+  for (const path of [
+    "/radar",
+    "/saved",
+    "/vault",
+    "/you",
+    "/notifications",
+    "/employer",
+    "/employer/listings/new",
+    "/admin",
+  ]) {
     test(`redirects ${path} to login when signed out`, async ({ page }) => {
       await page.goto(path);
       await expect(page).toHaveURL(/\/login/);
