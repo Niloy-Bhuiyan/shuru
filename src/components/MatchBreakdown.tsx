@@ -12,9 +12,29 @@
  * the surrounding labels are translated.
  */
 
-import { matchScore } from "@/lib/matching";
-import { useLang } from "@/lib/i18n";
+import { matchScore, type MatchComponentId } from "@/lib/matching";
+import { useLang, type StringKey } from "@/lib/i18n";
 import type { Opportunity, Profile } from "@/lib/types";
+
+/**
+ * The engine's own `label` and `detail` are English prose — useful in logs and
+ * tests, but they must not reach the UI, or a Bangla reader gets an English
+ * breakdown. Everything rendered below is keyed off machine-readable fields
+ * instead.
+ */
+const FACTOR_KEY: Record<MatchComponentId, StringKey> = {
+  skills: "match.factor.skills",
+  eligibility: "match.factor.eligibility",
+  location: "match.factor.location",
+  work_mode: "match.factor.work_mode",
+};
+
+/** Derived from the score, so no engine change is needed to translate it. */
+function stateKey(score: number): StringKey {
+  if (score >= 1) return "match.state.met";
+  if (score <= 0) return "match.state.notMet";
+  return "match.state.partial";
+}
 
 export function MatchBreakdown({
   profile,
@@ -27,6 +47,7 @@ export function MatchBreakdown({
   const result = matchScore(profile, opportunity);
 
   const blocked = result.score === 0 && result.reason.includes("hard requirement");
+  const judged = result.components.filter((c) => c.score !== null).length;
 
   return (
     <section className="mt-4 border-3 border-ink bg-paper p-3 shadow-pixel">
@@ -71,18 +92,20 @@ export function MatchBreakdown({
           <ul className="mt-2.5 space-y-1">
             {result.components.map((c) => (
               <li key={c.id} className="flex items-start justify-between gap-2">
-                <span className="font-mono text-[11px] text-ink">{c.label}</span>
+                <span className="font-mono text-[11px] text-ink">
+                  {t(FACTOR_KEY[c.id])}
+                </span>
                 <span className="shrink-0 font-mono text-[10px] text-grey">
                   {c.score === null
                     ? t("match.notStated")
-                    : `${Math.round(c.score * 100)}%`}
+                    : `${t(stateKey(c.score))} · ${Math.round(c.score * 100)}%`}
                 </span>
               </li>
             ))}
           </ul>
 
           <p className="mt-2 font-mono text-[10px] leading-relaxed text-grey">
-            {result.reason}
+            {t("match.scoredOn")}: {judged}/{result.components.length}
           </p>
         </>
       )}

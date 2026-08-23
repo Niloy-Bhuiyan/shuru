@@ -32,6 +32,25 @@ export function isSupabaseConfigured(): boolean {
  */
 export function siteUrl(): string {
   const configured = process.env.NEXT_PUBLIC_SITE_URL;
+
+  /*
+   * In the browser on localhost, the port actually being served wins over the
+   * configured value.
+   *
+   * `next dev` falls forward to 3001, 3002, … when its default port is busy,
+   * while NEXT_PUBLIC_SITE_URL stays pinned at 3000. The configured value then
+   * sends the OAuth callback to a port nothing is listening on (or worse, to
+   * a different app), and sign-in appears to succeed and then lands nowhere.
+   *
+   * Restricted to localhost so it cannot be abused: in production the
+   * configured canonical origin always wins, which is what matters behind a
+   * proxy or on a custom domain.
+   */
+  if (typeof window !== "undefined") {
+    const { hostname, origin } = window.location;
+    if (hostname === "localhost" || hostname === "127.0.0.1") return origin;
+  }
+
   if (isSet(configured)) return configured!.replace(/\/$/, "");
   if (typeof window !== "undefined") return window.location.origin;
   return "http://localhost:3000";

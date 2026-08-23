@@ -132,9 +132,9 @@ export function StepBuild({
       <div className="space-y-3">
         <PixelInput label={t("auth.name")} name="r-name" value={content.contact.name} onChange={(v) => update({ contact: { ...content.contact, name: v } })} />
         <PixelInput label={t("auth.email")} name="r-email" type="email" value={content.contact.email} onChange={(v) => update({ contact: { ...content.contact, email: v } })} placeholder="you@university.edu" />
-        <PixelInput label="Phone" name="r-phone" value={content.contact.phone} onChange={(v) => update({ contact: { ...content.contact, phone: v } })} placeholder="+8801XXXXXXXXX" />
+        <PixelInput label={t("forge.f.phone")} name="r-phone" value={content.contact.phone} onChange={(v) => update({ contact: { ...content.contact, phone: v } })} placeholder="+8801XXXXXXXXX" />
         <PixelInput label={t("detail.location")} name="r-loc" value={content.contact.location} onChange={(v) => update({ contact: { ...content.contact, location: v } })} />
-        <PixelInput label="Links" name="r-links" value={content.contact.links.join(", ")} onChange={(v) => update({ contact: { ...content.contact, links: v.split(",").map((s) => s.trim()).filter(Boolean) } })} hint="Comma separated" />
+        <PixelInput label={t("forge.f.links")} name="r-links" value={content.contact.links.join(", ")} onChange={(v) => update({ contact: { ...content.contact, links: v.split(",").map((s) => s.trim()).filter(Boolean) } })} hint={t("forge.f.commaSeparated")} />
       </div>
     ),
     summary: (
@@ -145,7 +145,7 @@ export function StepBuild({
           onChange={(e) => update({ summary: e.target.value })}
           rows={5}
           className="w-full border-3 border-ink bg-cream px-3 py-2 font-mono text-xs leading-relaxed text-ink placeholder:text-grey focus:outline-none focus:shadow-pixel-sm"
-          placeholder="2–3 sentences: who you are, what you build, what you're aiming at."
+          placeholder={t("forge.f.summaryHint")}
         />
         {toolbarFor({ kind: "summary" })}
       </div>
@@ -154,13 +154,13 @@ export function StepBuild({
       <div className="space-y-3">
         {content.education.map((e, i) => (
           <div key={i} className="space-y-2 border-2 border-ink/30 p-2">
-            <PixelInput label="Institution" name={`edu-inst-${i}`} value={e.institution} onChange={(v) => { const education = [...content.education]; education[i] = { ...e, institution: v }; update({ education }); }} />
-            <PixelInput label="Degree" name={`edu-deg-${i}`} value={e.degree} onChange={(v) => { const education = [...content.education]; education[i] = { ...e, degree: v }; update({ education }); }} />
+            <PixelInput label={t("forge.f.institution")} name={`edu-inst-${i}`} value={e.institution} onChange={(v) => { const education = [...content.education]; education[i] = { ...e, institution: v }; update({ education }); }} />
+            <PixelInput label={t("forge.f.degree")} name={`edu-deg-${i}`} value={e.degree} onChange={(v) => { const education = [...content.education]; education[i] = { ...e, degree: v }; update({ education }); }} />
             <div className="grid grid-cols-2 gap-2">
-              <PixelInput label="Start" name={`edu-s-${i}`} value={e.start} onChange={(v) => { const education = [...content.education]; education[i] = { ...e, start: v }; update({ education }); }} placeholder="Jan 2023" />
-              <PixelInput label="End" name={`edu-e-${i}`} value={e.end} onChange={(v) => { const education = [...content.education]; education[i] = { ...e, end: v }; update({ education }); }} placeholder="Dec 2026" />
+              <PixelInput label={t("forge.f.start")} name={`edu-s-${i}`} value={e.start} onChange={(v) => { const education = [...content.education]; education[i] = { ...e, start: v }; update({ education }); }} placeholder="Jan 2023" />
+              <PixelInput label={t("forge.f.end")} name={`edu-e-${i}`} value={e.end} onChange={(v) => { const education = [...content.education]; education[i] = { ...e, end: v }; update({ education }); }} placeholder="Dec 2026" />
             </div>
-            <PixelInput label="Notes" name={`edu-n-${i}`} value={e.notes} onChange={(v) => { const education = [...content.education]; education[i] = { ...e, notes: v }; update({ education }); }} hint="CGPA, honors, expected graduation…" />
+            <PixelInput label={t("forge.f.notes")} name={`edu-n-${i}`} value={e.notes} onChange={(v) => { const education = [...content.education]; education[i] = { ...e, notes: v }; update({ education }); }} hint={t("forge.f.notesHint")} />
             {toolbarFor({ kind: "education", index: i })}
           </div>
         ))}
@@ -173,11 +173,11 @@ export function StepBuild({
       <div className="space-y-3">
         {content.experience.map((e, i) => (
           <div key={i} className="space-y-2 border-2 border-ink/30 p-2">
-            <PixelInput label="Company" name={`exp-c-${i}`} value={e.company} onChange={(v) => { const experience = [...content.experience]; experience[i] = { ...e, company: v }; update({ experience }); }} />
-            <PixelInput label="Role" name={`exp-r-${i}`} value={e.role} onChange={(v) => { const experience = [...content.experience]; experience[i] = { ...e, role: v }; update({ experience }); }} />
+            <PixelInput label={t("forge.f.company")} name={`exp-c-${i}`} value={e.company} onChange={(v) => { const experience = [...content.experience]; experience[i] = { ...e, company: v }; update({ experience }); }} />
+            <PixelInput label={t("forge.f.role")} name={`exp-r-${i}`} value={e.role} onChange={(v) => { const experience = [...content.experience]; experience[i] = { ...e, role: v }; update({ experience }); }} />
             <div className="grid grid-cols-2 gap-2">
-              <PixelInput label="Start" name={`exp-s-${i}`} value={e.start} onChange={(v) => { const experience = [...content.experience]; experience[i] = { ...e, start: v }; update({ experience }); }} />
-              <PixelInput label="End" name={`exp-e-${i}`} value={e.end} onChange={(v) => { const experience = [...content.experience]; experience[i] = { ...e, end: v }; update({ experience }); }} />
+              <PixelInput label={t("forge.f.start")} name={`exp-s-${i}`} value={e.start} onChange={(v) => { const experience = [...content.experience]; experience[i] = { ...e, start: v }; update({ experience }); }} />
+              <PixelInput label={t("forge.f.end")} name={`exp-e-${i}`} value={e.end} onChange={(v) => { const experience = [...content.experience]; experience[i] = { ...e, end: v }; update({ experience }); }} />
             </div>
             <BulletsEditor bullets={e.bullets} onChange={(bullets) => { const experience = [...content.experience]; experience[i] = { ...e, bullets }; update({ experience }); }} />
             {toolbarFor({ kind: "experience", index: i })}
@@ -192,9 +192,9 @@ export function StepBuild({
       <div className="space-y-3">
         {content.projects.map((p, i) => (
           <div key={i} className="space-y-2 border-2 border-ink/30 p-2">
-            <PixelInput label="Project" name={`prj-n-${i}`} value={p.name} onChange={(v) => { const projects = [...content.projects]; projects[i] = { ...p, name: v }; update({ projects }); }} />
-            <PixelInput label="Link" name={`prj-l-${i}`} value={p.link} onChange={(v) => { const projects = [...content.projects]; projects[i] = { ...p, link: v }; update({ projects }); }} placeholder="live URL or repo" />
-            <PixelInput label="Tech" name={`prj-t-${i}`} value={p.tech} onChange={(v) => { const projects = [...content.projects]; projects[i] = { ...p, tech: v }; update({ projects }); }} hint="Comma separated" />
+            <PixelInput label={t("forge.f.project")} name={`prj-n-${i}`} value={p.name} onChange={(v) => { const projects = [...content.projects]; projects[i] = { ...p, name: v }; update({ projects }); }} />
+            <PixelInput label={t("forge.f.link")} name={`prj-l-${i}`} value={p.link} onChange={(v) => { const projects = [...content.projects]; projects[i] = { ...p, link: v }; update({ projects }); }} placeholder={t("forge.f.linkHint")} />
+            <PixelInput label={t("forge.f.tech")} name={`prj-t-${i}`} value={p.tech} onChange={(v) => { const projects = [...content.projects]; projects[i] = { ...p, tech: v }; update({ projects }); }} hint={t("forge.f.commaSeparated")} />
             <BulletsEditor bullets={p.bullets} onChange={(bullets) => { const projects = [...content.projects]; projects[i] = { ...p, bullets }; update({ projects }); }} />
             {toolbarFor({ kind: "projects", index: i })}
           </div>
