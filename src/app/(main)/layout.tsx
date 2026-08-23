@@ -44,7 +44,13 @@ export default function MainLayout({
       */}
       <div className="lg:flex lg:items-start">
         <PixelSideNav />
-        <div className="min-w-0 flex-1">
+        {/*
+          Cap the reading column on desktop. Without it, single-column screens
+          (alerts, profile) stretch a form across ~920px, which is wide enough
+          that the eye loses the line. 880px still leaves the radar feed two
+          comfortable card columns.
+        */}
+        <div className="min-w-0 flex-1 lg:max-w-[880px]">
           {ready ? (
             <div className="pb-20 lg:pb-8">{children}</div>
           ) : (
