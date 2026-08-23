@@ -171,7 +171,10 @@ describe("normalizeAdzuna", () => {
         description: "React internship",
         created: "2026-08-10T00:00:00Z",
         company: { display_name: "Initech" },
-        location: { display_name: "London" },
+        // Dhaka, not London: these cases are about compensation evidence, and
+        // an onsite-abroad location is now dropped by the location filter
+        // before the salary logic is ever reached.
+        location: { display_name: "Dhaka" },
         redirect_url: "https://adzuna.example/999",
         salary_min: 20000,
         salary_max: 24000,

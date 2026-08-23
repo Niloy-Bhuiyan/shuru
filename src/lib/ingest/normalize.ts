@@ -147,6 +147,48 @@ export type IngestSource = Exclude<InternshipSource, "shuru">;
  *    records whether the source said anything at all
  *  - no eligibility gates are invented, so Reality Check abstains on these
  */
+/**
+ * Places a Bangladeshi student can realistically take.
+ *
+ * Matched against the raw location string, which every board formats
+ * differently ("Dhaka", "Dhaka, Bangladesh", "Chattogram"). Both the current
+ * and former spellings of the major cities are listed because job boards use
+ * them interchangeably.
+ */
+const BD_LOCATION_TERMS = [
+  "bangladesh",
+  "dhaka",
+  "chattogram",
+  "chittagong",
+  "sylhet",
+  "khulna",
+  "rajshahi",
+  "gazipur",
+  "narayanganj",
+];
+
+/**
+ * Whether a listing is applicable to this product's users.
+ *
+ * Shuru is for students in Bangladesh. An onsite internship in San Francisco
+ * is a real listing, but not one a Dhaka undergraduate can accept, and filling
+ * the feed with them makes the product look busy while being useless — the
+ * same dishonesty as an invented match score, one layer up.
+ *
+ * Remote is kept regardless of where the company sits: that IS applicable.
+ * Hybrid is treated as onsite, because it requires being near the office.
+ *
+ * Exported for tests and for `scripts/probe-source-filters.mjs`.
+ */
+export function isRelevantLocation(
+  location: string,
+  workMode: WorkMode | undefined
+): boolean {
+  if (workMode === "remote") return true;
+  const haystack = location.toLowerCase();
+  return BD_LOCATION_TERMS.some((t) => haystack.includes(t));
+}
+
 export function buildListing(args: {
   source: IngestSource;
   sourceId: string;
@@ -163,6 +205,20 @@ export function buildListing(args: {
 }): Opportunity | null {
   const deadline = addDays(args.postedIso, DEADLINE_DAYS);
   if (!deadline || !args.company.trim() || !args.role.trim()) return null;
+
+  /*
+   * Applied centrally so every adapter inherits it — a per-adapter check
+   * would be forgotten by the next source added.
+   *
+   * The `?? "remote"` default is load-bearing here, so be deliberate about it:
+   * Lever, Ashby and Arbeitnow all set workMode from a real source field
+   * (`workplaceType`, `isRemote`, `remote`). Only RemoteOK omits it, and that
+   * board lists nothing but remote roles, so defaulting to remote states a
+   * fact about that source rather than guessing. Any new adapter whose source
+   * does NOT publish a work mode must set it explicitly rather than inherit
+   * this default, or an onsite role abroad slips through as "remote".
+   */
+  if (!isRelevantLocation(args.location, args.workMode ?? "remote")) return null;
   const sourceLabel = SOURCE_LABELS[args.source];
   const workMode = args.workMode ?? "remote";
   const placement = workMode === "remote" ? "Remote listing" : "Listing";
