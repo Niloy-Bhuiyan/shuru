@@ -131,6 +131,43 @@ Matching activates as listings gain real skill data:
 Do not lower `MIN_COVERAGE` to make numbers appear. The regression test in
 `src/lib/__tests__/matching.test.ts` pins the real ingested shape.
 
+## 5a. Notification delivery
+
+Check configuration without sending anything:
+
+```
+GET /api/notifications/dispatch
+```
+
+It reports `email` and `push` each as configured or names the exact missing
+variable. Run a dispatch:
+
+```
+POST /api/notifications/dispatch   header: x-ingest-secret: <INGEST_SECRET>
+```
+
+The response separates `sent`, `failed` and `skipped`, with `skip_reasons`
+counted by cause. Common `skip_reasons` and what they mean:
+
+| reason | meaning |
+| --- | --- |
+| `email_disabled` | user has not opted in — **the default**, not a fault |
+| `daily_cap_reached` | `max_alerts_per_day` hit; highest-priority alerts were sent first |
+| `expired` | alert outlived its listing and was dropped rather than sent late |
+| `no_email_address` | auth record has no address |
+| `already_emailed` | `emailed_at` already stamped |
+
+**`emailed_at` / `pushed_at` are stamped only after the provider accepted.** A
+retryable failure leaves them null so the next run picks it up; a permanent
+one is reported in `failures` rather than marked delivered. If you see
+`sent but not stamped`, that message may duplicate on the next run — it is
+reported precisely so the duplicate is not a mystery.
+
+Dead push subscriptions are retired automatically: a 404/410 from the push
+service sets `expired_at`, so a stale device stops consuming send attempts.
+Rotating the VAPID keypair invalidates every subscription at once — if push
+goes universally quiet, check that first.
+
 ## 6. Common symptoms
 
 | Symptom | Likely cause |
@@ -138,7 +175,9 @@ Do not lower `MIN_COVERAGE` to make numbers appear. The regression test in
 | Every request 403s with `42501` | grants missing — apply `0007` (§2) |
 | Protected routes serve without auth | `ƒ Middleware` missing from build (§1) |
 | Employer/admin action "succeeds" but nothing changes | caller is not that role; the guard trigger reverted it. `moderateListing`/`verifyCompany` re-read and raise `ModerationRejected` rather than reporting a false success |
-| Alerts never arrive | notifications are rows; `emailed_at`/`pushed_at` null means that channel never ran. No email sender is wired by default |
+| Alerts never arrive | check `GET /api/notifications/dispatch` — the channel is probably unconfigured, or the user never opted in (both default to false) |
+| Cron jobs return 503 | `CRON_SECRET` is unset; `/api/cron` refuses rather than running an unauthenticated job |
+| Push works on desktop, not iPhone | iOS requires the site be added to the Home Screen before Web Push is available |
 | Ingestion returns 429 | 15-minute in-memory cooldown, per instance |
 | Ingestion returns 401 | `INGEST_SECRET` mismatch |
 
@@ -149,10 +188,17 @@ Deliberate, documented, not defects:
 - **Rate limits are per-instance.** The agent's 20/day cap and the ingest
   cooldown live in module memory, so on multi-instance serverless they scale
   with instance count. They are cost seatbelts, not security boundaries.
-- **No email or push sender is wired.** The schema records per-channel
-  delivery so nothing claims an alert was sent by a channel that never ran.
-- **Bangla coverage is partial for employer and admin screens.** Missing keys
-  fall back to English by design (`i18n.tsx`), so the UI stays usable rather
-  than showing raw key names.
+- **Email and push are optional and opt-in.** Both are fully implemented, but
+  a deployment without provider credentials sends nothing and leaves
+  `emailed_at` / `pushed_at` null rather than overstating delivery. Both user
+  preferences default to false.
+- **No Content-Security-Policy is set.** Next's App Router injects inline
+  bootstrap scripts, so a useful CSP needs per-request nonces via middleware.
+  A `unsafe-inline` policy was deliberately not added: it would imply XSS
+  protection it does not provide. The other security headers are set
+  (`next.config.mjs`).
+- **The service worker caches nothing.** It exists only to receive push
+  events. An offline cache for live listing data would serve stale deadlines
+  and stale odds, which is worse than an offline error.
 - **`schema_migrations` has RLS on with no policy.** Intentional: only
   `service_role` (which bypasses RLS) may touch the ledger.

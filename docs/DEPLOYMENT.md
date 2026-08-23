@@ -109,6 +109,56 @@ generated from the codebase.
 |---|---|---|---|---|
 | 9 | Cron/ingest secret | generate: `openssl rand -hex 32` | Vercel env + your scheduler's request header | `INGEST_SECRET` |
 | 10 | A scheduler | Vercel Cron, GitHub Actions, or any cron host | calls `POST /api/ingest` with `x-ingest-secret` | — |
+| 11 | Vercel Cron secret | generate: `openssl rand -hex 32` | Vercel env only | `CRON_SECRET` |
+
+### Scheduling on Vercel
+
+`vercel.json` already declares both cron jobs — ingestion every 6 hours and
+notification dispatch every 15 minutes. **Set `CRON_SECRET` or they refuse to
+run**: `/api/cron` returns 503 when it is unset rather than executing an
+unauthenticated job, because a public URL that triggers ingestion is a
+denial-of-wallet vector.
+
+Vercel Cron can only issue a GET and cannot attach custom headers — it sends
+`Authorization: Bearer $CRON_SECRET`. The job endpoints are POST with
+`x-ingest-secret`, so `/api/cron?job=…` authenticates the scheduler and then
+performs the real POST. Any scheduler that can POST with a header should skip
+`/api/cron` and call `/api/ingest` and `/api/notifications/dispatch` directly.
+
+## 6. Notification delivery
+
+Notifications are always written as database rows and always appear in-app.
+Email and browser push are optional channels layered on top; with neither
+configured the product works, and `emailed_at` / `pushed_at` stay null so
+nothing claims a delivery that did not happen.
+
+| # | Feature | What to provide | Where you get it | Env var |
+|---|---|---|---|---|
+| 12 | Email delivery | provider choice + API key + verified sender | resend.com or postmarkapp.com (both have free tiers) | `EMAIL_PROVIDER`, `EMAIL_FROM`, and `RESEND_API_KEY` **or** `POSTMARK_SERVER_TOKEN` |
+| 13 | Browser push | a VAPID keypair — **self-generated, no account needed** | `node scripts/generate-vapid-keys.mjs` | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` |
+
+**Email.** `EMAIL_FROM` must be a sender on a domain verified with your
+provider, or every send is rejected. Check configuration without sending:
+
+```
+GET /api/notifications/dispatch
+```
+
+It reports each channel as configured or names the missing variable.
+
+**Push.** Generate the keypair once and keep it stable — rotating it
+invalidates every existing subscription and silently stops delivery. The
+public key ships to browsers; the private key is server-only and must never
+carry a `NEXT_PUBLIC_` prefix.
+
+Push requires HTTPS (localhost is exempt), so it will not work over a plain
+HTTP preview. On iPhone and iPad, Web Push only works after the user adds
+Shuru to their Home Screen — the UI states this rather than showing a toggle
+that does nothing.
+
+Both channels are opt-in per user: `notification_preferences.email` and
+`browser_push` default to **false**, so a user who never opens their settings
+is never emailed or pushed.
 
 ## Optional — each feature hides itself when unset
 
