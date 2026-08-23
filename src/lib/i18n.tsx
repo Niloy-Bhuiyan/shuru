@@ -90,7 +90,10 @@ const STRINGS = {
     "auth.errRequired": "Required",
     "auth.errCgpa": "Enter a CGPA between 0.00 and 4.00",
     "auth.errPw": "Minimum 8 characters",
-    "auth.errCreds": "Wrong email or password",
+    "auth.errCreds":
+      "Wrong email or password. If you created this account with Google or GitHub, sign in with that button instead — those accounts have no password.",
+    "auth.errUnconfirmed":
+      "Confirm your email first. Check your inbox for the link we sent.",
     "auth.forgot": "Forgot password?",
     "auth.forgotTitle": "Reset password",
     "auth.forgotBody":
@@ -509,7 +512,10 @@ const STRINGS = {
     "auth.errRequired": "আবশ্যক",
     "auth.errCgpa": "০.০০ থেকে ৪.০০-এর মধ্যে সিজিপিএ দিন",
     "auth.errPw": "কমপক্ষে ৮ অক্ষর",
-    "auth.errCreds": "ইমেইল বা পাসওয়ার্ড ভুল",
+    "auth.errCreds":
+      "ইমেইল বা পাসওয়ার্ড ভুল। আপনি যদি Google বা GitHub দিয়ে অ্যাকাউন্ট খুলে থাকেন, সেই বাটন দিয়েই সাইন ইন করুন — ওই অ্যাকাউন্টে কোনো পাসওয়ার্ড থাকে না।",
+    "auth.errUnconfirmed":
+      "আগে আপনার ইমেইল নিশ্চিত করুন। আমরা যে লিংক পাঠিয়েছি সেটি ইনবক্সে দেখুন।",
     "auth.forgot": "পাসওয়ার্ড ভুলে গেছেন?",
     "auth.forgotTitle": "পাসওয়ার্ড রিসেট",
     "auth.forgotBody":

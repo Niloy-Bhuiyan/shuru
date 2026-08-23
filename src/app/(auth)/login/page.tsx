@@ -49,7 +49,25 @@ function LoginForm() {
         password,
       });
       if (error || !data.user) {
-        setError(t("auth.errCreds"));
+        /*
+         * Don't collapse every failure into "wrong password".
+         *
+         * An account created through Google or GitHub has NO password in
+         * Supabase, so password sign-in returns plain invalid-credentials —
+         * indistinguishable from a typo, deliberately, so the API cannot be
+         * used to enumerate accounts. We must not resolve that ambiguity
+         * either, but we can name it: the credentials message points at the
+         * social buttons rather than insisting the password is wrong.
+         *
+         * `email_not_confirmed` IS distinguishable and gets its own message,
+         * because "check your inbox" and "retype your password" are entirely
+         * different actions.
+         */
+        setError(
+          error?.code === "email_not_confirmed"
+            ? t("auth.errUnconfirmed")
+            : t("auth.errCreds")
+        );
         return;
       }
       const existing = await getProfile();
