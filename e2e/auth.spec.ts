@@ -51,6 +51,31 @@ test.describe("login", () => {
   });
 });
 
+test.describe("signed-out header", () => {
+  test("does not render the notification bell", async ({ page }) => {
+    // SunriseHeader is shared with the auth screens. The bell used to poll
+    // /rest/v1/notifications here and 401 twice on every visit; a signed-out
+    // user has no alerts, so it must not render at all.
+    await page.goto("/login");
+    await expect(page.getByRole("link", { name: /notification/i })).toHaveCount(0);
+  });
+
+  test("makes no authenticated data request", async ({ page }) => {
+    const unauthorized: string[] = [];
+    page.on("response", (r) => {
+      if (r.status() === 401) unauthorized.push(r.url());
+    });
+
+    await page.goto("/login");
+    await page.waitForTimeout(3000);
+
+    expect(
+      unauthorized,
+      `signed-out page made authenticated requests:\n  ${unauthorized.join("\n  ")}`
+    ).toEqual([]);
+  });
+});
+
 test.describe("registration", () => {
   test("rejects a short password and an out-of-range CGPA", async ({ page }) => {
     await page.goto("/register");

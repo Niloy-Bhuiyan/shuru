@@ -16,6 +16,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PixelIcon } from "@/components/pixel/PixelIcon";
 import { countUnreadNotifications } from "@/lib/data/notifications";
+import { supabaseBrowser } from "@/lib/supabase/client";
 import { useLang } from "@/lib/i18n";
 
 const POLL_MS = 60_000;
@@ -24,9 +25,12 @@ export function NotificationBell() {
   const { t } = useLang();
   const pathname = usePathname();
   const [unread, setUnread] = useState(0);
+  /** Null until the session check resolves, so the bell never flashes in. */
+  const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    let timer: ReturnType<typeof setInterval> | undefined;
 
     async function tick() {
       try {
@@ -37,14 +41,34 @@ export function NotificationBell() {
       }
     }
 
-    tick();
-    const id = setInterval(tick, POLL_MS);
+    (async () => {
+      // SunriseHeader also renders on the signed-out auth screens, where a
+      // notifications query is guaranteed to 401. Check for a session first:
+      // a signed-out user has no alerts, so the bell should not appear at all
+      // rather than poll and swallow the error.
+      const {
+        data: { user },
+      } = await supabaseBrowser().auth.getUser();
+      if (cancelled) return;
+      if (!user) {
+        setSignedIn(false);
+        return;
+      }
+      setSignedIn(true);
+      await tick();
+      timer = setInterval(tick, POLL_MS);
+    })().catch(() => {
+      if (!cancelled) setSignedIn(false);
+    });
+
     return () => {
       cancelled = true;
-      clearInterval(id);
+      if (timer) clearInterval(timer);
     };
     // re-count on navigation so reading the centre clears the badge promptly
   }, [pathname]);
+
+  if (!signedIn) return null;
 
   return (
     <Link
