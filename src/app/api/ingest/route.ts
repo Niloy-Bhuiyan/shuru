@@ -44,7 +44,18 @@ function secretOk(req: NextRequest): boolean {
   return provided === process.env.INGEST_SECRET;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  /*
+   * Status is operator information, not public. It names every job board this
+   * deployment pulls from, their health, and the ingest cooldown — useful to
+   * whoever runs the service, and to nobody else. Nothing in the app calls
+   * this (the admin panel reads `ingestion_runs` through RLS instead), so
+   * gating it costs no functionality.
+   */
+  if (!secretOk(req)) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
   const availability = adapterAvailability();
 
   // Health is derived from recorded runs, so it is reported only when those

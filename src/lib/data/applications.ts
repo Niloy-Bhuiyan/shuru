@@ -25,23 +25,3 @@ export async function listApplicationEvents(
   if (error) throw error;
   return (data ?? []) as ApplicationEvent[];
 }
-
-/** The caller's application for one listing, or null if they have none. */
-export async function getApplicationFor(
-  opportunityId: string
-): Promise<{ id: string; status: string } | null> {
-  const sb = supabaseBrowser();
-  const {
-    data: { user },
-  } = await sb.auth.getUser();
-  if (!user) return null;
-
-  const { data, error } = await sb
-    .from("applications")
-    .select("id, status")
-    .eq("user_id", user.id)
-    .eq("opportunity_id", opportunityId)
-    .maybeSingle();
-  if (error) throw error;
-  return (data as { id: string; status: string }) ?? null;
-}

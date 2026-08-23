@@ -76,6 +76,23 @@ test.describe("signed-out header", () => {
   });
 });
 
+test.describe("operator endpoints", () => {
+  // These name the job boards in use, their health, and the email provider.
+  // No app surface consumes them, so they must not answer an anonymous GET.
+  for (const path of ["/api/ingest", "/api/notifications/dispatch"]) {
+    test(`${path} refuses an unauthenticated GET`, async ({ request }) => {
+      const res = await request.get(path);
+      expect(res.status()).toBe(401);
+    });
+  }
+
+  test("does not leak provider or source config in the 401 body", async ({ request }) => {
+    const res = await request.get("/api/notifications/dispatch");
+    const body = await res.text();
+    expect(body).not.toMatch(/resend|postmark|remoteok|arbeitnow|lever|ashby/i);
+  });
+});
+
 test.describe("registration", () => {
   test("rejects a short password and an out-of-range CGPA", async ({ page }) => {
     await page.goto("/register");

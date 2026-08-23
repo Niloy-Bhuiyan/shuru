@@ -68,8 +68,16 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? req.nextUrl.origin;
-  const target = `${origin.replace(/\/+$/, "")}${JOBS[job]}`;
+  /*
+   * Self-call uses the request's own origin, NOT NEXT_PUBLIC_SITE_URL.
+   *
+   * This request already arrived at the instance that should do the work, so
+   * its origin is correct by construction. The configured value can be stale
+   * or simply different (locally it stays pinned to :3000 while `next dev`
+   * serves :3002), which would send the job to a port running something else
+   * — or nothing.
+   */
+  const target = `${req.nextUrl.origin.replace(/\/+$/, "")}${JOBS[job]}`;
 
   try {
     const res = await fetch(target, {

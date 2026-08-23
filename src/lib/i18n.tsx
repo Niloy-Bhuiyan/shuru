@@ -343,6 +343,8 @@ const STRINGS = {
     "notif.saving": "Saving…",
     "notif.savedOk": "Saved",
     "notif.channelPending": "Not sent by this channel",
+    "notif.pushPrefFailed":
+      "This device subscribed, but we could not save the setting — push may not arrive. Try the toggle again.",
     "notif.loadError": "Could not load your notifications.",
     "notif.retry": "Try again",
 
@@ -806,6 +808,8 @@ const STRINGS = {
     "notif.saving": "সেভ হচ্ছে…",
     "notif.savedOk": "সেভ হয়েছে",
     "notif.channelPending": "এই চ্যানেলে পাঠানো হয়নি",
+    "notif.pushPrefFailed":
+      "এই ডিভাইস সাবস্ক্রাইব হয়েছে, কিন্তু সেটিং সেভ করা যায়নি — পুশ নাও আসতে পারে। আবার টগল করে দেখুন।",
     "notif.loadError": "নোটিফিকেশন লোড করা যায়নি।",
     "notif.retry": "আবার চেষ্টা করুন",
 

@@ -95,10 +95,11 @@ Trigger a run:
 POST /api/ingest    header: x-ingest-secret: <INGEST_SECRET>
 ```
 
-Check status and per-source health:
+Check status and per-source health (secret required — it lists every board
+this deployment pulls from):
 
 ```
-GET /api/ingest
+GET /api/ingest    header: x-ingest-secret: <INGEST_SECRET>
 ```
 
 `GET` returns a `health` array with one verdict per source. Admins see the same
@@ -139,10 +140,12 @@ Do not lower `MIN_COVERAGE` to make numbers appear. The regression test in
 
 ## 5a. Notification delivery
 
-Check configuration without sending anything:
+Check configuration without sending anything (the same secret POST uses —
+these status endpoints name your provider and job boards, so they are not
+public):
 
 ```
-GET /api/notifications/dispatch
+GET /api/notifications/dispatch    header: x-ingest-secret: <INGEST_SECRET>
 ```
 
 It reports `email` and `push` each as configured or names the exact missing

@@ -38,7 +38,13 @@ function secretOk(req: NextRequest): boolean {
   return provided === required;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // Operator information: it names the configured email provider. Gated for
+  // the same reason as GET /api/ingest — no app surface consumes it.
+  if (!secretOk(req)) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
   const email = selectEmailProvider();
   const push = selectPushConfig();
   return NextResponse.json({

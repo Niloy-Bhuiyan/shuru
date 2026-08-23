@@ -73,6 +73,29 @@ export default function NotificationsPage() {
     isPushSubscribed().then(setPushOn);
   }, []);
 
+  /**
+   * Persists `browser_push` immediately rather than waiting for Save.
+   *
+   * The subscription itself is created the moment the toggle flips, so
+   * leaving the preference in unsaved local state produced a live
+   * subscription with `browser_push` still false — and the sender skips those,
+   * so push silently never arrived. The two must move together.
+   */
+  async function persistPushPref(enabled: boolean) {
+    const next: NotificationPreferences = {
+      ...(prefs ?? { user_id: "", ...DEFAULT_NOTIFICATION_PREFERENCES }),
+      browser_push: enabled,
+    };
+    setPrefs(next);
+    try {
+      await saveNotificationPreferences(next);
+    } catch {
+      // Subscription succeeded but the preference did not stick — say so
+      // rather than leaving a toggle that looks on and delivers nothing.
+      setPushNote(t("notif.pushPrefFailed"));
+    }
+  }
+
   async function onTogglePush(e: React.ChangeEvent<HTMLInputElement>) {
     const want = e.target.checked;
     setPushBusy(true);
@@ -83,15 +106,14 @@ export default function NotificationsPage() {
         if (!result.ok) {
           setPushNote(result.reason);
           setPushOn(false);
-        } else {
-          setPushOn(true);
-          // Mirror it into preferences so the sender honours it too.
-          patch({ browser_push: true });
+          return;
         }
+        setPushOn(true);
+        await persistPushPref(true);
       } else {
         await unsubscribeFromPush();
         setPushOn(false);
-        patch({ browser_push: false });
+        await persistPushPref(false);
       }
     } finally {
       setPushBusy(false);

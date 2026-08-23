@@ -6,13 +6,11 @@
  */
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PixelButton } from "@/components/pixel/PixelButton";
 import { PixelInput } from "@/components/pixel/PixelInput";
 import { LoadingBlock } from "@/components/LoadingBlock";
 import { useProfile } from "@/hooks/useProfile";
-import { useRole } from "@/hooks/useRole";
 import { saveProfile } from "@/lib/data";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { useLang, type Lang } from "@/lib/i18n";
@@ -23,7 +21,6 @@ const DEPARTMENTS = ["CSE", "SWE", "EEE", "IT", "BBA", "Other"];
 export default function YouPage() {
   const router = useRouter();
   const { profile, loading, refresh } = useProfile();
-  const { role } = useRole();
   const { t, lang, setLang } = useLang();
   const [name, setName] = useState("");
   const [university, setUniversity] = useState("AIUB");
@@ -114,26 +111,9 @@ export default function YouPage() {
           {savedOk ? t("you.savedOk") : busy ? "…" : t("you.saveChanges")}
         </PixelButton>
 
-        {/* Role areas. Rendered from the role for discoverability only —
-            both screens re-check, and RLS is the actual boundary. */}
-        {(role === "employer" || role === "admin") && (
-          <div className="border-t-2 border-ink/20 pt-4">
-            <Link
-              href="/employer"
-              className="block border-3 border-ink bg-paper px-3 py-2 text-center font-mono text-xs font-bold uppercase tracking-wide text-ink shadow-pixel-sm active:translate-x-[1px] active:translate-y-[1px]"
-            >
-              {t("emp.title")} →
-            </Link>
-          </div>
-        )}
-        {role === "admin" && (
-          <Link
-            href="/admin"
-            className="block border-3 border-ink bg-paper px-3 py-2 text-center font-mono text-xs font-bold uppercase tracking-wide text-ink shadow-pixel-sm active:translate-x-[1px] active:translate-y-[1px]"
-          >
-            {t("admin.title")} →
-          </Link>
-        )}
+        {/* Operator areas deliberately do NOT live here. /you is the student's
+            own profile; employer and admin entry points belong to the app
+            chrome (RoleChip in the header), not inside a user surface. */}
 
         <div className="border-t-2 border-ink/20 pt-4">
           <PixelButton variant="secondary" full onClick={onSignOut}>

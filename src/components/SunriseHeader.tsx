@@ -5,6 +5,7 @@ import Link from "next/link";
 import { cx } from "@/lib/cx";
 import { PixelSun } from "./PixelSun";
 import { NotificationBell } from "./NotificationBell";
+import { RoleChip } from "./RoleChip";
 import { useLang } from "@/lib/i18n";
 
 /**
@@ -26,6 +27,7 @@ export function SunriseHeader() {
         </Link>
 
         <div className="flex items-center gap-2">
+          <RoleChip />
           <NotificationBell />
           <div
             className="flex border-2 border-ink shadow-pixel-sm"
