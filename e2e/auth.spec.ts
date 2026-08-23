@@ -118,6 +118,7 @@ test.describe("route guard", () => {
     "/employer",
     "/employer/listings/new",
     "/admin",
+    "/admin/listings/new",
   ]) {
     test(`redirects ${path} to login when signed out`, async ({ page }) => {
       await page.goto(path);

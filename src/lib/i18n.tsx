@@ -425,6 +425,14 @@ const STRINGS = {
     "admin.health": "Source health",
     "admin.lastRun": "Last run",
     "admin.neverRun": "Never run",
+    "admin.addListing": "Add a listing",
+    "admin.addListingHint":
+      "For internships no source publishes — Bangladeshi employers run their own career pages, so local listings are added here by hand. This goes live immediately.",
+    "admin.applyUrl": "Link to the posting",
+    "admin.notes": "Requirements note (optional)",
+    "admin.saveListing": "Publish listing",
+    "admin.savingListing": "Publishing…",
+    "admin.listingAdded": "Published",
 
     // ── match breakdown ──
     "match.title": "Match",
@@ -880,6 +888,14 @@ const STRINGS = {
     "admin.health": "সোর্স হেলথ",
     "admin.lastRun": "সর্বশেষ রান",
     "admin.neverRun": "কখনো চলেনি",
+    "admin.addListing": "লিস্টিং যোগ করুন",
+    "admin.addListingHint":
+      "যেসব ইন্টার্নশিপ কোনো সোর্সে পাওয়া যায় না — বাংলাদেশি প্রতিষ্ঠানগুলো নিজস্ব ক্যারিয়ার পেজ ব্যবহার করে, তাই স্থানীয় লিস্টিং এখানে হাতে যোগ করতে হয়। এটি সঙ্গে সঙ্গে লাইভ হবে।",
+    "admin.applyUrl": "পোস্টিংয়ের লিংক",
+    "admin.notes": "শর্ত সংক্রান্ত নোট (ঐচ্ছিক)",
+    "admin.saveListing": "লিস্টিং প্রকাশ করুন",
+    "admin.savingListing": "প্রকাশ হচ্ছে…",
+    "admin.listingAdded": "প্রকাশিত হয়েছে",
 
     // ── match breakdown ──
     "match.title": "ম্যাচ",

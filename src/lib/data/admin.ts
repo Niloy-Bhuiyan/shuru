@@ -81,6 +81,78 @@ export async function moderateListing(
   }
 }
 
+/**
+ * Adds a listing an admin knows about but no source publishes.
+ *
+ * This is the only route by which a Bangladeshi internship reaches the
+ * platform today. No BD job board offers a public API, and the major
+ * employers (Robi, Grameenphone, bKash, Brac Bank) run custom career pages
+ * with no ATS behind them — verified, not assumed. So scraping yields remote
+ * roles only, and local listings are curated by hand.
+ *
+ * `company_id` is deliberately null: the employer has not onboarded, and
+ * inventing a `companies` row would put an unverified organisation in the
+ * employer directory as though it had signed up. `source` is 'shuru', which
+ * also protects the row — /api/ingest never touches non-ingested listings, so
+ * a refresh cannot overwrite or expire it.
+ *
+ * `guard_opportunity_insert` lets an admin set status directly; a non-admin's
+ * insert is forced back to 'pending', so this cannot be used to self-publish.
+ */
+export async function createCuratedListing(input: {
+  company: string;
+  role: string;
+  location: string;
+  duration: string;
+  deadline: string;
+  work_mode: Opportunity["work_mode"];
+  is_paid: boolean;
+  apply_url: string | null;
+  skills_required: string[];
+  min_cgpa: number | null;
+  min_semester: number | null;
+  notes: string | null;
+}): Promise<Opportunity> {
+  const sb = supabaseBrowser();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) throw new Error("Not signed in");
+
+  const { data, error } = await sb
+    .from("opportunities")
+    .insert({
+      company: input.company.trim(),
+      role: input.role.trim(),
+      location: input.location.trim(),
+      duration: input.duration.trim() || "Not specified",
+      deadline: input.deadline,
+      work_mode: input.work_mode,
+      is_paid: input.is_paid,
+      // The admin read the posting, so compensation state is a stated fact.
+      compensation_stated: true,
+      apply_url: input.apply_url,
+      source_url: input.apply_url,
+      skills_required: input.skills_required,
+      eligibility_rules: {
+        min_cgpa: input.min_cgpa,
+        min_semester: input.min_semester,
+        allowed_departments: null,
+        other_text: input.notes,
+      },
+      source: "shuru",
+      company_id: null,
+      posted_by: user.id,
+      status: "approved",
+      is_verified: true,
+      cycle_label: String(new Date(input.deadline).getFullYear()),
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as Opportunity;
+}
+
 // ── company verification ────────────────────────────────────────
 export async function listCompaniesByVerification(
   status: Company["verification_status"]

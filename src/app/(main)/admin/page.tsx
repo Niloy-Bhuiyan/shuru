@@ -107,7 +107,15 @@ export default function AdminPage() {
 
   return (
     <main className="px-4 pt-4">
-      <h1 className="font-pixel text-xs text-ink">{t("admin.title")}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="font-pixel text-xs text-ink">{t("admin.title")}</h1>
+        <Link
+          href="/admin/listings/new"
+          className="border-2 border-ink bg-amber px-2 py-1 font-mono text-[11px] font-bold uppercase text-ink shadow-pixel-sm"
+        >
+          + {t("admin.addListing")}
+        </Link>
+      </div>
 
       <div className="no-scrollbar mt-3 flex gap-1.5 overflow-x-auto">
         {TABS.map((x) => (
