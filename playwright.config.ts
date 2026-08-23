@@ -58,10 +58,22 @@ export default defineConfig({
     },
   ],
 
+  /**
+   * Runs against a PRODUCTION build, not `next dev`.
+   *
+   * `next dev` compiles each route on first request. With workers in parallel
+   * all hitting a cold server, that first compile intermittently exceeded the
+   * assertion timeout and failed navigation tests that pass in isolation —
+   * flakiness caused purely by the dev server.
+   *
+   * Building first also means the gate exercises what actually ships,
+   * including middleware and the security headers, rather than the dev
+   * server's looser behaviour. The build cost is paid once per run.
+   */
   webServer: {
-    command: `npx next dev -p ${PORT}`,
+    command: `npx next build && npx next start -p ${PORT}`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
-    timeout: 180_000,
+    timeout: 300_000,
   },
 });

@@ -36,9 +36,9 @@ test.describe("login", () => {
   });
 
   test("links to registration and password reset", async ({ page }) => {
-    // Each destination is compiled on first hit by the dev server, which can
-    // exceed the 5s default while other workers compile in parallel. The
-    // redirect itself is immediate — only the first paint is slow.
+    // Headroom over the 5s default for a cold first paint under parallel
+    // workers. The suite now runs against a production build, so there is no
+    // on-demand compile — this is defensive, not load-bearing.
     const NAV_TIMEOUT = 20_000;
 
     await page.goto("/login");

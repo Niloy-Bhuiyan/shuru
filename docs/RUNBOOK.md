@@ -17,6 +17,12 @@ npm run test:e2e     # playwright, mobile 390px + desktop 1440px
 npm run build        # must print "ƒ Middleware"
 ```
 
+`test:e2e` builds and serves a **production** bundle on port 3100 rather than
+running `next dev`, so it exercises middleware and the security headers as
+shipped. It also removes a class of flakiness: `next dev` compiles routes on
+first request, and parallel workers hitting a cold server intermittently
+failed navigation assertions that pass in isolation.
+
 **`ƒ Middleware` must appear in the build output.** Its absence means the auth
 guard did not compile into the deployment and every protected route is served
 unauthenticated. This has regressed once before, when `middleware.ts` sat at
