@@ -433,6 +433,12 @@ const STRINGS = {
       "This listing does not state enough — skills, requirements — to judge your fit. Showing a number here would be a guess, so we don't.",
     "match.notStated": "Not stated by this listing",
     "match.blocked": "You do not meet a hard requirement",
+    // ── onboarding (OAuth signups) ──
+    "onboard.title": "One more step",
+    "onboard.hint":
+      "Your CGPA, university and semester decide which internships you actually qualify for — and the odds we show you. We can't guess them, so nothing is shown until you fill this in.",
+    "onboard.finish": "Finish setup",
+
     // ── résumé builder field labels ──
     "forge.f.phone": "Phone",
     "forge.f.links": "Links",
@@ -882,6 +888,12 @@ const STRINGS = {
       "এই লিস্টিংয়ে যথেষ্ট তথ্য নেই — দক্ষতা বা শর্ত — তাই আপনার ফিট বিচার করা যাচ্ছে না। অনুমান করে সংখ্যা দেখানো হবে না।",
     "match.notStated": "এই লিস্টিংয়ে উল্লেখ নেই",
     "match.blocked": "আপনি একটি আবশ্যক শর্ত পূরণ করছেন না",
+    // ── onboarding (OAuth signups) ──
+    "onboard.title": "আর একটি ধাপ",
+    "onboard.hint":
+      "আপনার সিজিপিএ, বিশ্ববিদ্যালয় ও সেমিস্টার ঠিক করে দেয় কোন ইন্টার্নশিপে আপনি আসলে যোগ্য — এবং আমরা কী সম্ভাবনা দেখাব। এগুলো অনুমান করা যায় না, তাই পূরণ না করা পর্যন্ত কিছু দেখানো হবে না।",
+    "onboard.finish": "সেটআপ শেষ করুন",
+
     // ── résumé builder field labels ──
     "forge.f.phone": "ফোন",
     "forge.f.links": "লিংক",

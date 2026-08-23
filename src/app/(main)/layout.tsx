@@ -26,7 +26,11 @@ export default function MainLayout({
   useEffect(() => {
     getProfile()
       .then((p) => {
-        if (!p) router.replace("/login");
+        // A session without a profile means an OAuth signup that never passed
+        // through /register. Send it to onboarding, NOT to /login — middleware
+        // bounces an authenticated user off /login straight back here, and the
+        // two used to loop forever.
+        if (!p) router.replace("/onboarding");
         else setReady(true);
       })
       // A transient data/auth error must not hang the shell on the loader

@@ -114,6 +114,7 @@ test.describe("route guard", () => {
     "/vault",
     "/you",
     "/notifications",
+    "/onboarding",
     "/employer",
     "/employer/listings/new",
     "/admin",

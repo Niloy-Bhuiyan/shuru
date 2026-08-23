@@ -25,6 +25,10 @@ const STUDENT_ROUTES = [
   "/agent",
   "/notifications",
   "/verify-email",
+  // Requires a session but NOT a profile — it is where a profile is created.
+  // Must never be listed as public, or middleware would bounce the very users
+  // who need it back to /radar.
+  "/onboarding",
 ];
 const EMPLOYER_ROUTES = ["/employer"];
 const ADMIN_ROUTES = ["/admin"];
