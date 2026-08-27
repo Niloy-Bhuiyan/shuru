@@ -3,8 +3,9 @@
 **Find internships. See your honest, evidence-backed chances — or an honest
 "not enough data yet." Never a fake number.**
 
-Next.js 14 (App Router) · TypeScript · Tailwind · Supabase (Postgres, Auth,
-Storage, RLS) · a committed pixel "cozy retro instrument" design system,
+Next.js 16 (App Router) · TypeScript · Tailwind · Supabase (Postgres, Auth,
+Storage, RLS, pgvector) · a Python retrieval service (FastAPI · LangGraph ·
+LangChain) · a committed pixel "cozy retro instrument" design system,
 mobile-first with a deliberately designed desktop layout.
 
 ---
@@ -46,6 +47,7 @@ reference set.
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | provisioning, deployment, credentials checklist |
 | [docs/RUNBOOK.md](docs/RUNBOOK.md) | pre-release gate, grant verification, ingestion triage, known limitations |
 | [docs/decisions/](docs/decisions/) | engineering decision records (ADRs) |
+| [services/rag/README.md](services/rag/README.md) | the Python retrieval service — design, API, limitations |
 | [supabase/README.md](supabase/README.md) | migration order, promoting an admin |
 | [ISSUES.md](ISSUES.md) | prior independent security/quality audit and its remediation |
 
@@ -57,6 +59,8 @@ them first will look like fixing a bug and will actually be causing one:
   real ones.
 - [ADR 0002](docs/decisions/0002-match-abstention.md) — why match scores are
   blank on scraped listings, and why job-description text does not unlock them.
+- [ADR 0003](docs/decisions/0003-paid-placement.md) — why a promoted listing is
+  shown in its own labelled section and is **never** ranked into the feed.
 
 ## 4. Scripts
 
@@ -68,7 +72,9 @@ them first will look like fixing a bug and will actually be causing one:
 | `npm run lint` | ESLint |
 | `npm test` | Vitest suite |
 | `npm run test:e2e` | Playwright, run at 390px and 1440px |
+| `cd services/rag && .venv/bin/pytest` | retrieval-service suite (no database or credentials needed) |
 | `npm run migrate` / `npm run migrate:status` | apply / list migrations |
+| `npm run verify:rls` | ten database security invariants — see docs/RUNBOOK.md §2 |
 | `node scripts/generate-seed.mjs` | regenerates `supabase/seed.sql` and `src/lib/data/seed.ts` from one deterministic source |
 
 The full pre-release gate — and what to do when one of these fails — is in

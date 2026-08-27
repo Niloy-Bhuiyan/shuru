@@ -99,7 +99,7 @@ generated from the codebase.
 | 3 | Anon public key | Supabase → Settings → API → `anon public` | Vercel env + `.env.local` | `NEXT_PUBLIC_SUPABASE_ANON_KEY` |
 | 4 | Service role key | Supabase → Settings → API → `service_role` | Vercel env **only** (server-side secret, never `NEXT_PUBLIC_`) | `SUPABASE_SERVICE_ROLE_KEY` |
 | 5 | Deployment origin | your Vercel URL or custom domain | Vercel env + `.env.local` | `NEXT_PUBLIC_SITE_URL` |
-| 6 | Migrations run | `supabase/migrations/0001`–`0009`, in order | `npm run migrate`, or Supabase SQL Editor | — |
+| 6 | Migrations run | `supabase/migrations/0001`–`0014`, in order | `npm run migrate`, or Supabase SQL Editor | — |
 | 7 | Auth redirect URLs | you configure them | Supabase → Auth → URL Configuration → `<origin>/auth/callback` | — |
 | 8 | First admin account | promote after registering | Supabase SQL Editor (`update public.user_roles set role='admin' …`) | — |
 
@@ -170,6 +170,8 @@ is never emailed or pushed.
 | 14 | AI assistance | Gemini API key | aistudio.google.com/apikey (free) | `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`) |
 | 15 | Lever listings | public board slugs, comma-separated | the `<slug>` in `jobs.lever.co/<slug>` | `LEVER_COMPANIES` |
 | 16 | Ashby listings | public board names, comma-separated | the `<name>` in `jobs.ashbyhq.com/<name>` | `ASHBY_COMPANIES` |
+| 17 | Adzuna listings | app id + app key + country | developer.adzuna.com (free tier) | `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`, `ADZUNA_COUNTRY` |
+| 18 | Toggle keyless sources | on/off | — | `INGEST_REMOTEOK_ENABLED`, `INGEST_ARBEITNOW_ENABLED` |
 
 **Board slugs worth knowing.** Not every well-known company has a public board,
 and a wrong slug returns 404 rather than an error you would notice. These were
@@ -185,8 +187,128 @@ Lever and Ashby matter beyond volume: they publish **structured descriptions**,
 which is the listing evidence the match engine needs. Keyless boards
 (RemoteOK, Arbeitnow) publish none, which is why match scores stay blank on
 their listings — see `docs/decisions/0002-match-abstention.md`.
-| 17 | Adzuna listings | app id + app key + country | developer.adzuna.com (free tier) | `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`, `ADZUNA_COUNTRY` |
-| 18 | Toggle keyless sources | on/off | — | `INGEST_REMOTEOK_ENABLED`, `INGEST_ARBEITNOW_ENABLED` |
+
+## Payments (sandbox)
+
+Shuru ships a **clearly labelled sandbox** payment provider. It moves no money
+and collects no card details, and the UI says so on every screen that touches
+it. There is nothing to buy and no account to create.
+
+| # | What to provide | Where you get it | Env var |
+|---|---|---|---|
+| 19 | Provider selection | only `sandbox` is implemented | `PAYMENT_PROVIDER` |
+| 20 | Webhook signing key | generate: `openssl rand -hex 32` | `SANDBOX_PAYMENT_SIGNING_SECRET` |
+
+If `SANDBOX_PAYMENT_SIGNING_SECRET` is unset, a **published development
+constant** is used and the operator UI says so. Signatures are still verified,
+but a signature checked against a public value is not a security property —
+set it to anything random to make the check meaningful.
+
+An unrecognised `PAYMENT_PROVIDER` **throws at startup** rather than falling
+back, so a real provider can never silently degrade into the sandbox.
+
+## Retrieval service (services/rag)
+
+An optional second deployable unit. Without it, `/api/ask` reports itself
+unavailable and the feature hides; nothing degrades into a guessed answer.
+
+| # | What to provide | Where you get it | Env var |
+|---|---|---|---|
+| 21 | A host for the Python service | Fly.io / Render / Railway / Cloud Run / a VM | — |
+| 22 | Its public URL | your host | `SHURU_RAG_URL` (web app) |
+| 23 | Shared bearer token | generate: `openssl rand -hex 32` | `SHURU_RAG_SERVICE_TOKEN` (**both** the web app and the service) |
+| 24 | Direct Postgres URI | Supabase → Settings → Database → Connection string → URI | `SHURU_RAG_DATABASE_URL` (service) |
+| 25 | Answer generation key *(optional)* | console.anthropic.com | `SHURU_RAG_ANTHROPIC_API_KEY` (service) |
+
+**Not on Vercel.** Vercel's Python runtime is serverless-function shaped; this
+service loads an ONNX embedding model into memory and benefits from keeping it
+there. Run it as a long-lived process:
+
+```bash
+cd services/rag
+python -m venv .venv
+.venv/bin/pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+```
+
+The first request pays ~35 s for the model download and load. Keep one instance
+warm.
+
+Populate the index after each ingestion run, or the retrieval corpus falls
+behind the listings table:
+
+```bash
+curl -X POST "$SHURU_RAG_URL/reindex" -H "Authorization: Bearer $SHURU_RAG_SERVICE_TOKEN"
+```
+
+Without `SHURU_RAG_ANTHROPIC_API_KEY` the service still retrieves and still
+returns citations — only the written answer is unavailable, and `/ask` reports
+`abstain_reason: "generation_not_configured"` rather than inventing prose.
+
+Full design notes, API reference and known limitations:
+[`services/rag/README.md`](../services/rag/README.md).
+
+## Smoke test after a deploy
+
+Run these against the deployed origin. Each one fails loudly if the thing it
+checks is misconfigured.
+
+```bash
+SITE=https://your-deployment
+
+# 1. The app is up and the auth guard compiled in.
+#    A protected route MUST redirect, not render.
+curl -sI "$SITE/radar" | head -1          # expect 307
+curl -sI "$SITE/login" | head -1          # expect 200
+
+# 2. Security headers are being applied.
+curl -sI "$SITE/" | grep -iE 'x-frame-options|strict-transport|x-content-type'
+
+# 3. Operator endpoints refuse anonymous callers.
+curl -s -o /dev/null -w '%{http_code}
+' "$SITE/api/ingest"   # expect 401
+
+# 4. The payment webhook refuses an unsigned event.
+curl -s -o /dev/null -w '%{http_code}
+' -X POST "$SITE/api/payments/webhook"   -H 'content-type: application/json' -d '{}'                 # expect 400
+
+# 5. Cron is authenticated and actually runs.
+curl -s -H "Authorization: Bearer $CRON_SECRET" "$SITE/api/cron?job=ingest"
+#    503 cron_not_configured => CRON_SECRET is missing in the environment
+#    401                     => it does not match
+
+# 6. Database invariants (needs SUPABASE_DB_URL).
+npm run verify:rls                         # expect 10/10 checks passed
+```
+
+The build log must contain **`ƒ Proxy (Middleware)`**. Its absence means the
+auth guard did not compile into the deployment and every protected route is
+served unauthenticated.
+
+## Rollback
+
+Vercel keeps every deployment. To roll back the app: Vercel → Deployments →
+the last known-good one → **Promote to Production**. No code change, and it
+takes effect in seconds.
+
+**Migrations do not roll back with it.** They are forward-only by design, and
+every one in this repo is additive — new tables, new columns, tightened
+grants — so an older application build runs correctly against a newer schema.
+That is the property that makes promoting an old deployment safe. Preserve it:
+a migration that drops or renames a column in use breaks rollback, so stage it
+as *add new → migrate reads → stop writing old → drop in a later release*.
+
+To undo a specific migration's effect, write a new migration that reverses it.
+
+## Key rotation
+
+| Key | How to rotate | What breaks meanwhile |
+|---|---|---|
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → roll | ingestion, dispatch, payment fulfilment until redeployed |
+| `INGEST_SECRET` / `CRON_SECRET` | generate a new value, update Vercel env | scheduled jobs return 401 until both sides match |
+| `SHURU_RAG_SERVICE_TOKEN` | update in **both** places at once | `/api/ask` returns 401 in between |
+| `SANDBOX_PAYMENT_SIGNING_SECRET` | update, then redeploy | in-flight sandbox webhooks fail verification |
+| VAPID keypair | `node scripts/generate-vapid-keys.mjs` | **every existing push subscription is invalidated** — users must re-subscribe |
 
 ## Security notes
 
@@ -196,4 +318,31 @@ their listings — see `docs/decisions/0002-match-abstention.md`.
 - Rotate `INGEST_SECRET` if it is ever exposed; it is the only thing standing
   between the public internet and a write-capable ingestion run.
 - OAuth client secrets live in Supabase, not in this repo or its environment.
-- `.env.local` is git-ignored. Keep it that way.
+- `.env.local` is git-ignored. Keep it that way. So is `services/rag/.env`.
+- `SHURU_RAG_SERVICE_TOKEN` and `SANDBOX_PAYMENT_SIGNING_SECRET` are
+  server-only. Neither may ever carry a `NEXT_PUBLIC_` prefix.
+- The payment provider contract forbids handling raw card data. **No
+  implementation may accept a card number, CVV or expiry** — if a provider
+  requires them, it is the wrong provider.
+- Structured logs must not carry secrets or personal data. The retrieval
+  service logs abstention reasons, citation counts and timings, never the
+  question text or the passages.
+
+## Incident response
+
+1. **Suspected key exposure** — rotate first, investigate second. See the key
+   rotation table above; `SUPABASE_SERVICE_ROLE_KEY` is the one that matters
+   most, because it bypasses RLS.
+2. **Unexpected data access** — `public.admin_audit_log` records privileged
+   actions and `application_events` is append-only, so the moderation and
+   application trails survive an attacker with a user session.
+3. **Runaway cost** — the AI and ingestion paths have per-instance seatbelts,
+   not hard caps. To stop them immediately, unset `GEMINI_API_KEY` /
+   `ANTHROPIC_API_KEY` (features hide themselves) and remove the `crons` block
+   from `vercel.json`, then redeploy.
+4. **Bad listing data in production** — an admin can moderate a listing to
+   `rejected` from `/admin`, which removes it from every student surface
+   immediately via `opportunities_select`. Re-run `/reindex` afterwards so the
+   retrieval corpus drops it too.
+5. **After any incident**, re-run the §"Smoke test after a deploy" checks and
+   `npm run verify:rls` before declaring it closed.
