@@ -38,11 +38,11 @@ const nextConfig = {
   reactStrictMode: true,
   // Never ship the framework version in a response header.
   poweredByHeader: false,
-  experimental: {
-    // pdf-parse's internal requires break when webpack bundles them in dev;
-    // resolve these natively in Node instead (server-side only).
-    serverComponentsExternalPackages: ["pdf-parse", "mammoth"],
-  },
+  // pdf-parse's internal requires break when a bundler processes them;
+  // resolve these natively in Node instead (server-side only). Promoted out
+  // of `experimental` in Next 15, where it was renamed from
+  // `experimental.serverComponentsExternalPackages`.
+  serverExternalPackages: ["pdf-parse", "mammoth"],
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

@@ -43,7 +43,7 @@ async function resolveUserKey(body: AgentBody): Promise<string> {
   try {
     const {
       data: { user },
-    } = await supabaseServer().auth.getUser();
+    } = await (await supabaseServer()).auth.getUser();
     if (user) return `sb:${user.id}`;
   } catch {
     /* fall through to the client-supplied key */

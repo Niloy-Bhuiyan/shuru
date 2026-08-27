@@ -14,7 +14,7 @@ npm run typecheck    # tsc --noEmit
 npm run lint         # next lint
 npm test             # vitest, unit + integration
 npm run test:e2e     # playwright, mobile 390px + desktop 1440px
-npm run build        # must print "ƒ Middleware"
+npm run build        # must print "ƒ Proxy (Middleware)"
 ```
 
 The database has its own gate, which does need a connection — see §2:
@@ -29,11 +29,22 @@ shipped. It also removes a class of flakiness: `next dev` compiles routes on
 first request, and parallel workers hitting a cold server intermittently
 failed navigation assertions that pass in isolation.
 
-**`ƒ Middleware` must appear in the build output.** Its absence means the auth
-guard did not compile into the deployment and every protected route is served
-unauthenticated. This has regressed once before, when `middleware.ts` sat at
-the repo root instead of `src/` (see `ISSUES.md`); the build line is the only
-cheap signal, so read it.
+**`ƒ Proxy (Middleware)` must appear in the build output.** Its absence means
+the auth guard did not compile into the deployment and every protected route
+is served unauthenticated. This has regressed once before, when
+`middleware.ts` sat at the repo root instead of `src/` (see `ISSUES.md`); the
+build line is the only cheap signal, so read it.
+
+**The wording changed in Next 16** — it printed `ƒ Middleware` on Next 14. If
+you are comparing against an older note, that is a rename, not a regression.
+Next 16 also deprecates the `middleware` file convention in favour of `proxy`;
+`src/middleware.ts` still compiles and is still the guard, and the build prints
+a deprecation notice saying so. Confirm independently with:
+
+```bash
+node -e "console.log(require('./.next/server/middleware-manifest.json').sortedMiddleware)"
+# expected: [ '/' ]
+```
 
 ## 2. Database verification
 

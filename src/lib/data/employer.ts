@@ -13,7 +13,6 @@
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type {
   Application,
-  ApplicationEvent,
   ApplicationStatus,
   Company,
   EmployerMember,

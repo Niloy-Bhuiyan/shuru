@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
   }
 
-  const sb = supabaseServer();
+  const sb = await supabaseServer();
   const { error } = await sb.auth.exchangeCodeForSession(code);
   if (error) {
     return NextResponse.redirect(

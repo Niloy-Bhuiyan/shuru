@@ -7,7 +7,6 @@
  */
 
 import React, { useRef, useState } from "react";
-import { PixelButton } from "@/components/pixel/PixelButton";
 import { PixelIcon } from "@/components/pixel/PixelIcon";
 import { cx } from "@/lib/cx";
 import { useLang } from "@/lib/i18n";

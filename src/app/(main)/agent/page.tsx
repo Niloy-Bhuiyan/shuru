@@ -22,10 +22,7 @@ import { LoadingBlock } from "@/components/LoadingBlock";
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { CrtReveal } from "@/components/CrtReveal";
 import { useAgentEnabled } from "@/hooks/useAgentEnabled";
-import { useProfile } from "@/hooks/useProfile";
 import {
-  getResume,
-  listApplications,
   upsertApplication,
 } from "@/lib/data";
 import { useLang } from "@/lib/i18n";
@@ -74,7 +71,6 @@ const QUICK_ACTIONS = [
 
 export default function AgentPage() {
   const enabled = useAgentEnabled();
-  const { profile } = useProfile();
   const { t, lang } = useLang();
 
   const [revealed, setRevealed] = useState(false);

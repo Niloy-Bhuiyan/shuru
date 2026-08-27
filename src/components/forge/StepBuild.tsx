@@ -13,7 +13,7 @@
  * page (shared with TAILOR in B5).
  */
 
-import React, { useRef } from "react";
+import React, { useState } from "react";
 import { PixelButton } from "@/components/pixel/PixelButton";
 import { PixelBadge } from "@/components/pixel/PixelBadge";
 import { PixelInput } from "@/components/pixel/PixelInput";
@@ -94,7 +94,13 @@ export function StepBuild({
   onImprove: (ref: EntryRef) => void;
 }) {
   const { t } = useLang();
-  const skillsDraft = useRef<string | null>(null);
+  /*
+   * The raw text the user is typing, kept separate from the parsed array so
+   * the field does not reformat mid-edit (typing "a, " must not become "a").
+   * State, not a ref: a ref read during render is not tracked by React, so
+   * the displayed value could lag the committed one.
+   */
+  const [skillsDraft, setSkillsDraft] = useState<string | null>(null);
   const section = BUILD_ORDER[buildIndex];
 
   function moveEntry(ref: EntryRef, dir: -1 | 1) {
@@ -209,9 +215,9 @@ export function StepBuild({
         <PixelInput
           label={t("auth.skills")}
           name="r-skills"
-          value={skillsDraft.current ?? content.skills.join(", ")}
+          value={skillsDraft ?? content.skills.join(", ")}
           onChange={(v) => {
-            skillsDraft.current = v;
+            setSkillsDraft(v);
             update({ skills: v.split(",").map((s) => s.trim()).filter(Boolean) });
           }}
           hint={t("auth.skillsHint")}

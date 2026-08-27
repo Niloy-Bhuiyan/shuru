@@ -3,11 +3,16 @@ import react from "@vitejs/plugin-react";
 import path from "node:path";
 
 export default defineConfig({
+  // Explicit JSX transform for the test build.
+  //
   // Vitest 4 runs on Vite 8 (Rolldown), which transforms via oxc and honors
-  // tsconfig's `jsx: "preserve"` (set for Next.js) — leaving JSX untransformed
-  // and breaking import analysis of any .tsx a test pulls in (e.g. transitionTo
-  // from ForgeTransition.tsx). The React plugin handles the JSX transform for the
-  // test build only; the Next.js app build still reads jsx:"preserve".
+  // tsconfig's `jsx` setting. This plugin was added when that setting was
+  // `"preserve"`, which left JSX untransformed and broke import analysis of any
+  // .tsx a test pulls in (e.g. transitionTo from ForgeTransition.tsx).
+  //
+  // Next 16 rewrote tsconfig to `jsx: "react-jsx"`, so that specific conflict is
+  // gone — but the plugin is kept so the test build states its own transform
+  // rather than inheriting whatever the framework last wrote into tsconfig.
   plugins: [react()],
   resolve: {
     alias: { "@": path.resolve(__dirname, "src") },

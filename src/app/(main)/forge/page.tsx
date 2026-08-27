@@ -80,7 +80,20 @@ export default function ForgePage() {
     future: [],
     last: 0,
   });
-  const [, bumpHistory] = useState(0);
+  /*
+   * Whether undo/redo are available, mirrored into state.
+   *
+   * The stacks themselves stay in a ref (they are large and change during a
+   * state updater), but the two booleans the buttons render from must be
+   * state: reading `history.current` during render is untracked by React, so
+   * the disabled state depended on something else happening to re-render.
+   */
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+  function syncHistoryFlags() {
+    setCanUndo(history.current.past.length > 0);
+    setCanRedo(history.current.future.length > 0);
+  }
 
   function update(patch: Partial<ResumeContent>) {
     setContent((c) => {
@@ -94,7 +107,7 @@ export default function ForgePage() {
       history.current.future = [];
       return { ...c, ...patch };
     });
-    bumpHistory((n) => n + 1);
+    syncHistoryFlags();
   }
   function undo() {
     const prev = history.current.past.pop();
@@ -103,7 +116,7 @@ export default function ForgePage() {
       if (c) history.current.future.push(c);
       return prev;
     });
-    bumpHistory((n) => n + 1);
+    syncHistoryFlags();
   }
   function redo() {
     const next = history.current.future.pop();
@@ -112,7 +125,7 @@ export default function ForgePage() {
       if (c) history.current.past.push(c);
       return next;
     });
-    bumpHistory((n) => n + 1);
+    syncHistoryFlags();
   }
 
   // AI improve — shared by BUILD (jd-less) and TAILOR (B5, jd-aware)
@@ -231,7 +244,7 @@ export default function ForgePage() {
                 type="button"
                 aria-label="Undo"
                 onClick={undo}
-                disabled={history.current.past.length === 0}
+                disabled={!canUndo}
                 className="flex h-8 w-8 items-center justify-center border-2 border-ink bg-paper text-ink shadow-pixel-sm disabled:opacity-30 active:translate-x-[1px] active:translate-y-[1px]"
               >
                 <PixelIcon name="undo" size={13} />
@@ -240,7 +253,7 @@ export default function ForgePage() {
                 type="button"
                 aria-label="Redo"
                 onClick={redo}
-                disabled={history.current.future.length === 0}
+                disabled={!canRedo}
                 className="flex h-8 w-8 items-center justify-center border-2 border-ink bg-paper text-ink shadow-pixel-sm disabled:opacity-30 active:translate-x-[1px] active:translate-y-[1px]"
               >
                 <PixelIcon name="redo" size={13} />

@@ -26,9 +26,14 @@ export function supabaseServiceRole() {
   });
 }
 
-/** Server Supabase client (route handlers / server components). */
-export function supabaseServer() {
-  const cookieStore = cookies();
+/**
+ * Server Supabase client (route handlers / server components).
+ *
+ * Async because `cookies()` became async in Next 15 — it is a request-scoped
+ * dynamic API now, not a synchronous read. Every caller must await this.
+ */
+export async function supabaseServer() {
+  const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

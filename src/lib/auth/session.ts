@@ -23,7 +23,7 @@ export type SessionUser = {
 
 /** The signed-in user, or null. Always validated against Supabase. */
 export async function getSessionUser(): Promise<SessionUser | null> {
-  const sb = supabaseServer();
+  const sb = await supabaseServer();
 
   // getUser() re-validates with the auth server; getSession() would trust a
   // cookie the client could have tampered with.

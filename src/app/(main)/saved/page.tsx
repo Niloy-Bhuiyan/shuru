@@ -10,7 +10,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { PixelBadge } from "@/components/pixel/PixelBadge";
 import { PixelIcon } from "@/components/pixel/PixelIcon";
 import { DeadlineBadge } from "@/components/DeadlineBadge";
 import { LoadingBlock } from "@/components/LoadingBlock";

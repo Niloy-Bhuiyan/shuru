@@ -57,6 +57,22 @@ function Selectable({
   );
 }
 
+/**
+ * Section heading.
+ *
+ * Defined at module scope, not inside ResumePreview. A component declared in
+ * a render body is a new component type on every render, so React unmounts
+ * and remounts the whole subtree under it each time — losing DOM state and
+ * defeating reconciliation.
+ */
+function H({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="mt-4 border-b border-[#1c1c1c] pb-0.5 text-[13px] font-bold uppercase tracking-wide">
+      {children}
+    </h2>
+  );
+}
+
 export const ResumePreview = forwardRef<
   HTMLDivElement,
   {
@@ -68,12 +84,6 @@ export const ResumePreview = forwardRef<
 >(function ResumePreview({ content, selected, onSelect, toolbarFor }, ref) {
   const c = content;
   const sel = selected ? entryKey(selected) : "";
-
-  const H = ({ children }: { children: React.ReactNode }) => (
-    <h2 className="mt-4 border-b border-[#1c1c1c] pb-0.5 text-[13px] font-bold uppercase tracking-wide">
-      {children}
-    </h2>
-  );
 
   const sections: Record<string, React.ReactNode> = {
     contact: (

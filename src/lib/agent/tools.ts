@@ -14,7 +14,6 @@ import { realityCheck, snapshotFromProfile } from "@/lib/realityCheck";
 import { computeAts } from "@/lib/resume/ats";
 import { supabaseServer } from "@/lib/supabase/server";
 import type {
-  Application,
   ApplicationStatus,
   Opportunity,
   Outcome,
@@ -116,13 +115,13 @@ export const TOOL_DEFS: ToolDef[] = [
 // ── server-side data access (session-scoped Supabase) ──
 
 async function serverOpportunities(): Promise<Opportunity[]> {
-  const { data, error } = await supabaseServer().from("opportunities").select("*");
+  const { data, error } = await (await supabaseServer()).from("opportunities").select("*");
   if (error) throw error;
   return (data ?? []) as Opportunity[];
 }
 
 async function serverOutcomes(opportunityId: string): Promise<Outcome[]> {
-  const { data, error } = await supabaseServer()
+  const { data, error } = await (await supabaseServer())
     .from("outcomes")
     .select("*")
     .eq("opportunity_id", opportunityId);
@@ -131,7 +130,7 @@ async function serverOutcomes(opportunityId: string): Promise<Outcome[]> {
 }
 
 async function serverProfile(): Promise<Profile | null> {
-  const sb = supabaseServer();
+  const sb = await supabaseServer();
   const {
     data: { user },
   } = await sb.auth.getUser();
@@ -145,7 +144,7 @@ async function serverProfile(): Promise<Profile | null> {
 }
 
 async function serverResume(): Promise<Resume | null> {
-  const { data } = await supabaseServer()
+  const { data } = await (await supabaseServer())
     .from("resumes")
     .select("*")
     .order("updated_at", { ascending: false })
@@ -162,7 +161,7 @@ function err(message: string): ToolExecution {
 
 async function execSearch(
   input: Record<string, unknown>,
-  ctx: ToolContext
+  _ctx: ToolContext
 ): Promise<ToolExecution> {
   const query = typeof input.query === "string" ? input.query.toLowerCase().trim() : "";
   const paidOnly = input.paid_only === true;
@@ -197,7 +196,7 @@ async function execSearch(
   return { result: JSON.stringify({ count: results.length, results }) };
 }
 
-async function execProfile(ctx: ToolContext): Promise<ToolExecution> {
+async function execProfile(_ctx: ToolContext): Promise<ToolExecution> {
   const p = await serverProfile();
   if (!p) return err("No profile found. The user needs to complete onboarding first.");
   return {
@@ -215,7 +214,7 @@ async function execProfile(ctx: ToolContext): Promise<ToolExecution> {
 
 async function execRealityCheck(
   input: Record<string, unknown>,
-  ctx: ToolContext
+  _ctx: ToolContext
 ): Promise<ToolExecution> {
   const id = typeof input.opportunity_id === "string" ? input.opportunity_id : "";
   if (!id) return err("opportunity_id is required.");
@@ -286,7 +285,7 @@ const VALID_STATUSES: ApplicationStatus[] = [
 
 async function execUpdateStatus(
   input: Record<string, unknown>,
-  ctx: ToolContext
+  _ctx: ToolContext
 ): Promise<ToolExecution> {
   const id = typeof input.opportunity_id === "string" ? input.opportunity_id : "";
   const status = input.status as ApplicationStatus;
@@ -296,7 +295,7 @@ async function execUpdateStatus(
   const opp = (await serverOpportunities()).find((o) => o.id === id);
   if (!opp) return err(`No opportunity with id ${id}.`);
 
-  const sb = supabaseServer();
+  const sb = await supabaseServer();
   const {
     data: { user },
   } = await sb.auth.getUser();

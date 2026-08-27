@@ -1,6 +1,6 @@
 import { buildListing, matchesFilters, MAX_PER_SOURCE } from "../normalize";
 import type { Opportunity } from "@/lib/types";
-import type { Adapter, AdapterRunResult, FetchLike } from "./types";
+import type { Adapter, AdapterRunResult } from "./types";
 
 /**
  * Adzuna — https://api.adzuna.com/v1/api/jobs/<country>/search/1
