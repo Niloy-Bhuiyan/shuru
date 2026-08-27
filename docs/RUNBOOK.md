@@ -7,7 +7,7 @@ Deployment *setup* lives in `DEPLOYMENT.md`; this is the day-two document.
 
 ## 1. Pre-release gate
 
-All four must pass. None require a database.
+All five must pass. None of them require a database.
 
 ```bash
 npm run typecheck    # tsc --noEmit
@@ -15,6 +15,12 @@ npm run lint         # next lint
 npm test             # vitest, unit + integration
 npm run test:e2e     # playwright, mobile 390px + desktop 1440px
 npm run build        # must print "ƒ Middleware"
+```
+
+The database has its own gate, which does need a connection — see §2:
+
+```bash
+npm run verify:rls
 ```
 
 `test:e2e` builds and serves a **production** bundle on port 3100 rather than
@@ -31,48 +37,49 @@ cheap signal, so read it.
 
 ## 2. Database verification
 
-After applying migrations, confirm the grants actually landed. RLS policies
-without table grants produce `42501 permission denied` on every request —
-policies are the *fine* gate, grants are the *coarse* one, and both are
-required.
-
-```sql
--- expected: service_role 16/16, authenticated select 16 / insert 13 /
--- update 14 / delete 14, and NO anon row at all
-select grantee,
-       count(*) filter (where privilege_type = 'SELECT') as sel,
-       count(*) filter (where privilege_type = 'INSERT') as ins,
-       count(*) filter (where privilege_type = 'UPDATE') as upd,
-       count(*) filter (where privilege_type = 'DELETE') as del
-from information_schema.role_table_grants
-where table_schema = 'public'
-  and grantee in ('anon','authenticated','service_role')
-group by grantee order by grantee;
+```bash
+npm run verify:rls
 ```
 
-`authenticated` is deliberately below 16 on write privileges:
-`application_events` and `admin_audit_log` are append-only (no insert/update/
-delete), and `notifications` is insert-revoked because alerts are written by
-trigger or the service role only.
+Ten invariants, all of which must pass. The SQL lives in
+`supabase/verify-rls.sql` and can also be pasted straight into the Supabase
+SQL Editor if you do not have `SUPABASE_DB_URL` set locally.
 
-```sql
--- expected: anon 0, authenticated 6 (the policy helpers only)
-select
-  count(*) filter (where has_function_privilege('anon', p.oid, 'EXECUTE')) as anon_exec,
-  count(*) filter (where has_function_privilege('authenticated', p.oid, 'EXECUTE')) as authed_exec,
-  count(*) as total
-from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-where n.nspname = 'public';
-```
+| # | Invariant | Why it exists |
+|---|---|---|
+| 1 | RLS enabled on every table | RLS *is* the authorization boundary |
+| 2 | Every RLS-enabled table has a policy | `schema_migrations` is the one documented exemption |
+| 3 | Every `authenticated` grant has a matching policy | grants are the coarse gate, policies the fine one — they must agree |
+| 4 | `anon` has no table privileges | the publishable key is public by design |
+| 5 | No TRUNCATE / REFERENCES / TRIGGER for `anon` or `authenticated` | **TRUNCATE is not subject to RLS** |
+| 6 | `anon` can execute no functions | see the `PUBLIC` note below |
+| 7 | Only the five policy helpers are SECURITY DEFINER *and* callable by `authenticated` | a guard trigger reachable over `/rest/v1/rpc` would be a hole |
+| 8 | Every function pins `search_path` | stops a caller shadowing an object a definer function resolves |
+| 9 | No self-write path to `user_roles` | this is what prevents self-promotion to admin |
+| 10 | Policies hoist `auth.*()` into an InitPlan | otherwise re-evaluated once per candidate row |
 
-If `anon_exec` is not 0, `0009` has not been applied. Note that revoking from
-`anon`/`authenticated` alone is **not** enough — PostgreSQL grants `EXECUTE`
-to `PUBLIC` by default and both roles inherit through it. `0009` revokes
-`PUBLIC` explicitly; that is the whole reason it exists.
+These are written as invariants rather than expected counts on purpose. This
+section used to carry a hand-maintained tally ("service_role 16/16,
+authenticated select 16 / insert 13 …"). Counts drift the moment a table is
+added, and the natural fix is to edit the expected number — which is how a
+security gate quietly stops being one. Check 3 replaces that tally with a rule
+that stays true as the schema grows.
+
+Two things worth knowing before you debug a failure:
+
+**Grants and policies are both required.** RLS policies without table grants
+produce `42501 permission denied` on every request. Policies decide *which
+rows*; grants decide whether the role may touch the table at all. Migration
+`0007` supplies the grants.
+
+**Revoking `EXECUTE` from `anon` / `authenticated` is not enough.** PostgreSQL
+grants `EXECUTE` to `PUBLIC` by default and both roles inherit through it.
+Migration `0009` revokes `PUBLIC` explicitly; that is the whole reason it
+exists.
 
 Also run Supabase's own linter (Dashboard → Advisors, or the MCP
-`get_advisors`) after any schema change. It caught both of the issues `0008`
-and `0009` fix.
+`get_advisors`) after any schema change. It caught the issues `0008`, `0009`
+and `0011` fix.
 
 ## 3. Promoting the first admin
 

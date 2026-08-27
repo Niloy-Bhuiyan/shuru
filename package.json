@@ -11,6 +11,7 @@
     "test": "vitest run",
     "migrate": "node scripts/migrate.mjs",
     "migrate:status": "node scripts/migrate.mjs --status",
+    "verify:rls": "node scripts/verify-rls.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },
