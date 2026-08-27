@@ -4,7 +4,8 @@
 top to bottom before touching anything. It records verified state only: every
 "pass" / "done" below was observed, not assumed.
 
-**Last updated:** 2026-08-27 (session 1, discovery + baseline)
+**Last updated:** 2026-08-27 — session 1, after the P0 database / bundle /
+secrets checkpoint.
 
 ---
 
@@ -18,7 +19,8 @@ use a clearly labelled sandbox provider.
 **Shuru's defining product rule, which overrides convenience everywhere:**
 never manufacture confidence the evidence does not support. No fabricated
 match scores, deadlines, compensation, or delivery states. Abstention is a
-first-class outcome.
+first-class outcome. That rule applies to this document too — if something
+below is not verified, it says so.
 
 ---
 
@@ -32,7 +34,7 @@ first-class outcome.
 | Branched from | `a44d4ad` (`main`) |
 | Safety tag on pre-existing work | `safety/pre-hardening-2026-08-27` → `a44d4ad` |
 | Remote | `origin` → `https://github.com/Niloy-Bhuiyan/shuru` (private) |
-| Latest pushed commit on `production-hardening` | *(none yet — see §10)* |
+| Latest commit | `3a04fff` tighten rls policies and table grants |
 
 **Why a sibling directory and not a nested worktree:** a git worktree placed
 inside `D:\SHURU Internship` would appear as untracked content in the parent
@@ -43,7 +45,7 @@ Sibling placement is the documented fallback.
 lockfile) and its own copy of `.env.local` (git-ignored, copied from the main
 checkout — **not** committed).
 
-### Git identity (verified)
+### Git identity (verified on every commit so far)
 
 ```
 user.name  = Niloy-Bhuiyan
@@ -73,7 +75,8 @@ src/
   app/auth/callback/   OAuth code exchange
   components/pixel/    design primitives (the visual authority)
   components/forge/    resume builder
-  lib/auth/      config (env detection, siteUrl, OAuth flags) + session (roles)
+  lib/auth/      config (env detection, siteUrl, OAuth flags), session (roles),
+                 secret (shared-secret compare for machine endpoints)
   lib/data/      one module per domain, client-side, RLS-scoped
   lib/ingest/    adapters (lever ashby adzuna keyless) + normalize dedupe
                  refresh health
@@ -81,7 +84,9 @@ src/
   lib/notify/    dispatch + email providers + web push
   lib/resume/    extract ats jdMatch pdfExport
   middleware.ts  session refresh + role-aware route guard
-supabase/migrations/   0001..0010, forward-only, applied via scripts/migrate.mjs
+supabase/
+  migrations/    0001..0012, forward-only, applied via scripts/migrate.mjs
+  verify-rls.sql the database security gate (see §6)
 ```
 
 ### External services
@@ -110,7 +115,7 @@ Read from `D:\shuru-work\.env.local`.
 | `NEXT_PUBLIC_OAUTH_GOOGLE_ENABLED` | set | |
 | `NEXT_PUBLIC_OAUTH_GITHUB_ENABLED` | set | |
 | `INGEST_SECRET` | set | guards POST /api/ingest and /api/notifications/dispatch |
-| **`CRON_SECRET`** | **UNSET — see §7 P0-1** | `/api/cron` returns 503 without it |
+| `CRON_SECRET` | **set (added this session)** | `/api/cron` returns 503 without it |
 | `INGEST_REMOTEOK_ENABLED` | set | |
 | `INGEST_ARBEITNOW_ENABLED` | set | |
 | `LEVER_COMPANIES` / `ASHBY_COMPANIES` | set | |
@@ -119,7 +124,12 @@ Read from `D:\shuru-work\.env.local`.
 | `GEMINI_API_KEY` / `GEMINI_MODEL` | empty | AI entry points hide themselves |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | set | |
 | `EMAIL_PROVIDER` / `EMAIL_FROM` / `RESEND_API_KEY` / `POSTMARK_SERVER_TOKEN` | absent from `.env.local` | documented in the template |
-| `SUPABASE_DB_URL` | absent from `.env.local` | only `npm run migrate` reads it |
+| `SUPABASE_DB_URL` | **absent** | needed by `npm run migrate` and `npm run verify:rls` — see §11 |
+
+**`CRON_SECRET` must also be set in the Vercel environment**, or both
+scheduled jobs 503 on every run. It is not in `.env.local.example`'s git
+history before this session, so a deployment provisioned from the old template
+will not have it.
 
 ---
 
@@ -139,138 +149,194 @@ Project `lciujpypigtbzhjawghf`. 18 tables, **RLS enabled on all 18**.
 | notifications | 1 |
 | notification_preferences | 1 |
 | ingestion_runs | 14 |
-| schema_migrations | 10 |
+| schema_migrations | 12 |
 | outcomes, interview_reports, mentors, resumes, listing_reports, admin_audit_log, push_subscriptions | 0 |
 
 **Listing provenance is honest** — no illustrative seed data is loaded:
 `arbeitnow` 18, `ashby` 8, `shuru` (employer/admin-posted) 1.
 
-16 functions in `public`, all with `search_path=public` pinned. 6 are
-`SECURITY DEFINER` and executable by `authenticated` — the RLS policy helpers
+16 functions in `public`, all with `search_path=public` pinned. 5 are
+`SECURITY DEFINER` and callable by `authenticated` — the RLS policy helpers
 (`is_admin`, `is_employer`, `is_member_of_company`,
 `is_member_of_opportunity_company`, `current_user_role`); the guard triggers
 are `postgres` / `service_role` only. `anon` can execute none.
 
----
-
-## 6. Verified baseline (2026-08-27, before any change)
-
-| Gate | Result |
-|---|---|
-| `npm run typecheck` | **pass** (exit 0) |
-| `npm run lint` | **pass** — no ESLint warnings or errors |
-| `npm test` | **pass — 210/210, 26 files**, 14.5s |
-| `npm run build` | not yet re-run this session |
-| `npm run test:e2e` | not yet run this session |
-| `npm audit` | **7 vulnerabilities (6 high, 1 moderate)** — all from `next` 14.2.35 + transitive `postcss`; only fix is a Next major |
-| Supabase security advisors | 1 INFO, 6 WARN — see §7 |
-| Supabase performance advisors | 29 `auth_rls_initplan` WARN, 15 `multiple_permissive_policies` WARN, 10 unindexed FK INFO, 8 unused-index INFO |
-
-This baseline is genuinely healthy. The prior work is real and mostly
-well-engineered; the job is to close the gaps below, not to rewrite it.
+**Grants after migration 0012:** `anon` has **no table privileges at all**;
+`authenticated` has SELECT 17 / INSERT 10 / UPDATE 10 / DELETE 9 and zero
+TRUNCATE / REFERENCES / TRIGGER; `service_role` retains ALL on 18.
 
 ---
 
-## 7. Prioritized plan
+## 6. Gates and their latest observed results
 
-### P0 — verified defects and security
+| Gate | Baseline (start of session) | Now |
+|---|---|---|
+| `npm run typecheck` | pass | **pass** |
+| `npm run lint` | pass | **pass** |
+| `npm test` | pass — 210/210, 26 files | **pass — 227/227, 28 files** |
+| `npm run build` | not run | **pass**, exit 0, prints `ƒ Middleware` |
+| `npm run verify:rls` | did not exist | **10/10 PASS** (run via MCP against the live DB; the npm script itself is unrun — needs `SUPABASE_DB_URL`, §11) |
+| `npm run test:e2e` | not run | **still not run this session** |
+| `npm audit` | 7 vulns (6 high, 1 moderate) | unchanged — all from `next` 14.2.35 + transitive `postcss`; only fix is a Next major |
+| Supabase security advisors | 1 INFO, 6 WARN | 1 INFO, 6 WARN (5 are the intended policy helpers; 1 is the dashboard action in §11) |
+| Supabase performance advisors | 29 + 15 WARN, 10 + 8 INFO | **0 WARN**; only `unused_index` INFO remains |
 
-1. **`CRON_SECRET` is required by `/api/cron` but is in no env template.**
-   `vercel.json` schedules `/api/cron?job=ingest` and `?job=dispatch`;
-   `src/app/api/cron/route.ts` returns **503 `cron_not_configured`** when
-   `CRON_SECRET` is unset. It is absent from `.env.local.example` *and* from
-   `.env.local`. As shipped, **both scheduled jobs fail on every run.**
-   Fix: add to the template with generation instructions, document in
-   DEPLOYMENT, surface in a health check, cover with a test.
-2. **Next.js 14.2.35 → 15.** Closes 6 high advisories with no 14.2.x backport
+---
+
+## 7. Completed this session
+
+1. **Discovery and baseline** — full repository, git, database, advisor and
+   dependency inventory. Recorded above.
+2. **Safety** — tag `safety/pre-hardening-2026-08-27` on `a44d4ad`; isolated
+   worktree on branch `production-hardening`.
+3. **`53cd039` harden secret compare and add cron secret to env template**
+   - New `src/lib/auth/secret.ts`: `secretsMatch` compares SHA-256 digests via
+     `timingSafeEqual`, so neither the content nor the length of a secret is
+     observable from timing. `/api/ingest` and `/api/notifications/dispatch`
+     were using plain `===`; `/api/cron` had its own hand-rolled comparator.
+     All three now share one helper. An **empty expected secret never
+     matches**, so a deployment that forgot the variable cannot authenticate
+     everyone.
+   - `.env.local.example` rewritten: it was UTF-8 **with a BOM and mojibake**
+     box-drawing characters. Now clean ASCII, and it documents `CRON_SECRET`.
+   - 14 new tests.
+   - *Scope correction from the first pass:* `CRON_SECRET` **was** already
+     documented in `docs/DEPLOYMENT.md` (credentials row 11 plus an explicit
+     warning). The gap was only the `.env.local.example` entry and the local
+     `.env.local`. Both fixed.
+4. **`44a488b` keep seed dataset out of the client bundle**
+   - `src/lib/data/index.ts` is `"use client"` and imported the 9,143-line
+     `seed.ts` only to build an id `Set`. `scripts/generate-seed.mjs` now also
+     emits a 38-line `src/lib/data/seedIds.ts`, which is what the app imports.
+   - **Measured, not assumed:** with the old import, production chunk
+     `8661-*.js` contained the seed-only string `Nextern Intern`; after, no
+     chunk does. Static chunk bytes 2,111,603 → 2,101,568 = **10,035 bytes**.
+     That is smaller than the raw file suggests because webpack tree-shook the
+     unused `SEED_OUTCOMES` / `SEED_REPORTS` / `SEED_MENTORS` exports — only
+     `SEED_OPPORTUNITIES` was actually reachable. Real, but ~10 KB, not the
+     hundreds of KB the line count implies.
+   - 3 new tests, including one that fails if any non-test module imports
+     `@/lib/data/seed` again.
+5. **`3a04fff` tighten rls policies and table grants**
+   - Migration `0011`: wrapped `auth.uid()` / `auth.role()` / `is_admin()` /
+     `is_employer()` in scalar subqueries so they hoist to an InitPlan instead
+     of re-evaluating per row; merged the duplicate permissive policies on
+     `applications` (SELECT, UPDATE) and split the FOR ALL policy on
+     `user_roles` that was shadowing SELECT; added the 10 missing FK indexes.
+     Behaviour-preserving. **Result: all 29 `auth_rls_initplan` and all 15
+     `multiple_permissive_policies` warnings cleared.**
+   - Migration `0012`: least-privilege grants. Found by the new gate —
+     `anon` held **TRUNCATE**, REFERENCES and TRIGGER on `push_subscriptions`
+     (created by 0010, after 0007's blanket revoke), and `authenticated` held
+     the same three on **all 17** tables (0007 granted DML additively and never
+     revoked the Supabase default ALL). **TRUNCATE is not subject to RLS.**
+     Honest scope: not reachable through the public HTTP API — PostgREST
+     exposes no TRUNCATE verb — so this was a latent least-privilege violation,
+     not a live breach. Also revoked every DML privilege that had no matching
+     policy, and set default privileges so a future table cannot reintroduce
+     it.
+   - New `supabase/verify-rls.sql` + `scripts/verify-rls.mjs` +
+     `npm run verify:rls`: ten database invariants, exits non-zero on failure.
+     Written as invariants rather than counts on purpose — `docs/RUNBOOK.md`
+     §2 previously carried a hand-maintained grant tally that had already gone
+     stale (it said 16 tables; there are 18).
+   - `docs/RUNBOOK.md` §1 and §2 rewritten accordingly (§1 also said "all four
+     must pass" above a list of five).
+
+**Both migrations are applied to the live database and verified there.**
+
+---
+
+## 8. Pending — in priority order
+
+### P0 (remaining)
+
+1. **Next.js 14.2.35 → 15.** Closes 6 high advisories with no 14.2.x backport
    (SSRF via rewrites / Server Actions, RSC cache poisoning, DoS,
    unauthenticated disclosure of internal Server Function endpoints). Breaking
    changes are scoped and known (async `cookies()` / `headers()` / `params` /
-   `searchParams`).
-3. **9,143-line seed dataset ships in the client bundle.**
-   `src/lib/data/index.ts` is `"use client"` and imports `SEED_OPPORTUNITIES`
-   from `src/lib/data/seed.ts` solely to build a ~20-entry id `Set` for
-   `isSeededOpportunity()`. The whole illustrative dataset (opportunities,
-   outcomes, reports, mentors) is therefore downloaded by every visitor.
-   Fix: generate a tiny id-only module from the same generator.
-4. **Supabase advisor remediation.** 29 RLS policies re-evaluate `auth.*()`
-   per row (wrap in `(select …)`); 15 duplicate permissive policies on
-   `applications` / `user_roles`; 10 unindexed foreign keys. Behaviour-
-   preserving, forward-only migration + verification.
-5. **Leaked-password protection is disabled** in Supabase Auth — dashboard
-   action, see §11.
+   `searchParams`). Re-evaluate the CSP decision (§12) while in there.
+2. **Enable leaked-password protection** — dashboard action, §11.
 
-### P1 — subsystems the brief requires that do not exist yet
+### P1 — subsystems the brief requires that do not exist at all
 
-6. **Python AI service (absent).** A real REST service using LangChain +
-   LangGraph with a production RAG pipeline (ingestion → normalization →
-   chunking + metadata → embeddings → vector store → retrieval → citations →
-   access control → evaluation → observability), authenticated integration
-   with the Next.js app, prompt-injection defences for untrusted retrieved
-   content, timeouts / retries / rate limits / cost controls, honest
-   unavailable states, and tests for retrieval quality, grounding, citations
-   and authorization boundaries.
-7. **Payments (absent).** Clearly labelled sandbox / demo flow behind a
-   provider adapter + webhook architecture. Server-authoritative, idempotent,
-   signature-verified, never claiming real money moved, no raw card data.
-8. **`src/lib/agent/claude.ts` is a throwing stub** and its branch in
-   `adapter.ts` is disabled. Implement it properly under the provider
-   abstraction.
+3. **Python AI service.** Real REST service using LangChain + LangGraph with a
+   production RAG pipeline (ingestion → normalization → chunking + metadata →
+   embeddings → vector store → retrieval → citations → access control →
+   evaluation → observability), authenticated integration with the Next.js
+   app, prompt-injection defences for untrusted retrieved content, timeouts /
+   retries / rate limits / cost controls, honest unavailable states, and tests
+   for retrieval quality, grounding, citations and authorization boundaries.
+4. **Payments.** Clearly labelled sandbox flow behind a provider adapter +
+   webhook architecture. Server-authoritative, idempotent, signature-verified,
+   never claiming real money moved, no raw card data.
+5. **`src/lib/agent/claude.ts` is a throwing stub** and its branch in
+   `adapter.ts` is disabled. Implement it under the provider abstraction.
 
-### P2 — completeness, verification, docs
+### P2 — completeness and verification
 
-9. E2E coverage for employer / admin permission boundaries, OAuth edge cases,
+6. E2E coverage for employer / admin permission boundaries, OAuth edge cases,
    ingestion, notifications, payments sandbox, and the AI service.
-10. Accessibility audit + automated checks; responsive visual QA at 390px and
-    1440px.
-11. Documentation refresh. `docs/ARCHITECTURE.md` is **stale**: it describes
-    `lib/match/` (actually `lib/matching.ts`), `app/employer/` and `app/admin/`
-    (actually under `app/(main)/`), `/api/cron/*` (actually `/api/cron`), and
-    says push / email delivery is "architecture ready — delivery not enabled"
-    when both were later fully wired.
-12. `.env.local.example` is UTF-8 **with a BOM and mojibake** box-drawing
-    characters — rewrite it clean.
+7. Accessibility audit + automated checks; responsive visual QA at 390px and
+   1440px.
+8. `docs/ARCHITECTURE.md` is **stale** and not yet fixed: it describes
+   `lib/match/` (actually `lib/matching.ts`), `app/employer/` and `app/admin/`
+   (actually under `app/(main)/`), `/api/cron/*` (actually `/api/cron`), and
+   says push / email delivery is "architecture ready — delivery not enabled"
+   when both were later fully wired.
 
 ---
 
-## 8. Completed this session
+## 9. Exact next step
 
-- Full repository, git, database, advisor and dependency discovery.
-- Verified baseline recorded in §6.
-- Safety tag `safety/pre-hardening-2026-08-27` created on `a44d4ad`.
-- Worktree `D:\shuru-work` on branch `production-hardening` created,
-  dependencies installed from the committed lockfile, `.env.local` copied.
-- This file.
+Push the three commits to `origin/production-hardening` (not yet pushed since
+`8113d00`), then begin P0-1, the Next.js 15 upgrade, in `D:\shuru-work`.
 
-## 9. Pending
+---
 
-Everything in §7.
+## 10. Running local processes / ports
 
-## 10. Exact next step
+None left running by this session. (`npm run dev` → 3000, Playwright → 3100.)
 
-Commit this file on `production-hardening` in `D:\shuru-work`, push the branch
-to `origin`, then start P0-1 (`CRON_SECRET`).
+---
 
-## 11. Human actions still required (none blocking yet)
+## 11. Human actions still required
+
+Neither is blocking further work.
 
 1. **Supabase Dashboard → Authentication → Policies → Password protection** —
-   enable "Prevent use of leaked passwords" (HaveIBeenPwned). Not exposed
-   through the MCP tools. Verify afterwards by re-running the security
-   advisors: the `auth_leaked_password_protection` WARN disappears.
+   enable "Prevent use of leaked passwords" (checks HaveIBeenPwned). Not
+   exposed through the MCP tools. **Verify afterwards** by re-running the
+   security advisors: the `auth_leaked_password_protection` WARN disappears.
+2. **`SUPABASE_DB_URL` in `.env.local`** — Supabase Dashboard → Project
+   Settings → Database → Connection string → URI, with `[YOUR-PASSWORD]`
+   replaced. Needed by `npm run migrate` and `npm run verify:rls`. Without it
+   the RLS gate can still be run by pasting `supabase/verify-rls.sql` into the
+   SQL Editor (which is how it was verified this session). **Verify
+   afterwards** with `npm run verify:rls` — expect `10/10 checks passed`.
 
-Further credential requirements (AI provider key, payment sandbox account,
-email sending domain) will be listed here precisely when the code that needs
-them is complete.
+Credentials for the AI provider, payment sandbox and email sending domain will
+be listed here precisely once the code that needs them exists.
+
+---
 
 ## 12. Accepted residual risks
 
+- **`npm audit`: 6 high + 1 moderate**, all `next` 14.2.35 and transitive
+  `postcss`, with no 14.2.x backport. Being addressed by P0-1.
 - **No Content-Security-Policy.** A `unsafe-inline` CSP was deliberately not
   added; a real nonce-based CSP needs middleware work. Re-evaluate during the
-  Next 15 upgrade (P0-2), which changes the relevant plumbing.
+  Next 15 upgrade.
 - **Rate limits are per-instance** (agent 20/day, ingest 15-min cooldown) —
   in-memory cost seatbelts, not security boundaries.
 - **`schema_migrations` has RLS on with no policy** — intentional: only
-  `service_role`, which bypasses RLS, touches the ledger.
+  `service_role`, which bypasses RLS, touches the ledger. It is the single
+  documented exemption in `verify-rls.sql`.
+- **`unused_index` advisories** — 18 of them, including the 10 FK indexes
+  added by 0011. Expected on a database with 27 rows in its largest table; not
+  actionable.
+
+---
 
 ## 13. Debugging discoveries worth not rediscovering
 
@@ -280,10 +346,19 @@ them is complete.
   signal — read it.
 - **RLS policies without table grants** produce `42501 permission denied` on
   every request. Policies are the fine gate, grants the coarse one; both are
-  required. Migration `0007` supplies the grants.
+  required.
 - **Revoking `EXECUTE` from `anon` / `authenticated` is not enough** —
   Postgres grants it to `PUBLIC` by default and both roles inherit. Migration
   `0009` revokes `PUBLIC` explicitly; that is its entire reason to exist.
+- **Supabase's default privileges re-grant ALL on every newly created table**
+  to `anon` and `authenticated`. A blanket revoke in one migration does not
+  protect a table created by a later one — which is exactly how
+  `push_subscriptions` ended up with `anon` TRUNCATE. `0012` sets
+  `alter default privileges` so this cannot recur.
+- **`check` is a reserved word** in `select check, …` — the verify-rls query
+  uses `check_name`.
+- **`globSync` is not in `@types/node` 20** (Node 22+). Walk directories with
+  `readdirSync(dir, { withFileTypes: true })` instead.
 - **RemoteOK keeping 0 listings is correct**, not a broken filter — see
   `docs/decisions/0001-source-filtering.md` before touching `matchesFilters`.
 - **Blank match scores on ingested listings are correct** — the engine
@@ -293,7 +368,3 @@ them is complete.
   intermittently on Windows past ~200 tests.
 - **Playwright runs against a production build** on port 3100, not `next dev`,
   because dev-server cold compiles caused navigation flakiness.
-
-## 14. Running local processes / ports
-
-None started by this session. (`npm run dev` → 3000, Playwright → 3100.)
