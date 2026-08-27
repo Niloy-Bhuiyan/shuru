@@ -49,6 +49,7 @@ class AbstainReason:
 
 class State(TypedDict, total=False):
     question: str
+    opportunity_id: str | None
     query_vector: list[float]
     passages: list[Passage]
     answer: str
@@ -77,6 +78,7 @@ def retrieve(state: State) -> State:
         state["query_vector"],
         top_k=settings.retrieval_top_k,
         max_distance=settings.max_cosine_distance,
+        opportunity_id=state.get("opportunity_id"),
     )
     for p in passages:
         if p.suspected_injection:

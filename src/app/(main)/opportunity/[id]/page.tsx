@@ -18,6 +18,7 @@ import { PixelIcon } from "@/components/pixel/PixelIcon";
 import { DeadlineBadge } from "@/components/DeadlineBadge";
 import { EligibilityChecklist } from "@/components/EligibilityChecklist";
 import { ApplicationTimeline } from "@/components/ApplicationTimeline";
+import { AskListing } from "@/components/AskListing";
 import { MatchBreakdown } from "@/components/MatchBreakdown";
 import { LoadingBlock } from "@/components/LoadingBlock";
 import { EmptyState } from "@/components/EmptyState";
@@ -214,6 +215,10 @@ export default function OpportunityDetailPage() {
 
       {/* history — only once an application exists to have a history */}
       {appId && <ApplicationTimeline applicationId={appId} />}
+
+      {/* Ask — renders nothing at all when the retrieval service is not
+          configured, so there is never a dead control here. */}
+      <AskListing opportunityId={op.id} />
 
       {/* actions */}
       <div className="mt-5 flex gap-3">

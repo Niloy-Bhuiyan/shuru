@@ -87,14 +87,26 @@ _VISIBILITY_SQL = """
 """
 
 
-def search(query_vector: list[float], top_k: int, max_distance: float) -> list[Passage]:
+def search(
+    query_vector: list[float],
+    top_k: int,
+    max_distance: float,
+    opportunity_id: str | None = None,
+) -> list[Passage]:
     """Nearest-neighbour search over visible chunks only.
 
     `<=>` is pgvector's cosine distance: 0 is identical, larger is less
     similar. The `max_distance` bound is what makes "we found nothing relevant"
     possible — without it, the nearest chunk always wins no matter how
     unrelated it is, and the pipeline could never honestly abstain.
+
+    `opportunity_id` scopes the search to one listing. That is what makes an
+    "ask about this listing" surface honest: without it, a question asked on
+    one listing's page could be answered by quoting a different company's
+    posting, which is a citation that is accurate and an answer that is wrong.
+    The scope narrows visibility further, never widens it.
     """
+    scope = "and c.opportunity_id = %(opportunity_id)s" if opportunity_id else ""
     sql = f"""
         select
             c.opportunity_id::text as opportunity_id,
@@ -110,12 +122,19 @@ def search(query_vector: list[float], top_k: int, max_distance: float) -> list[P
         join public.opportunities o on o.id = c.opportunity_id
         where {_VISIBILITY_SQL}
           and (c.embedding <=> %(q)s::vector) <= %(max_distance)s
+          {scope}
         order by c.embedding <=> %(q)s::vector
         limit %(k)s
     """
     with connection() as conn:
         rows = conn.execute(
-            sql, {"q": query_vector, "k": top_k, "max_distance": max_distance}
+            sql,
+            {
+                "q": query_vector,
+                "k": top_k,
+                "max_distance": max_distance,
+                "opportunity_id": opportunity_id,
+            },
         ).fetchall()
 
     return [

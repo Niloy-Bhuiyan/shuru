@@ -69,8 +69,11 @@ export async function POST(req: NextRequest) {
   }
 
   let question: unknown;
+  let opportunityId: unknown;
   try {
-    question = (await req.json())?.question;
+    const body = await req.json();
+    question = body?.question;
+    opportunityId = body?.opportunity_id;
   } catch {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
@@ -86,7 +89,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await askRag(question.trim(), userId);
+    const result = await askRag(
+      question.trim(),
+      userId,
+      typeof opportunityId === "string" ? opportunityId : undefined
+    );
     return NextResponse.json(result);
   } catch (e) {
     if (e instanceof RagUnavailableError) {

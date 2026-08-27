@@ -77,6 +77,9 @@ class AskRequest(BaseModel):
     # never sees the user's JWT and does not need to: the corpus is the public
     # listing set, and the id is only used for the per-user daily cap.
     user_id: str = Field(min_length=1, max_length=128)
+    # Optional. Scopes retrieval to one listing so an "ask about this listing"
+    # surface cannot answer by quoting a different company's posting.
+    opportunity_id: str | None = Field(default=None, max_length=64)
 
 
 class Citation(BaseModel):
@@ -172,7 +175,11 @@ async def ask(req: AskRequest) -> AskResponse:
     started = time.perf_counter()
     try:
         result = get_graph().invoke(
-            {"question": req.question, "user_id": req.user_id}
+            {
+                "question": req.question,
+                "user_id": req.user_id,
+                "opportunity_id": req.opportunity_id,
+            }
         )
     except Exception:
         # Never leak an internal message to the caller; it can quote the

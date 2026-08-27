@@ -73,7 +73,9 @@ const TIMEOUT_MS = 35_000;
 
 export async function askRag(
   question: string,
-  userId: string
+  userId: string,
+  /** Scopes retrieval to one listing. See the service's `search` docstring. */
+  opportunityId?: string
 ): Promise<RagAnswer> {
   if (!ragConfigured()) {
     throw new RagUnavailableError(
@@ -92,7 +94,11 @@ export async function askRag(
         "content-type": "application/json",
         authorization: `Bearer ${process.env.SHURU_RAG_SERVICE_TOKEN}`,
       },
-      body: JSON.stringify({ question, user_id: userId }),
+      body: JSON.stringify({
+        question,
+        user_id: userId,
+        ...(opportunityId ? { opportunity_id: opportunityId } : {}),
+      }),
       signal: ctrl.signal,
       cache: "no-store",
     });
