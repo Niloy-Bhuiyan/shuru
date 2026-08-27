@@ -12,172 +12,103 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-1B2A3A?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-3FBFA0?style=for-the-badge&logo=supabase&logoColor=1B2A3A)](https://supabase.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-FF7A3C?style=for-the-badge&logo=tailwindcss&logoColor=1B2A3A)](https://tailwindcss.com/)
+[![License](https://img.shields.io/badge/License-Permission_Required-E5533D?style=for-the-badge)](./LICENSE)
 
-[Explore features](#-what-shuru-does) · [See the architecture](#-architecture) · [Run locally](#-run-it-locally) · [Read the docs](#-documentation)
+[Why Shuru](#why-shuru) · [Features](#core-experience) · [Architecture](#architecture) · [Run locally](#run-it-locally) · [License](#license)
 
 </div>
 
 ---
 
-## The idea
+## Why Shuru
 
 Most internship platforms optimize for more listings and bigger match percentages. Shuru optimizes for **truthful decisions**.
 
-> If there is enough evidence, Shuru explains the match. If there is not, it abstains. No fake score, no invented deadline, no made-up salary.
+> If the evidence is strong enough, Shuru explains the match. If it is not, Shuru abstains. No fake score. No invented deadline. No made-up salary.
 
-| The usual experience | The Shuru approach |
-|---|---|
-| Opaque “95% match” scores | Evidence is shown for every contributing signal |
-| Stale or duplicated listings | Normalized, deduplicated, freshness-checked opportunities |
-| Invented closing dates | Explicit **Rolling** labels when no real deadline exists |
-| Generic resume advice | ATS checks and job-description-specific keyword analysis |
-| Scattered application notes | A status timeline, vault, alerts, and notification center |
+- **Fresh over noisy** — listings are filtered, normalized, deduplicated, and freshness checked.
+- **Evidence over confidence theatre** — every match signal can show what produced it.
+- **Useful even without AI** — matching, ATS checks, and scoring remain rule-based and testable.
 
-## ✦ What Shuru does
+## Core experience
 
-<table>
-  <tr>
-    <td width="50%" valign="top">
-      <h3>◉ Internship Radar</h3>
-      Discover employer-posted and responsibly ingested internships in one mobile-first feed. Every external listing is filtered, normalized, attributed, deduplicated, and freshness checked.
-    </td>
-    <td width="50%" valign="top">
-      <h3>◎ Reality Check</h3>
-      Compare a student profile with real historical outcomes. Small cohorts trigger an honest abstention instead of a statistically meaningless percentage.
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <h3>◆ Resume Forge</h3>
-      Upload PDF or DOCX resumes, edit structured sections, run rule-based ATS checks, tailor against a job description, and export a selectable, ATS-readable PDF.
-    </td>
-    <td width="50%" valign="top">
-      <h3>▣ Application Vault</h3>
-      Save opportunities, track every application stage, search the pipeline, and receive relevant deadline and status notifications.
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <h3>⌁ Role-aware workspaces</h3>
-      Purpose-built surfaces for students, employers, and admins—with authorization enforced by Postgres Row Level Security, middleware, and server-side role checks.
-    </td>
-    <td width="50%" valign="top">
-      <h3>✦ Optional AI assistance</h3>
-      Gemini can structure resumes and power contextual explanations. Without an API key, AI entry points disappear cleanly while every rule-based feature keeps working.
-    </td>
-  </tr>
-</table>
+### `01` Internship Radar
 
-## ◇ Honest odds, by design
+One focused feed for employer-posted and responsibly ingested internships, with source attribution, real freshness information, and honest compensation labels.
 
-Shuru’s Reality Check is intentionally conservative:
+### `02` Reality Check
 
-1. **Define success** — a past outcome of `shortlisted` or `offer`.
-2. **Build a cohort** — same CGPA band and department; relax once to CGPA band only when needed.
-3. **Check the sample** — `HIGH` confidence at `n ≥ 20`, `MED` at `8 ≤ n < 20`.
-4. **Abstain when evidence is thin** — `n < 8` produces no score.
-5. **Explain the result** — show the strongest evidence gap, with a five-point noise floor.
+Calibrated match information based on profile evidence and verified outcomes. Small cohorts produce **not enough data yet** instead of a meaningless percentage.
 
-The core engines are pure, unit-tested functions in [`eligibility.ts`](./src/lib/eligibility.ts) and [`realityCheck.ts`](./src/lib/realityCheck.ts). Externally ingested listings have no outcome history, so Shuru automatically abstains on them.
+### `03` Resume Forge
 
-## ⌘ Architecture
+PDF/DOCX import, structured editing, ATS readiness checks, job-description tailoring, and selectable text-layer PDF export in one dedicated workspace.
 
-Shuru is a single Next.js application. Server Components and Route Handlers form the application layer; Supabase Postgres—with RLS—is the authorization boundary.
+### `04` Application Vault
 
-```mermaid
-flowchart LR
-    U[Student / Employer / Admin]
+Save opportunities, track application stages, search the pipeline, and receive relevant deadline and status notifications.
 
-    subgraph N[Next.js 14 Application]
-      MW[Middleware<br/>session + role routing]
-      SC[Server Components<br/>product surfaces]
-      API[Route Handlers<br/>API + cron jobs]
-      CORE[Pure domain engines<br/>matching · eligibility · ATS]
-    end
+## Architecture
 
-    subgraph S[Supabase]
-      AUTH[Auth]
-      DB[(Postgres + RLS)]
-      STORE[Private Storage]
-    end
+<div align="center">
 
-    subgraph X[External Services]
-      BOARDS[Job-board adapters]
-      AI[Gemini · optional]
-      DELIVERY[Email + Web Push]
-    end
+<img src="./public/readme/shuru-architecture.svg" alt="Animated architecture diagram of the Shuru platform" width="100%" />
 
-    U --> MW --> SC
-    SC --> CORE
-    SC --> AUTH
-    SC --> DB
-    SC --> STORE
-    API --> CORE
-    API --> DB
-    API --> BOARDS
-    API -. optional .-> AI
-    API -. optional .-> DELIVERY
-```
+<sub>Requests move through role-aware Next.js boundaries; Postgres RLS remains the final authority.</sub>
 
-### Data flows
+</div>
+
+The system follows three rules:
+
+1. **The database is the trust boundary.** Supabase Row Level Security protects data even if a route is called directly.
+2. **Core decisions stay deterministic.** Eligibility, matching, ATS scoring, and abstention are pure, unit-tested domain functions.
+3. **External services are optional and isolated.** A missing AI or delivery key disables that feature cleanly; it never creates fake output.
+
+<details>
+<summary><strong>How the main pipelines work</strong></summary>
 
 ```text
-LISTING INGESTION
+LISTINGS
 source adapter → internship filter → normalize → deduplicate → freshness check → upsert
 
 REALITY CHECK
-profile + verified outcomes → cohort selection → sample threshold → score or abstain → evidence
+profile + outcomes → cohort selection → sample threshold → score or abstain → evidence
 
 RESUME FORGE
-PDF/DOCX → text extraction → structured editor → ATS checks → JD tailoring → text-layer PDF
+PDF/DOCX → text extraction → structured editor → ATS checks → JD tailoring → PDF
 
 NOTIFICATIONS
 domain event → notification row → in-app center → optional email / browser push
 ```
 
+Read the complete [architecture guide](./docs/ARCHITECTURE.md) for authorization, ingestion, matching, and notification details.
+
+</details>
+
 <details>
-<summary><strong>Explore the repository structure</strong></summary>
+<summary><strong>Repository map</strong></summary>
 
 ```text
 shuru/
 ├── src/
-│   ├── app/
-│   │   ├── (auth)/          # Authentication and onboarding
-│   │   ├── (main)/          # Student, employer, and admin surfaces
-│   │   └── api/             # Route handlers, ingestion, AI, notifications
+│   ├── app/                 # App Router pages and route handlers
 │   ├── components/
-│   │   ├── pixel/           # Cozy-retro design system primitives
+│   │   ├── pixel/           # Cozy-retro design primitives
 │   │   └── forge/           # Resume Forge experience
 │   └── lib/
-│       ├── agent/           # Optional AI adapter and tool loop
-│       ├── data/            # Domain-oriented data access
-│       ├── ingest/          # Adapters, normalization, dedupe, refresh
+│       ├── agent/           # Optional AI adapter
+│       ├── data/            # Domain data access
+│       ├── ingest/          # Listing pipeline
 │       ├── notify/          # In-app, email, and push delivery
-│       └── resume/          # Extraction, ATS, JD match, PDF export
-├── supabase/
-│   ├── migrations/          # Ordered, additive SQL migrations
-│   └── seed.sql             # Optional illustrative sample data
-├── docs/                    # Product, architecture, database, operations
-├── e2e/                     # Playwright responsive and auth journeys
-└── public/                  # Static assets and service worker
+│       └── resume/          # Parsing, ATS, JD match, PDF export
+├── supabase/migrations/     # Ordered database migrations
+├── docs/                    # Product and engineering guides
+└── e2e/                     # Playwright journeys
 ```
 
 </details>
 
-## ⚙ Technology
-
-| Layer | Built with |
-|---|---|
-| Web | Next.js 14 App Router, React 18, strict TypeScript |
-| Interface | Tailwind CSS, custom pixel design system, responsive app shell |
-| Data | Supabase Postgres, Auth, Storage, Row Level Security |
-| Documents | `pdf-parse`, Mammoth, jsPDF |
-| Intelligence | Pure matching/ATS engines; optional Gemini adapter |
-| Background work | Vercel cron routes, modular listing adapters |
-| Notifications | In-app records, email adapters, Web Push |
-| Quality | Vitest, Playwright, ESLint, TypeScript |
-
-## ▶ Run it locally
+## Run it locally
 
 ### Prerequisites
 
@@ -193,9 +124,9 @@ cp .env.local.example .env.local
 npm run dev
 ```
 
-Open [`http://localhost:3000`](http://localhost:3000). Shuru does not ship a simulated backend: when Supabase is missing, it shows an explicit **Not configured** state instead of invented data.
+Open [`http://localhost:3000`](http://localhost:3000). Shuru is database-backed; without Supabase it shows an explicit **Not configured** state instead of simulated data.
 
-### Minimum environment
+### Required environment
 
 ```dotenv
 NEXT_PUBLIC_SUPABASE_URL=your-project-url
@@ -204,85 +135,40 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-The service-role key is server-only—never prefix it with `NEXT_PUBLIC_`. Optional ingestion sources, OAuth providers, Gemini, email, and Web Push are documented in [`.env.local.example`](./.env.local.example) and the [deployment guide](./docs/DEPLOYMENT.md).
+Apply [`supabase/migrations`](./supabase/migrations) in filename order. Optional OAuth, ingestion, Gemini, email, and Web Push settings are documented in [`.env.local.example`](./.env.local.example) and the [deployment guide](./docs/DEPLOYMENT.md).
 
-### Prepare the database
+> [!CAUTION]
+> `SUPABASE_SERVICE_ROLE_KEY` is server-only. Never expose it through a `NEXT_PUBLIC_` variable.
 
-Apply the SQL files in [`supabase/migrations`](./supabase/migrations) in filename order. The optional [`supabase/seed.sql`](./supabase/seed.sql) contains illustrative Bangladesh listings and outcomes; sample-derived results remain visibly labeled as sample data.
+## Commands
 
-```bash
-npm run migrate:status
-npm run migrate
-```
-
-See the [Supabase guide](./supabase/README.md) for migration order and first-admin promotion.
-
-## ✓ Quality checks
-
-```bash
-npm run typecheck     # TypeScript
-npm run lint          # ESLint
-npm test              # Vitest unit suite
-npm run test:e2e      # Playwright at 390px and 1440px
-npm run build         # Production build
-```
-
-The full release gate and failure triage live in the [operations runbook](./docs/RUNBOOK.md).
-
-## 📚 Documentation
-
-| Guide | Purpose |
+| Command | Purpose |
 |---|---|
-| [Product requirements](./docs/PRD.md) | Users, scope, requirements, and non-goals |
-| [Architecture](./docs/ARCHITECTURE.md) | Runtime shape, authorization, pipelines, and configuration |
-| [Database](./docs/DATABASE.md) | Tables, RLS policies, constraints, and triggers |
-| [Deployment](./docs/DEPLOYMENT.md) | Supabase/Vercel provisioning and production credentials |
-| [Operations runbook](./docs/RUNBOOK.md) | Release gate, verification, ingestion triage, and limitations |
-| [Decision records](./docs/decisions) | Load-bearing engineering decisions and their trade-offs |
-| [Security audit](./ISSUES.md) | Previous findings and remediation record |
+| `npm run dev` | Start the local development server |
+| `npm run typecheck` | Check strict TypeScript |
+| `npm run lint` | Run ESLint |
+| `npm test` | Run the Vitest unit suite |
+| `npm run test:e2e` | Test at mobile and desktop widths |
+| `npm run build` | Create a production build |
+| `npm run migrate` | Apply pending database migrations |
+
+## Documentation
+
+- [Product requirements](./docs/PRD.md) — users, scope, requirements, and non-goals
+- [Architecture](./docs/ARCHITECTURE.md) — runtime, authorization, and data pipelines
+- [Database](./docs/DATABASE.md) — tables, RLS policies, constraints, and triggers
+- [Deployment](./docs/DEPLOYMENT.md) — Supabase and Vercel provisioning
+- [Operations runbook](./docs/RUNBOOK.md) — release checks and failure triage
+- [Engineering decisions](./docs/decisions) — load-bearing trade-offs and context
 
 > [!IMPORTANT]
-> Read [ADR 0001](./docs/decisions/0001-source-filtering.md) before changing source filters and [ADR 0002](./docs/decisions/0002-match-abstention.md) before changing score availability. Both encode deliberate honesty constraints that can look like bugs from the outside.
+> Read [ADR 0001](./docs/decisions/0001-source-filtering.md) before changing source filters and [ADR 0002](./docs/decisions/0002-match-abstention.md) before changing score availability. Both encode deliberate honesty constraints.
 
-## Roles and trust boundaries
+## License
 
-| Role | Capabilities |
-|---|---|
-| **Student** | Discover, evaluate, save, apply, track, build resumes, receive alerts |
-| **Employer** | Maintain a company profile, post internships, manage applicants |
-| **Admin** | Review employers/listings, moderate reports, inspect ingestion and audit logs |
+**Copyright © 2026 Niloy Bhuiyan. All rights reserved.**
 
-There is no self-service role-escalation API. `public.user_roles` has no self-write policy; the first admin is promoted directly through the Supabase SQL Editor.
-
-## Troubleshooting
-
-<details>
-<summary><strong>“NOT CONFIGURED” screen</strong></summary>
-
-Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and make sure they are not placeholder values.
-
-</details>
-
-<details>
-<summary><strong>Redirect loop at login</strong></summary>
-
-Confirm that `NEXT_PUBLIC_SITE_URL` exactly matches the origin in the browser and that the session cookie reaches middleware.
-
-</details>
-
-<details>
-<summary><strong>OAuth button fails</strong></summary>
-
-The UI flag and Supabase provider must both be enabled, and the provider callback URL must match `<site>/auth/callback`.
-
-</details>
-
-<details>
-<summary><strong>Reality Check differs between users</strong></summary>
-
-That is expected. Cohorts are calibrated by CGPA band and department, then relaxed once only when the sample is too small.
-
-</details>
+This project is source-visible, but it is **not open source**. You may not copy, use, modify, distribute, publish, sublicense, sell, or create derivative works from any part of this repository without prior written permission from Niloy Bhuiyan. See the full [LICENSE](./LICENSE).
 
 ---
 
@@ -290,7 +176,7 @@ That is expected. Cohorts are calibrated by CGPA band and department, then relax
 
 ### শুরু মানে সূচনা — go open some doors.
 
-Built with care by [Niloy Bhuiyan](https://github.com/Niloy-Bhuiyan).
+Designed and built by [Niloy Bhuiyan](https://github.com/Niloy-Bhuiyan).
 
 [Back to top](#)
 
