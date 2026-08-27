@@ -10,7 +10,7 @@
  */
 
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { SEED_OPPORTUNITIES } from "./seed";
+import { SEED_OPPORTUNITY_IDS } from "./seedIds";
 import type {
   Application,
   ApplicationStatus,
@@ -30,10 +30,14 @@ import { emptyResumeContent } from "@/lib/types";
  * behind a seeded row is illustrative, not observed, so any Reality Check
  * number computed from it must be labelled as sample data. Real listings
  * carry real outcomes or none at all — in which case Reality Check abstains.
+ *
+ * Imports ./seedIds, never ./seed. This module is "use client", so an import
+ * of the full ~9k-line dataset would ship every illustrative outcome, report
+ * and mentor to every visitor to answer a 30-entry membership test.
  */
-const SEED_OPPORTUNITY_IDS = new Set(SEED_OPPORTUNITIES.map((o) => o.id));
+const SEEDED = new Set(SEED_OPPORTUNITY_IDS);
 export function isSeededOpportunity(id: string): boolean {
-  return SEED_OPPORTUNITY_IDS.has(id);
+  return SEEDED.has(id);
 }
 
 export async function listOpportunities(): Promise<Opportunity[]> {
