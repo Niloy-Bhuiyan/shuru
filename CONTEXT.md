@@ -4,8 +4,8 @@
 top to bottom before touching anything. It records verified state only: every
 "pass" / "done" below was observed, not assumed.
 
-**Last updated:** 2026-08-27 — session 1, after the P0 database / bundle /
-secrets checkpoint.
+**Last updated:** 2026-08-27 — session 1, after the Python retrieval service
+checkpoint.
 
 ---
 
@@ -34,7 +34,7 @@ below is not verified, it says so.
 | Branched from | `a44d4ad` (`main`) |
 | Safety tag on pre-existing work | `safety/pre-hardening-2026-08-27` → `a44d4ad` |
 | Remote | `origin` → `https://github.com/Niloy-Bhuiyan/shuru` (private) |
-| Latest commit | `3a04fff` tighten rls policies and table grants |
+| Latest commit (pushed) | `1b7be23` add python retrieval service with cited answers and abstention |
 
 **Why a sibling directory and not a nested worktree:** a git worktree placed
 inside `D:\SHURU Internship` would appear as untracked content in the parent
@@ -59,18 +59,19 @@ listed as author or co-author. Never force-push. Never make the repo public.
 
 ## 3. Architecture as it actually exists
 
-Next.js 14.2.35 App Router · React 18 · TypeScript strict · Tailwind + a
-custom pixel design system · Supabase (Postgres, Auth, Storage, RLS).
+Next.js **16.3.3** App Router · React 18.3.1 · TypeScript strict · Tailwind +
+a custom pixel design system · Supabase (Postgres, Auth, Storage, RLS).
 
-There is currently **no separate backend service**. Server Components and
-route handlers are the API layer; Postgres RLS is the authorization boundary.
+Two services: the Next.js app, and a Python retrieval service under
+`services/rag`. Server Components and route handlers are the web API layer;
+Postgres RLS is the authorization boundary for the database.
 
 ```
 src/
   app/(auth)/    login register onboarding verify-email forgot/reset-password
   app/(main)/    radar saved vault you opportunity mentors forge agent
                  notifications employer admin
-  app/api/       agent cron explain forge-section ingest parse-resume
+  app/api/       agent ask cron explain forge-section ingest parse-resume
                  notifications/dispatch
   app/auth/callback/   OAuth code exchange
   components/pixel/    design primitives (the visual authority)
@@ -80,13 +81,17 @@ src/
   lib/data/      one module per domain, client-side, RLS-scoped
   lib/ingest/    adapters (lever ashby adzuna keyless) + normalize dedupe
                  refresh health
-  lib/agent/     provider adapter (gemini live, claude.ts is a THROWING STUB)
+  lib/agent/     provider adapter — BOTH gemini and claude implemented
+  lib/rag/       server-only client for the Python retrieval service
   lib/notify/    dispatch + email providers + web push
   lib/resume/    extract ats jdMatch pdfExport
   middleware.ts  session refresh + role-aware route guard
 supabase/
-  migrations/    0001..0012, forward-only, applied via scripts/migrate.mjs
+  migrations/    0001..0013, forward-only, applied via scripts/migrate.mjs
   verify-rls.sql the database security gate (see §6)
+services/rag/    FastAPI + LangGraph + LangChain + pgvector retrieval service
+  app/           config chunking security embeddings db graph main ratelimit
+  tests/         63 pytest tests, no database or credentials needed
 ```
 
 ### External services
@@ -96,6 +101,8 @@ supabase/
 | Supabase project `lciujpypigtbzhjawghf` | live, real user data |
 | Vercel | connected to the GitHub repo (production deploy on `main`) |
 | Google Gemini | code path complete, **no key set** — feature hides itself |
+| Anthropic | provider implemented, **no key set** — feature hides itself |
+| Python retrieval service | implemented + tested, **not deployed** — needs a host and `SUPABASE_DB_URL` (§11) |
 | Email (Resend / Postmark) | adapter complete, **no provider configured** |
 | Web Push (VAPID) | keys set locally |
 | Lever / Ashby / Arbeitnow / RemoteOK / Adzuna | ingestion adapters |
@@ -122,6 +129,8 @@ Read from `D:\shuru-work\.env.local`.
 | `ADZUNA_APP_ID` / `ADZUNA_APP_KEY` | empty | adapter inactive |
 | `ADZUNA_COUNTRY` | set | |
 | `GEMINI_API_KEY` / `GEMINI_MODEL` | empty | AI entry points hide themselves |
+| `ANTHROPIC_API_KEY` / `ANTHROPIC_MODEL` | **absent** | preferred over Gemini when set |
+| `SHURU_RAG_URL` / `SHURU_RAG_SERVICE_TOKEN` | **absent** | `/api/ask` reports itself unavailable |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | set | |
 | `EMAIL_PROVIDER` / `EMAIL_FROM` / `RESEND_API_KEY` / `POSTMARK_SERVER_TOKEN` | absent from `.env.local` | documented in the template |
 | `SUPABASE_DB_URL` | **absent** | needed by `npm run migrate` and `npm run verify:rls` — see §11 |
@@ -135,7 +144,7 @@ will not have it.
 
 ## 5. Real database state (verified via Supabase MCP, 2026-08-27)
 
-Project `lciujpypigtbzhjawghf`. 18 tables, **RLS enabled on all 18**.
+Project `lciujpypigtbzhjawghf`. **19** tables, **RLS enabled on all 19**.
 
 | Table | Rows |
 |---|---|
@@ -149,7 +158,8 @@ Project `lciujpypigtbzhjawghf`. 18 tables, **RLS enabled on all 18**.
 | notifications | 1 |
 | notification_preferences | 1 |
 | ingestion_runs | 14 |
-| schema_migrations | 12 |
+| schema_migrations | 13 |
+| rag_chunks | 0 — **not yet indexed**, needs `SUPABASE_DB_URL` (§11) |
 | outcomes, interview_reports, mentors, resumes, listing_reports, admin_audit_log, push_subscriptions | 0 |
 
 **Listing provenance is honest** — no illustrative seed data is loaded:
@@ -163,7 +173,9 @@ are `postgres` / `service_role` only. `anon` can execute none.
 
 **Grants after migration 0012:** `anon` has **no table privileges at all**;
 `authenticated` has SELECT 17 / INSERT 10 / UPDATE 10 / DELETE 9 and zero
-TRUNCATE / REFERENCES / TRIGGER; `service_role` retains ALL on 18.
+TRUNCATE / REFERENCES / TRIGGER; `service_role` retains ALL. Migration 0013
+adds `rag_chunks` following the same rules (read-only for `authenticated`,
+nothing for `anon`, **no write policy at all**).
 
 ---
 
@@ -172,16 +184,15 @@ TRUNCATE / REFERENCES / TRIGGER; `service_role` retains ALL on 18.
 | Gate | Baseline (start of session) | Now |
 |---|---|---|
 | `npm run typecheck` | pass | **pass** |
-| `npm run lint` | pass | **pass** |
-| `npm test` | pass — 210/210, 26 files | **pass — 227/227, 28 files** |
-| `npm run build` | not run | **pass**, exit 0, prints `ƒ Middleware` |
+| `npm run lint` | pass | **pass — 0 errors**, 19 warnings (see §12) |
+| `npm test` | pass — 210/210, 26 files | **pass — 254/254, 30 files** |
+| `npm run build` | not run | **pass**, exit 0, prints `ƒ Proxy (Middleware)` |
+| `npm run test:e2e` | not run | **pass — 50/50** (mobile 390px + desktop 1440px, production build) |
+| `npm audit` | 7 vulns (6 high, 1 moderate) | **0 vulnerabilities** |
+| `pytest` (services/rag) | did not exist | **pass — 63/63** |
 | `npm run verify:rls` | did not exist | **10/10 PASS** (run via MCP against the live DB; the npm script itself is unrun — needs `SUPABASE_DB_URL`, §11) |
-| `npm run test:e2e` | not run | **still not run this session** |
-| `npm audit` | 7 vulns (6 high, 1 moderate) | unchanged — all from `next` 14.2.35 + transitive `postcss`; only fix is a Next major |
 | Supabase security advisors | 1 INFO, 6 WARN | 1 INFO, 6 WARN (5 are the intended policy helpers; 1 is the dashboard action in §11) |
 | Supabase performance advisors | 29 + 15 WARN, 10 + 8 INFO | **0 WARN**; only `unused_index` INFO remains |
-
----
 
 ## 7. Completed this session
 
@@ -243,98 +254,191 @@ TRUNCATE / REFERENCES / TRIGGER; `service_role` retains ALL on 18.
    - `docs/RUNBOOK.md` §1 and §2 rewritten accordingly (§1 also said "all four
      must pass" above a list of five).
 
-**Both migrations are applied to the live database and verified there.**
+6. **`3fc3048` upgrade to next 16 and clear all dependency advisories**
+   - `next` 14.2.35 -> **16.3.3**. Next 15 was *not* enough: the advisory range
+     is `9.3.4-canary.0 - 16.3.0-preview.10`, so only 16.3.0+ closes it.
+     React stayed at 18.3.1 — Next 16 still lists `^18.2.0` as a valid peer, so
+     the React 19 migration was not needed and was not done.
+   - Migration surface turned out to be tiny: every dynamic route is a client
+     component using `useParams()`, and there is exactly **one** server
+     component and **one** `cookies()` call. `supabaseServer()` is now async;
+     7 call sites await it. `experimental.serverComponentsExternalPackages` ->
+     top-level `serverExternalPackages`.
+   - ESLint 8 -> 9 with flat config (`eslint.config.mjs`), `eslint-config-next`
+     16, and `next lint` -> `eslint .` (removed in Next 16).
+   - Next 16's ruleset surfaced 27 new errors. **9 were real defects and were
+     fixed**: a component declared inside `ResumePreview`'s render body
+     (remounted its subtree every render), and undo/redo `disabled` plus a
+     skills-draft input read from refs during render (untracked by React).
+     The other 18 are `set-state-in-effect` — see §12.
+   - `npm audit`: **7 -> 0**, after also bumping `postcss` and `dompurify`.
+7. **`6d11aec` implement the claude provider behind the agent adapter**
+   - `src/lib/agent/claude.ts` was a throwing stub with its adapter branch
+     commented out. It is now a real provider on the official
+     `@anthropic-ai/sdk`, with pure translation functions unit-tested the same
+     way `gemini.ts`'s are (15 tests).
+   - The load-bearing detail: consecutive `tool_result` messages must merge
+     into ONE user turn. Emitting one turn each reads as several separate human
+     turns and degrades multi-turn tool use.
+   - A refusal raises rather than returning empty text, because "" would read
+     to the caller as "nothing to say" instead of "declined".
+   - Precedence when both keys are set: Anthropic. Not a quality ranking —
+     Gemini's free tier makes it the easy key to leave lying around, so an
+     explicitly-added Anthropic key is the more deliberate signal.
+8. **`1b7be23` add python retrieval service with cited answers and abstention**
+   - `services/rag/`: FastAPI + LangGraph + LangChain + pgvector, 63 tests.
+   - **Product need it solves:** the structured columns were already queryable;
+     the 4,000-char job descriptions were not. Of 27 listings, **5** carry
+     indexable prose — so abstaining on the other 22 is the expected behaviour.
+   - **LangGraph is not decoration:** the pipeline has three abstain exits and
+     one self-rejection (`verify_grounding` discards a draft that cites
+     nothing). As nested ifs, that is where an early return silently skips the
+     grounding check.
+   - Vector store is the **same Supabase Postgres** (migration `0013`,
+     `public.rag_chunks`, HNSW + cosine). No new infrastructure; the chunk ->
+     listing FK cascades.
+   - Embeddings run **locally** via fastembed ONNX (BAAI/bge-small-en-v1.5,
+     384-dim) — a real model, no API key, so retrieval is verifiable by anyone
+     who clones the repo. Only the written answer needs a hosted credential.
+   - Prompt-injection defence in three layers (fenced documents, delimiter
+     sanitising, advisory detection that never blocks). `rag_chunks` has no
+     write policy, so no user can inject retrievable text.
+   - Next.js integration: `src/lib/rag/client.ts` (server-only) +
+     `/api/ask` (session-verified; the user id comes from the session, never
+     the request body, so a client cannot spend another student's quota).
+
+**Both database migrations and `0013` are applied to the live database and
+verified there.**
+
+**Verified with evidence, not assumed:**
+- The pgvector SQL path was probed against the live database with synthetic
+  unit vectors: identical vector -> distance `0.0000`, 45-degree vector ->
+  `0.2929` (exactly 1 - cos 45), and an orthogonal vector was **correctly
+  excluded** by the 0.75 bound. That last one is the abstention mechanism
+  working. Probe rows were deleted afterwards (`rag_chunks` is back to 0).
+- `fastembed` was run end to end: 384-dim vectors, cosine 0.77 between a
+  related question and passage.
 
 ---
 
 ## 8. Pending — in priority order
 
-### P0 (remaining)
+### P1 — the remaining subsystem the brief requires
 
-1. **Next.js 14.2.35 → 15.** Closes 6 high advisories with no 14.2.x backport
-   (SSRF via rewrites / Server Actions, RSC cache poisoning, DoS,
-   unauthenticated disclosure of internal Server Function endpoints). Breaking
-   changes are scoped and known (async `cookies()` / `headers()` / `params` /
-   `searchParams`). Re-evaluate the CSP decision (§12) while in there.
-2. **Enable leaked-password protection** — dashboard action, §11.
-
-### P1 — subsystems the brief requires that do not exist at all
-
-3. **Python AI service.** Real REST service using LangChain + LangGraph with a
-   production RAG pipeline (ingestion → normalization → chunking + metadata →
-   embeddings → vector store → retrieval → citations → access control →
-   evaluation → observability), authenticated integration with the Next.js
-   app, prompt-injection defences for untrusted retrieved content, timeouts /
-   retries / rate limits / cost controls, honest unavailable states, and tests
-   for retrieval quality, grounding, citations and authorization boundaries.
-4. **Payments.** Clearly labelled sandbox flow behind a provider adapter +
-   webhook architecture. Server-authoritative, idempotent, signature-verified,
-   never claiming real money moved, no raw card data.
-5. **`src/lib/agent/claude.ts` is a throwing stub** and its branch in
-   `adapter.ts` is disabled. Implement it under the provider abstraction.
+1. **Payments.** Not started. Clearly labelled sandbox flow behind a provider
+   adapter + webhook architecture. Server-authoritative, idempotent,
+   signature-verified, never claiming real money moved, no raw card data.
 
 ### P2 — completeness and verification
 
-6. E2E coverage for employer / admin permission boundaries, OAuth edge cases,
-   ingestion, notifications, payments sandbox, and the AI service.
-7. Accessibility audit + automated checks; responsive visual QA at 390px and
+2. **UI surface for `/api/ask`.** The route and the service are done and
+   tested; no screen calls them yet. Needs an entry point (opportunity detail
+   is the natural place), a citation list, and an explicit abstention state —
+   the abstention is the product working and must not render as an error.
+3. **Index the corpus.** `rag_chunks` is empty. `POST /reindex` needs
+   `SUPABASE_DB_URL` (§11-2). Expect ~5 listings indexed, 22 skipped for no
+   text.
+4. E2E coverage for employer / admin permission boundaries, OAuth edge cases,
+   ingestion, notifications, payments sandbox, and `/api/ask`.
+5. Accessibility audit + automated checks; responsive visual QA at 390px and
    1440px.
-8. `docs/ARCHITECTURE.md` is **stale** and not yet fixed: it describes
+6. **`docs/ARCHITECTURE.md` is stale** and not yet fixed: it describes
    `lib/match/` (actually `lib/matching.ts`), `app/employer/` and `app/admin/`
-   (actually under `app/(main)/`), `/api/cron/*` (actually `/api/cron`), and
-   says push / email delivery is "architecture ready — delivery not enabled"
-   when both were later fully wired.
+   (actually under `app/(main)/`), `/api/cron/*` (actually `/api/cron`), says
+   push / email delivery is "architecture ready — delivery not enabled" when
+   both were later wired, and predates both the Next 16 upgrade and the Python
+   service. `docs/DEPLOYMENT.md` also needs the two new services' variables and
+   the Python deployment steps.
+7. **Migrate the 18 `set-state-in-effect` sites** and restore that rule to
+   `error` in `eslint.config.mjs` (§12).
 
 ---
 
 ## 9. Exact next step
 
-Push the three commits to `origin/production-hardening` (not yet pushed since
-`8113d00`), then begin P0-1, the Next.js 15 upgrade, in `D:\shuru-work`.
+Start P1-1 (payments sandbox) in `D:\shuru-work`. Everything through
+`1b7be23` is committed and pushed.
 
 ---
 
 ## 10. Running local processes / ports
 
-None left running by this session. (`npm run dev` → 3000, Playwright → 3100.)
+None left running by this session.
+
+| What | Port |
+|---|---|
+| `npm run dev` | 3000 |
+| Playwright (`npm run test:e2e`) | 3100 |
+| `uvicorn app.main:app` (services/rag) | 8000 |
 
 ---
 
 ## 11. Human actions still required
 
-Neither is blocking further work.
+None of these blocks further code work.
 
 1. **Supabase Dashboard → Authentication → Policies → Password protection** —
    enable "Prevent use of leaked passwords" (checks HaveIBeenPwned). Not
    exposed through the MCP tools. **Verify afterwards** by re-running the
    security advisors: the `auth_leaked_password_protection` WARN disappears.
-2. **`SUPABASE_DB_URL` in `.env.local`** — Supabase Dashboard → Project
-   Settings → Database → Connection string → URI, with `[YOUR-PASSWORD]`
-   replaced. Needed by `npm run migrate` and `npm run verify:rls`. Without it
-   the RLS gate can still be run by pasting `supabase/verify-rls.sql` into the
-   SQL Editor (which is how it was verified this session). **Verify
-   afterwards** with `npm run verify:rls` — expect `10/10 checks passed`.
 
-Credentials for the AI provider, payment sandbox and email sending domain will
-be listed here precisely once the code that needs them exists.
+2. **`SUPABASE_DB_URL`** — Supabase Dashboard → Project Settings → Database →
+   Connection string → URI, with `[YOUR-PASSWORD]` replaced. Add it to
+   `D:\shuru-work\.env.local` **and** `services/rag/.env` (as
+   `SHURU_RAG_DATABASE_URL`).
+   Unblocks three things: `npm run migrate`, `npm run verify:rls`, and
+   **indexing the RAG corpus**, which cannot run without a direct connection.
+   **Verify afterwards:** `npm run verify:rls` prints `10/10 checks passed`,
+   and `POST /reindex` reports `indexed: 5`.
+
+3. **`CRON_SECRET` in the Vercel environment** — generate with
+   `openssl rand -hex 32`. Without it both scheduled jobs return 503
+   `cron_not_configured` on every run. It was missing from the env template
+   before this session, so an existing deployment almost certainly lacks it.
+   **Verify afterwards:** Vercel → Deployments → Cron Jobs shows a 200, or
+   `curl -H "Authorization: Bearer $CRON_SECRET" <site>/api/cron?job=ingest`.
+
+4. **Optional — an AI provider key.** `ANTHROPIC_API_KEY` (preferred) or
+   `GEMINI_API_KEY` for the in-app agent, and `SHURU_RAG_ANTHROPIC_API_KEY`
+   for written RAG answers. All three features hide themselves cleanly when
+   unset; retrieval still returns cited passages without one.
+   **Verify afterwards:** the agent entry point appears on `/agent`, and
+   `GET /ready` on the Python service reports `answers.available: true`.
+
+5. **Optional — a host for the Python service**, plus `SHURU_RAG_URL` and a
+   shared `SHURU_RAG_SERVICE_TOKEN` in both environments. Not Vercel — see
+   `services/rag/README.md` §8. **Verify afterwards:** `GET /api/ask` on the
+   web app returns `{"available": true, "missing": []}`.
 
 ---
 
 ## 12. Accepted residual risks
 
-- **`npm audit`: 6 high + 1 moderate**, all `next` 14.2.35 and transitive
-  `postcss`, with no 14.2.x backport. Being addressed by P0-1.
+- **18 `react-hooks/set-state-in-effect` warnings.** The rule is new in
+  `eslint-config-next` 16 and fires on the ordinary load-on-mount /
+  reset-on-dependency-change idiom. It is set to `warn` in
+  `eslint.config.mjs` with the reasoning written inline — **not disabled**, and
+  the gate is still "zero errors". The 9 genuinely-defective findings from the
+  same ruleset were fixed rather than downgraded. Restoring this to `error`
+  means changing every data-loading screen, which was not worth bundling into
+  a framework major.
+- **Grounding verification is structural, not semantic.** `verify_grounding`
+  rejects an answer that cites nothing or cites a passage that does not exist;
+  it does not check that citation `[2]` supports the sentence it is on. Doing
+  that needs a second model call per answer. Documented in the service README.
+- **Job descriptions are truncated at 4,000 characters** by the ingestion
+  pipeline. Four of the five indexable listings hit that ceiling exactly, so
+  their tail content is not retrievable.
 - **No Content-Security-Policy.** A `unsafe-inline` CSP was deliberately not
-  added; a real nonce-based CSP needs middleware work. Re-evaluate during the
-  Next 15 upgrade.
-- **Rate limits are per-instance** (agent 20/day, ingest 15-min cooldown) —
-  in-memory cost seatbelts, not security boundaries.
+  added; a real nonce-based CSP needs middleware work. Still open after the
+  Next 16 upgrade.
+- **Rate limits are per-instance** (agent 20/day, ingest cooldown, RAG
+  30/day) — in-memory cost seatbelts, not security boundaries.
 - **`schema_migrations` has RLS on with no policy** — intentional: only
   `service_role`, which bypasses RLS, touches the ledger. It is the single
   documented exemption in `verify-rls.sql`.
-- **`unused_index` advisories** — 18 of them, including the 10 FK indexes
-  added by 0011. Expected on a database with 27 rows in its largest table; not
-  actionable.
+- **`unused_index` advisories** — expected on a database whose largest table
+  has 27 rows. Not actionable.
 
 ---
 
@@ -359,6 +463,25 @@ be listed here precisely once the code that needs them exists.
   uses `check_name`.
 - **`globSync` is not in `@types/node` 20** (Node 22+). Walk directories with
   `readdirSync(dir, { withFileTypes: true })` instead.
+- **`eslint-config-next` 16 exports FLAT config natively.** Bridging it
+  through `FlatCompat` throws
+  "TypeError: Converting circular structure to JSON". Import
+  `eslint-config-next`, `.../core-web-vitals` and `.../typescript` and spread
+  them directly.
+- **Next 16 renamed the build's middleware line** from `ƒ Middleware` to
+  `ƒ Proxy (Middleware)`, and deprecates the `middleware` file convention in
+  favour of `proxy`. `src/middleware.ts` still compiles and is still the
+  guard. Confirm independently with
+  `node -e "console.log(require('./.next/server/middleware-manifest.json').sortedMiddleware)"`
+  — expect `[ '/' ]`.
+- **pgvector lives in the `extensions` schema on Supabase**, not `public`.
+  Casts must be written `::extensions.vector`. Verified working against the
+  live database.
+- **`fastembed` needs ~35 s on first use** to download the ONNX model. That is
+  a one-time cost per machine, but it will look like a hang in CI.
+- **bge embedding models need a query prefix.** `embed()` and `query_embed()`
+  are not interchangeable; using `embed()` for questions measurably degrades
+  retrieval.
 - **RemoteOK keeping 0 listings is correct**, not a broken filter — see
   `docs/decisions/0001-source-filtering.md` before touching `matchesFilters`.
 - **Blank match scores on ingested listings are correct** — the engine
