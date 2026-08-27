@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { SunriseHero } from "@/components/SunriseHero";
 import { OpportunityCard, EnrichedOpportunity } from "@/components/OpportunityCard";
+import type { Opportunity } from "@/lib/types";
 import { RadarIntro } from "@/components/RadarIntro";
 import { LoadingBlock } from "@/components/LoadingBlock";
 import { EmptyState } from "@/components/EmptyState";
@@ -101,6 +102,24 @@ export default function RadarPage() {
       })
       .sort((a, b) => a.op.deadline.localeCompare(b.op.deadline));
   }, [items, query, fDeadline, fPaid, fMyDept, showIneligible, profile]);
+
+  /*
+   * Promoted listings are pulled OUT of the ranked feed, never sorted within
+   * it.
+   *
+   * This is the load-bearing honesty rule for paid placement: Shuru's claim is
+   * that what a student sees reflects evidence about their chances. Letting
+   * money move a listing up the ranked list would make that claim false. A
+   * separate, labelled section is an advert; a boosted rank is a lie.
+   *
+   * Promoted listings still pass every filter above — paying does not exempt a
+   * listing from eligibility, deadline or search filtering.
+   */
+  const isPromoted = (op: Opportunity) =>
+    Boolean(op.featured_until && new Date(op.featured_until) > new Date());
+
+  const promoted = useMemo(() => visible.filter((i) => isPromoted(i.op)), [visible]);
+  const feed = useMemo(() => visible.filter((i) => !isPromoted(i.op)), [visible]);
 
   const openDoors = useMemo(
     () =>
@@ -199,6 +218,27 @@ export default function RadarPage() {
           </PixelChip>
         </div>
 
+        {/* promoted — its own labelled section, above and separate from the
+            ranked feed. See the note on `promoted` above for why. */}
+        {promoted.length > 0 && (
+          <section aria-labelledby="promoted-heading" className="mt-4">
+            <h2
+              id="promoted-heading"
+              className="font-mono text-[10px] font-bold uppercase tracking-wide text-ink/70"
+            >
+              {t("pay.promoted")}
+            </h2>
+            <p className="mt-0.5 font-mono text-[10px] leading-relaxed text-ink/60">
+              {t("pay.whatIsPromotion")}
+            </p>
+            <div className="mt-2 space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
+              {promoted.map((item) => (
+                <OpportunityCard key={item.op.id} item={item} />
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* feed — single column on mobile, two on desktop where the width
             would otherwise stretch each card into an unreadable line */}
         <div className="mt-4 space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
@@ -217,7 +257,7 @@ export default function RadarPage() {
           ) : visible.length === 0 ? (
             <EmptyState icon="radar" title={t("radar.empty")} />
           ) : (
-            visible.map((item, i) => (
+            feed.map((item, i) => (
               <div
                 key={item.op.id}
                 className="card-in"

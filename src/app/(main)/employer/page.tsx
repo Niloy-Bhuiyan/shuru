@@ -57,6 +57,7 @@ const VERIFY_KEY = {
 
 export default function EmployerPage() {
   const { t } = useLang();
+  const [promoting, setPromoting] = useState<string | null>(null);
   const { role, loading: roleLoading } = useRole();
 
   const [company, setCompany] = useState<Company | null | undefined>(undefined);
@@ -176,6 +177,35 @@ export default function EmployerPage() {
 
   const pipeline = summarisePipeline(applicants);
 
+  /** A listing is promoted while `featured_until` is still in the future. */
+  function isPromoted(l: Opportunity): boolean {
+    return Boolean(l.featured_until && new Date(l.featured_until) > new Date());
+  }
+
+  /**
+   * Starts a sandbox payment and hands off to the checkout page.
+   *
+   * Nothing is granted here — the server writes a `pending` row and the
+   * entitlement arrives only via the verified webhook.
+   */
+  async function startPromotion(opportunityId: string) {
+    setPromoting(opportunityId);
+    try {
+      const res = await fetch("/api/payments/checkout", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ opportunity_id: opportunityId }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && typeof body.redirect_url === "string") {
+        window.location.href = body.redirect_url;
+        return;
+      }
+    } finally {
+      setPromoting(null);
+    }
+  }
+
   return (
     <main className="px-4 pt-4">
       <h1 className="font-pixel text-xs text-ink">{company.name}</h1>
@@ -272,6 +302,29 @@ export default function EmployerPage() {
                     {l.rejection_reason}
                   </p>
                 )}
+                {/*
+                  Promotion is offered only on an approved listing: promoting
+                  one a student cannot see would be selling nothing. The
+                  sandbox tag is on the button itself, not only on the
+                  checkout page, so the flow is never entered by someone who
+                  thinks they are about to be charged.
+                */}
+                {l.status === "approved" &&
+                  (isPromoted(l) ? (
+                    <p className="mt-1.5 inline-block border-2 border-ink bg-amber px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase text-ink">
+                      {t("pay.promoted")} · {t("pay.promotedUntil")}{" "}
+                      {new Date(l.featured_until!).toLocaleDateString()}
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => startPromotion(l.id)}
+                      disabled={promoting === l.id}
+                      className="mt-1.5 border-2 border-ink bg-paper px-1.5 py-1 font-mono text-[10px] font-bold uppercase text-ink shadow-pixel-sm disabled:opacity-50"
+                    >
+                      {t("pay.promote")} · {t("pay.sandboxTag")}
+                    </button>
+                  ))}
               </li>
             ))}
           </ul>

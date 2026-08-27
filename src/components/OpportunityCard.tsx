@@ -21,6 +21,11 @@ export type EnrichedOpportunity = {
 };
 
 /** One radar card: role/company · countdown · eligibility · seniors · odds. */
+/** A listing is promoted while `featured_until` is still in the future. */
+function isPromoted(op: Opportunity): boolean {
+  return Boolean(op.featured_until && new Date(op.featured_until) > new Date());
+}
+
 export function OpportunityCard({ item }: { item: EnrichedOpportunity }) {
   const router = useRouter();
   const { t } = useLang();
@@ -56,6 +61,16 @@ export function OpportunityCard({ item }: { item: EnrichedOpportunity }) {
           Paid / verified / seniors live on the opportunity detail screen. */}
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         <DeadlineBadge deadline={op.deadline} estimated={isEstimatedDeadline(op)} />
+        {/*
+          Paid placement that announces itself is honest; paid placement that
+          blends in is not. The badge travels with the card so it is still
+          visible on screens (Saved) that have no promoted section around it.
+        */}
+        {isPromoted(op) && (
+          <span className="border-2 border-ink bg-amber px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase text-ink">
+            {t("pay.promoted")}
+          </span>
+        )}
       </div>
 
       <div className="mt-2 flex items-center justify-between border-t-2 border-ink/20 pt-2">

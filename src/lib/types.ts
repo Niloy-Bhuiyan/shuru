@@ -71,6 +71,12 @@ export type Opportunity = {
   first_seen_at?: string;
   last_verified_at?: string;
   expires_at?: string | null;
+  /**
+   * Set ONLY by the payments webhook (see migration 0014's guard trigger).
+   * A listing is promoted while this is in the future. Promoted listings are
+   * shown in their own labelled section, never mixed into the ranked feed.
+   */
+  featured_until?: string | null;
   /** Source publishes no real closing date — show "Rolling", never a fake one. */
   deadline_is_rolling?: boolean;
 };
