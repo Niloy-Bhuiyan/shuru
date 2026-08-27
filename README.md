@@ -52,7 +52,7 @@ Save opportunities, track application stages, search the pipeline, and receive r
 
 <div align="center">
 
-<img src="./public/readme/shuru-architecture.svg" alt="Animated architecture diagram of the Shuru platform" width="100%" />
+<img src="./public/readme/shuru-architecture.svg?v=afc059c" alt="Animated architecture diagram of the Shuru platform" width="100%" />
 
 <sub>Requests move through role-aware Next.js boundaries; Postgres RLS remains the final authority.</sub>
 
