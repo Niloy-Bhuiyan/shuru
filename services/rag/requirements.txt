@@ -1,0 +1,39 @@
+# Shuru RAG service — pinned runtime dependencies.
+#
+# Install (Windows):  python -m venv .venv && .venv\Scripts\pip install -r requirements.txt
+# Install (POSIX):    python -m venv .venv && .venv/bin/pip install -r requirements.txt
+#
+# Pinned exactly, not with ranges: this service is deployed, and a transitive
+# resolver change that swaps the embedding model out from under a populated
+# index produces vectors that silently never match.
+
+# ── web layer ───────────────────────────────────────────────────────────
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+pydantic==2.13.4
+pydantic-settings==2.15.0
+
+# ── orchestration ───────────────────────────────────────────────────────
+# LangGraph runs the retrieve -> grade -> answer -> verify state machine.
+# LangChain supplies the text splitter the chunker is built on.
+langgraph==1.2.11
+langchain-core==1.6.0
+langchain-text-splitters==1.1.2
+
+# ── database ────────────────────────────────────────────────────────────
+# Same Supabase Postgres the web app uses; pgvector is the vector store, so
+# the deployment gains no new infrastructure.
+psycopg[binary,pool]==3.3.4
+pgvector==0.5.0
+
+# ── embeddings ──────────────────────────────────────────────────────────
+# fastembed runs a real ONNX embedding model locally: no API key, no torch.
+# This is what makes the service runnable and verifiable without a hosted
+# credential. Hosted providers are selected with EMBEDDING_PROVIDER.
+fastembed==0.8.0
+
+# ── answer generation ───────────────────────────────────────────────────
+anthropic==1.1.0
+
+# ── misc ────────────────────────────────────────────────────────────────
+httpx==0.28.1
