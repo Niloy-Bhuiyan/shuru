@@ -16,6 +16,7 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.121.0",
     "@supabase/ssr": "0.5.2",
     "@supabase/supabase-js": "2.110.2",
     "jspdf": "^4.2.1",

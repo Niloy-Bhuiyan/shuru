@@ -13,6 +13,7 @@
  * translators, and cost controls have a single throat to choke.
  */
 
+import { askClaude, askClaudeStream } from "./claude";
 import { askGemini, askGeminiStream } from "./gemini";
 
 export type ToolDef = {
@@ -95,28 +96,33 @@ function geminiKey(): string | null {
   return k;
 }
 
-// ── FUTURE: Claude plug-in point ─────────────────────────────────────
-// function anthropicKey(): string | null {
-//   const k = process.env.ANTHROPIC_API_KEY ?? "";
-//   if (!k || k.includes("YOUR_ANTHROPIC_API_KEY")) return null;
-//   return k;
-// }
+function anthropicKey(): string | null {
+  const k = process.env.ANTHROPIC_API_KEY ?? "";
+  if (!k || k.includes("YOUR_ANTHROPIC_API_KEY")) return null;
+  return k;
+}
 
 /** True iff any provider key is configured — used by GET probes and by
  *  the UI (via those probes) to hide AI entry points gracefully. */
 export function agentEnabled(): boolean {
-  // return anthropicKey() !== null || geminiKey() !== null;  ← with claude.ts
-  return geminiKey() !== null;
+  return anthropicKey() !== null || geminiKey() !== null;
 }
 
+/*
+ * Provider precedence: Claude when configured, else Gemini.
+ *
+ * Not a quality ranking — it is what a deployment that set BOTH keys most
+ * likely meant. Gemini's free tier makes it the easy default to leave set, so
+ * an explicitly-added ANTHROPIC_API_KEY is the more deliberate signal. Force
+ * one by unsetting the other.
+ */
 export async function askAgent(
   messages: AgentMessage[],
   tools: ToolDef[],
   opts: AskOptions = {}
 ): Promise<AgentResult> {
-  // ── FUTURE: Claude preferred when configured ───────────────────────
-  // const ak = anthropicKey();
-  // if (ak) return askClaude(ak, messages, tools, opts);   // see claude.ts
+  const ak = anthropicKey();
+  if (ak) return askClaude(ak, messages, tools, opts);
 
   const gk = geminiKey();
   if (!gk) throw new AgentNotConfiguredError();
@@ -130,6 +136,9 @@ export function askAgentStream(
   tools: ToolDef[],
   opts: AskOptions = {}
 ): AsyncGenerator<StreamTextEvent, AgentResult, void> {
+  const ak = anthropicKey();
+  if (ak) return askClaudeStream(ak, messages, tools, opts);
+
   const gk = geminiKey();
   if (!gk) throw new AgentNotConfiguredError();
   return askGeminiStream(gk, messages, tools, opts);
