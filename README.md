@@ -14,7 +14,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-FF7A3C?style=for-the-badge&logo=tailwindcss&logoColor=1B2A3A)](https://tailwindcss.com/)
 [![License](https://img.shields.io/badge/License-Permission_Required-E5533D?style=for-the-badge)](./LICENSE)
 
-[Why Shuru](#why-shuru) · [Features](#core-experience) · [Architecture](#architecture) · [Run locally](#run-it-locally) · [License](#license)
+[Why Shuru](#why-shuru) · [Features](#core-experience) · [Architecture](#architecture) · [Documentation](#documentation) · [License](#license)
 
 </div>
 
@@ -64,93 +64,16 @@ The system follows three rules:
 2. **Core decisions stay deterministic.** Eligibility, matching, ATS scoring, and abstention are pure, unit-tested domain functions.
 3. **External services are optional and isolated.** A missing AI or delivery key disables that feature cleanly; it never creates fake output.
 
-<details>
-<summary><strong>How the main pipelines work</strong></summary>
+Read the complete [architecture guide](./docs/ARCHITECTURE.md) for authorization, data flows, ingestion, matching, and delivery details.
 
-```text
-LISTINGS
-source adapter → internship filter → normalize → deduplicate → freshness check → upsert
-
-REALITY CHECK
-profile + outcomes → cohort selection → sample threshold → score or abstain → evidence
-
-RESUME FORGE
-PDF/DOCX → text extraction → structured editor → ATS checks → JD tailoring → PDF
-
-NOTIFICATIONS
-domain event → notification row → in-app center → optional email / browser push
-```
-
-Read the complete [architecture guide](./docs/ARCHITECTURE.md) for authorization, ingestion, matching, and notification details.
-
-</details>
-
-<details>
-<summary><strong>Repository map</strong></summary>
-
-```text
-shuru/
-├── src/
-│   ├── app/                 # App Router pages and route handlers
-│   ├── components/
-│   │   ├── pixel/           # Cozy-retro design primitives
-│   │   └── forge/           # Resume Forge experience
-│   └── lib/
-│       ├── agent/           # Optional AI adapter
-│       ├── data/            # Domain data access
-│       ├── ingest/          # Listing pipeline
-│       ├── notify/          # In-app, email, and push delivery
-│       └── resume/          # Parsing, ATS, JD match, PDF export
-├── supabase/migrations/     # Ordered database migrations
-├── docs/                    # Product and engineering guides
-└── e2e/                     # Playwright journeys
-```
-
-</details>
-
-## Run it locally
-
-### Prerequisites
-
-- Node.js 20+
-- npm
-- A Supabase project
+## Development
 
 ```bash
-git clone https://github.com/Niloy-Bhuiyan/shuru.git
-cd shuru
 npm install
-cp .env.local.example .env.local
 npm run dev
 ```
 
-Open [`http://localhost:3000`](http://localhost:3000). Shuru is database-backed; without Supabase it shows an explicit **Not configured** state instead of simulated data.
-
-### Required environment
-
-```dotenv
-NEXT_PUBLIC_SUPABASE_URL=your-project-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-```
-
-Apply [`supabase/migrations`](./supabase/migrations) in filename order. Optional OAuth, ingestion, Gemini, email, and Web Push settings are documented in [`.env.local.example`](./.env.local.example) and the [deployment guide](./docs/DEPLOYMENT.md).
-
-> [!CAUTION]
-> `SUPABASE_SERVICE_ROLE_KEY` is server-only. Never expose it through a `NEXT_PUBLIC_` variable.
-
-## Commands
-
-| Command | Purpose |
-|---|---|
-| `npm run dev` | Start the local development server |
-| `npm run typecheck` | Check strict TypeScript |
-| `npm run lint` | Run ESLint |
-| `npm test` | Run the Vitest unit suite |
-| `npm run test:e2e` | Test at mobile and desktop widths |
-| `npm run build` | Create a production build |
-| `npm run migrate` | Apply pending database migrations |
+Shuru requires a configured Supabase project. Environment setup, database migrations, and production deployment are documented in the [deployment guide](./docs/DEPLOYMENT.md).
 
 ## Documentation
 
@@ -166,9 +89,12 @@ Apply [`supabase/migrations`](./supabase/migrations) in filename order. Optional
 
 ## License
 
-**Copyright © 2026 Niloy Bhuiyan. All rights reserved.**
+> [!WARNING]
+> **PROPRIETARY SOFTWARE — NO OPEN-SOURCE LICENSE IS GRANTED.**
+>
+> Copyright © 2026 Niloy Bhuiyan. All rights reserved. Copying, using, modifying, redistributing, publishing, sublicensing, selling, or creating derivative works from this repository requires prior written permission from Niloy Bhuiyan. Unauthorized use is expressly prohibited.
 
-This project is source-visible, but it is **not open source**. You may not copy, use, modify, distribute, publish, sublicense, sell, or create derivative works from any part of this repository without prior written permission from Niloy Bhuiyan. See the full [LICENSE](./LICENSE).
+Read the complete [LICENSE](./LICENSE) before using any part of this project.
 
 ---
 
