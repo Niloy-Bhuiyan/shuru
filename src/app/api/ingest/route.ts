@@ -16,6 +16,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { presentedSecret, secretsMatch } from "@/lib/auth/secret";
 import {
   cooldownRemainingMs,
   markSuccessfulRun,
@@ -37,11 +38,7 @@ function secretRequired(): boolean {
 
 function secretOk(req: NextRequest): boolean {
   if (!secretRequired()) return true;
-  const provided =
-    req.headers.get("x-ingest-secret") ??
-    req.nextUrl.searchParams.get("secret") ??
-    "";
-  return provided === process.env.INGEST_SECRET;
+  return secretsMatch(presentedSecret(req), process.env.INGEST_SECRET!);
 }
 
 export async function GET(req: NextRequest) {

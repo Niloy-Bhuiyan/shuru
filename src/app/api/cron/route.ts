@@ -20,6 +20,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { bearerToken, secretsMatch } from "@/lib/auth/secret";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,17 +31,6 @@ const JOBS = {
 } as const;
 
 type JobName = keyof typeof JOBS;
-
-/**
- * Constant-time-ish comparison. Not a full HMAC check, but it avoids the
- * trivially observable early-exit of `===` on a secret compare.
- */
-function secretsMatch(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
 
 export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
@@ -55,8 +45,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const provided = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
-  if (!secretsMatch(provided, cronSecret)) {
+  if (!secretsMatch(bearerToken(req), cronSecret)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

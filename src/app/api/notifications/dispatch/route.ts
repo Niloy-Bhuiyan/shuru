@@ -12,6 +12,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { presentedSecret, secretsMatch } from "@/lib/auth/secret";
 import { selectEmailProvider } from "@/lib/notify/email";
 import { planEmailDispatch, renderNotificationEmail, type Recipient } from "@/lib/notify/dispatch";
 import { selectPushConfig, sendPush } from "@/lib/notify/push";
@@ -31,11 +32,7 @@ const BATCH_LIMIT = 100;
 function secretOk(req: NextRequest): boolean {
   const required = process.env.INGEST_SECRET;
   if (!required) return true;
-  const provided =
-    req.headers.get("x-ingest-secret") ??
-    req.nextUrl.searchParams.get("secret") ??
-    "";
-  return provided === required;
+  return secretsMatch(presentedSecret(req), required);
 }
 
 export async function GET(req: NextRequest) {
