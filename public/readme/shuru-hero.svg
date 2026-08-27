@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-labelledby="title desc">
+  <title id="title">Shuru — an honest internship platform</title>
+  <desc id="desc">Animated pixel-art sunrise above the Shuru name and the phrase Start with clarity.</desc>
+
+  <style>
+    :root {
+      --cream: #f4e9d8;
+      --paper: #fbf4e6;
+      --ink: #1b2a3a;
+      --amber: #ff7a3c;
+      --mint: #3fbfa0;
+      --grey: #8a8578;
+    }
+
+    .sun {
+      transform-origin: 600px 175px;
+      animation: rise 2.4s steps(8, end) both, float 4s steps(2, end) 2.5s infinite;
+    }
+
+    .ray {
+      opacity: 0;
+      animation: ray-in 1.6s steps(4, end) forwards, ray-pulse 3s steps(2, end) 1.7s infinite;
+    }
+
+    .ray:nth-of-type(2) { animation-delay: .10s, 1.8s; }
+    .ray:nth-of-type(3) { animation-delay: .20s, 1.9s; }
+    .ray:nth-of-type(4) { animation-delay: .30s, 2s; }
+    .ray:nth-of-type(5) { animation-delay: .40s, 2.1s; }
+
+    .cloud-left { animation: drift-left 10s steps(10, end) infinite alternate; }
+    .cloud-right { animation: drift-right 12s steps(12, end) infinite alternate; }
+    .cursor { animation: blink 1s steps(1, end) infinite; }
+    .spark-a { animation: spark 2.2s steps(2, end) infinite; }
+    .spark-b { animation: spark 2.2s steps(2, end) .7s infinite; }
+    .spark-c { animation: spark 2.2s steps(2, end) 1.4s infinite; }
+    .scan { animation: scan 6s linear infinite; }
+
+    @keyframes rise {
+      from { transform: translateY(70px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes float {
+      0%, 49% { transform: translateY(0); }
+      50%, 100% { transform: translateY(-4px); }
+    }
+
+    @keyframes ray-in {
+      0%, 40% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    @keyframes ray-pulse {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: .48; }
+    }
+
+    @keyframes drift-left {
+      from { transform: translateX(0); }
+      to { transform: translateX(34px); }
+    }
+
+    @keyframes drift-right {
+      from { transform: translateX(0); }
+      to { transform: translateX(-42px); }
+    }
+
+    @keyframes blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+
+    @keyframes spark {
+      0%, 24%, 100% { opacity: .15; }
+      25%, 49% { opacity: 1; }
+      50%, 74% { opacity: .45; }
+    }
+
+    @keyframes scan {
+      from { transform: translateY(-400px); }
+      to { transform: translateY(400px); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; }
+      .sun, .ray, .cursor, .spark-a, .spark-b, .spark-c { opacity: 1; }
+    }
+  </style>
+
+  <defs>
+    <pattern id="dither" width="8" height="8" patternUnits="userSpaceOnUse">
+      <rect width="4" height="4" fill="var(--amber)" opacity=".18"/>
+      <rect x="4" y="4" width="4" height="4" fill="var(--amber)" opacity=".18"/>
+    </pattern>
+    <clipPath id="frame-cut">
+      <path d="M16 0H1184V8H1192V16H1200V384H1192V392H1184V400H16V392H8V384H0V16H8V8H16Z"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#frame-cut)">
+    <rect width="1200" height="400" fill="var(--cream)"/>
+    <rect width="1200" height="400" fill="url(#dither)"/>
+
+    <g opacity=".28">
+      <path d="M0 80H1200M0 160H1200M0 240H1200M0 320H1200" stroke="var(--ink)" stroke-width="1" stroke-dasharray="4 12"/>
+      <path d="M160 0V400M320 0V400M480 0V400M640 0V400M800 0V400M960 0V400M1120 0V400" stroke="var(--ink)" stroke-width="1" stroke-dasharray="4 12"/>
+    </g>
+
+    <g class="cloud-left" fill="var(--paper)" stroke="var(--ink)" stroke-width="6">
+      <path d="M70 108h28V94h42V76h55v18h34v14h38v34H70z"/>
+    </g>
+    <g class="cloud-right" fill="var(--paper)" stroke="var(--ink)" stroke-width="6">
+      <path d="M930 88h34V70h48V54h58v16h32v18h44v34H930z"/>
+    </g>
+
+    <g fill="var(--amber)">
+      <rect class="ray" x="594" y="24" width="12" height="42"/>
+      <rect class="ray" x="499" y="76" width="12" height="40" transform="rotate(-45 505 96)"/>
+      <rect class="ray" x="689" y="76" width="12" height="40" transform="rotate(45 695 96)"/>
+      <rect class="ray" x="448" y="166" width="42" height="12"/>
+      <rect class="ray" x="710" y="166" width="42" height="12"/>
+    </g>
+
+    <g class="sun">
+      <rect x="540" y="118" width="120" height="116" fill="var(--amber)"/>
+      <rect x="524" y="134" width="152" height="84" fill="var(--amber)"/>
+      <rect x="552" y="146" width="18" height="18" fill="var(--ink)"/>
+      <rect x="630" y="146" width="18" height="18" fill="var(--ink)"/>
+      <rect x="574" y="190" width="52" height="10" fill="var(--ink)"/>
+    </g>
+
+    <path d="M0 225h400v-10h90v10h220v-10h90v10h400v175H0z" fill="var(--paper)" stroke="var(--ink)" stroke-width="6"/>
+    <path d="M0 244h1200" stroke="var(--mint)" stroke-width="8" stroke-dasharray="28 10"/>
+
+    <text x="600" y="326" fill="var(--ink)" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="80" font-weight="900" letter-spacing="12">SHURU</text>
+    <text x="600" y="366" fill="var(--grey)" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="20" font-weight="700" letter-spacing="4">START WITH CLARITY</text>
+    <rect class="cursor" x="806" y="347" width="12" height="22" fill="var(--amber)"/>
+
+    <rect class="spark-a" x="96" y="290" width="10" height="10" fill="var(--mint)"/>
+    <rect class="spark-b" x="1082" y="294" width="10" height="10" fill="var(--amber)"/>
+    <rect class="spark-c" x="1028" y="354" width="8" height="8" fill="var(--mint)"/>
+
+    <rect class="scan" x="0" y="0" width="1200" height="3" fill="var(--ink)" opacity=".12"/>
+  </g>
+
+  <path d="M16 3H1184V11H1192V19H1197V381H1189V389H1181V397H19V389H11V381H3V19H11V11H16Z" fill="none" stroke="var(--ink)" stroke-width="6"/>
+</svg>

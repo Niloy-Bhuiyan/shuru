@@ -1,163 +1,297 @@
-# Shuru — শুরু
+<div align="center">
 
-**Find internships. See your honest, evidence-backed chances — or an honest
-"not enough data yet." Never a fake number.**
+<a href="https://github.com/Niloy-Bhuiyan/shuru">
+  <img src="./public/readme/shuru-hero.svg" alt="Shuru — an honest internship platform" width="100%" />
+</a>
 
-Next.js 14 (App Router) · TypeScript · Tailwind · Supabase (Postgres, Auth,
-Storage, RLS) · a committed pixel "cozy retro instrument" design system,
-mobile-first with a deliberately designed desktop layout.
+### Find the right internship. Know where you really stand.
+
+**Shuru** (শুরু — *the beginning*) is an internship platform for students that combines fresh opportunities, evidence-backed matching, application tracking, and an ATS-ready resume studio—without inventing confidence it cannot justify.
+
+[![Next.js](https://img.shields.io/badge/Next.js_14-1B2A3A?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-1B2A3A?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-3FBFA0?style=for-the-badge&logo=supabase&logoColor=1B2A3A)](https://supabase.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-FF7A3C?style=for-the-badge&logo=tailwindcss&logoColor=1B2A3A)](https://tailwindcss.com/)
+
+[Explore features](#-what-shuru-does) · [See the architecture](#-architecture) · [Run locally](#-run-it-locally) · [Read the docs](#-documentation)
+
+</div>
 
 ---
 
-## 1. Run it
+## The idea
 
-Shuru is database-backed. It does not ship a simulated backend: without a
-Supabase project it tells you it is not configured rather than showing
-invented data.
+Most internship platforms optimize for more listings and bigger match percentages. Shuru optimizes for **truthful decisions**.
 
-```bash
-npm install
-cp .env.local.example .env.local   # then fill in the Supabase values
-npm run dev                        # http://localhost:3000
+> If there is enough evidence, Shuru explains the match. If there is not, it abstains. No fake score, no invented deadline, no made-up salary.
+
+| The usual experience | The Shuru approach |
+|---|---|
+| Opaque “95% match” scores | Evidence is shown for every contributing signal |
+| Stale or duplicated listings | Normalized, deduplicated, freshness-checked opportunities |
+| Invented closing dates | Explicit **Rolling** labels when no real deadline exists |
+| Generic resume advice | ATS checks and job-description-specific keyword analysis |
+| Scattered application notes | A status timeline, vault, alerts, and notification center |
+
+## ✦ What Shuru does
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>◉ Internship Radar</h3>
+      Discover employer-posted and responsibly ingested internships in one mobile-first feed. Every external listing is filtered, normalized, attributed, deduplicated, and freshness checked.
+    </td>
+    <td width="50%" valign="top">
+      <h3>◎ Reality Check</h3>
+      Compare a student profile with real historical outcomes. Small cohorts trigger an honest abstention instead of a statistically meaningless percentage.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>◆ Resume Forge</h3>
+      Upload PDF or DOCX resumes, edit structured sections, run rule-based ATS checks, tailor against a job description, and export a selectable, ATS-readable PDF.
+    </td>
+    <td width="50%" valign="top">
+      <h3>▣ Application Vault</h3>
+      Save opportunities, track every application stage, search the pipeline, and receive relevant deadline and status notifications.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>⌁ Role-aware workspaces</h3>
+      Purpose-built surfaces for students, employers, and admins—with authorization enforced by Postgres Row Level Security, middleware, and server-side role checks.
+    </td>
+    <td width="50%" valign="top">
+      <h3>✦ Optional AI assistance</h3>
+      Gemini can structure resumes and power contextual explanations. Without an API key, AI entry points disappear cleanly while every rule-based feature keeps working.
+    </td>
+  </tr>
+</table>
+
+## ◇ Honest odds, by design
+
+Shuru’s Reality Check is intentionally conservative:
+
+1. **Define success** — a past outcome of `shortlisted` or `offer`.
+2. **Build a cohort** — same CGPA band and department; relax once to CGPA band only when needed.
+3. **Check the sample** — `HIGH` confidence at `n ≥ 20`, `MED` at `8 ≤ n < 20`.
+4. **Abstain when evidence is thin** — `n < 8` produces no score.
+5. **Explain the result** — show the strongest evidence gap, with a five-point noise floor.
+
+The core engines are pure, unit-tested functions in [`eligibility.ts`](./src/lib/eligibility.ts) and [`realityCheck.ts`](./src/lib/realityCheck.ts). Externally ingested listings have no outcome history, so Shuru automatically abstains on them.
+
+## ⌘ Architecture
+
+Shuru is a single Next.js application. Server Components and Route Handlers form the application layer; Supabase Postgres—with RLS—is the authorization boundary.
+
+```mermaid
+flowchart LR
+    U[Student / Employer / Admin]
+
+    subgraph N[Next.js 14 Application]
+      MW[Middleware<br/>session + role routing]
+      SC[Server Components<br/>product surfaces]
+      API[Route Handlers<br/>API + cron jobs]
+      CORE[Pure domain engines<br/>matching · eligibility · ATS]
+    end
+
+    subgraph S[Supabase]
+      AUTH[Auth]
+      DB[(Postgres + RLS)]
+      STORE[Private Storage]
+    end
+
+    subgraph X[External Services]
+      BOARDS[Job-board adapters]
+      AI[Gemini · optional]
+      DELIVERY[Email + Web Push]
+    end
+
+    U --> MW --> SC
+    SC --> CORE
+    SC --> AUTH
+    SC --> DB
+    SC --> STORE
+    API --> CORE
+    API --> DB
+    API --> BOARDS
+    API -. optional .-> AI
+    API -. optional .-> DELIVERY
 ```
 
-Provisioning Supabase takes about ten minutes and is free —
-see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the exact steps and
-**"WHAT I NEED TO PROVIDE FOR PRODUCTION"**, the complete list of accounts,
-keys and settings with the environment variable each one goes in.
+### Data flows
 
-## 2. Database
+```text
+LISTING INGESTION
+source adapter → internship filter → normalize → deduplicate → freshness check → upsert
 
-Migrations live in `supabase/migrations/` and run in filename order. See
-[`supabase/README.md`](supabase/README.md).
+REALITY CHECK
+profile + verified outcomes → cohort selection → sample threshold → score or abstain → evidence
 
-`supabase/seed.sql` is **optional sample data**. The outcome history it
-contains is illustrative, not observed — the UI labels anything computed from
-it as sample data. Leave it out of a production database unless you want that
-reference set.
+RESUME FORGE
+PDF/DOCX → text extraction → structured editor → ATS checks → JD tailoring → text-layer PDF
 
-## 3. Documentation
+NOTIFICATIONS
+domain event → notification row → in-app center → optional email / browser push
+```
 
-| Doc | What's in it |
+<details>
+<summary><strong>Explore the repository structure</strong></summary>
+
+```text
+shuru/
+├── src/
+│   ├── app/
+│   │   ├── (auth)/          # Authentication and onboarding
+│   │   ├── (main)/          # Student, employer, and admin surfaces
+│   │   └── api/             # Route handlers, ingestion, AI, notifications
+│   ├── components/
+│   │   ├── pixel/           # Cozy-retro design system primitives
+│   │   └── forge/           # Resume Forge experience
+│   └── lib/
+│       ├── agent/           # Optional AI adapter and tool loop
+│       ├── data/            # Domain-oriented data access
+│       ├── ingest/          # Adapters, normalization, dedupe, refresh
+│       ├── notify/          # In-app, email, and push delivery
+│       └── resume/          # Extraction, ATS, JD match, PDF export
+├── supabase/
+│   ├── migrations/          # Ordered, additive SQL migrations
+│   └── seed.sql             # Optional illustrative sample data
+├── docs/                    # Product, architecture, database, operations
+├── e2e/                     # Playwright responsive and auth journeys
+└── public/                  # Static assets and service worker
+```
+
+</details>
+
+## ⚙ Technology
+
+| Layer | Built with |
 |---|---|
-| [docs/PRD.md](docs/PRD.md) | product definition, roles, requirements, non-goals |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | stack, directory map, authorization model, pipelines |
-| [docs/DATABASE.md](docs/DATABASE.md) | tables, RLS, the trigger-based column rules |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | provisioning, deployment, credentials checklist |
-| [docs/RUNBOOK.md](docs/RUNBOOK.md) | pre-release gate, grant verification, ingestion triage, known limitations |
-| [docs/decisions/](docs/decisions/) | engineering decision records (ADRs) |
-| [supabase/README.md](supabase/README.md) | migration order, promoting an admin |
-| [ISSUES.md](ISSUES.md) | prior independent security/quality audit and its remediation |
+| Web | Next.js 14 App Router, React 18, strict TypeScript |
+| Interface | Tailwind CSS, custom pixel design system, responsive app shell |
+| Data | Supabase Postgres, Auth, Storage, Row Level Security |
+| Documents | `pdf-parse`, Mammoth, jsPDF |
+| Intelligence | Pure matching/ATS engines; optional Gemini adapter |
+| Background work | Vercel cron routes, modular listing adapters |
+| Notifications | In-app records, email adapters, Web Push |
+| Quality | Vitest, Playwright, ESLint, TypeScript |
 
-Two decisions are load-bearing enough that changing the code without reading
-them first will look like fixing a bug and will actually be causing one:
+## ▶ Run it locally
 
-- [ADR 0001](docs/decisions/0001-source-filtering.md) — why RemoteOK keeping
-  **0** listings is correct, and why "fixing" the filter costs Arbeitnow five
-  real ones.
-- [ADR 0002](docs/decisions/0002-match-abstention.md) — why match scores are
-  blank on scraped listings, and why job-description text does not unlock them.
+### Prerequisites
 
-## 4. Scripts
+- Node.js 20+
+- npm
+- A Supabase project
 
-| Command | What it does |
+```bash
+git clone https://github.com/Niloy-Bhuiyan/shuru.git
+cd shuru
+npm install
+cp .env.local.example .env.local
+npm run dev
+```
+
+Open [`http://localhost:3000`](http://localhost:3000). Shuru does not ship a simulated backend: when Supabase is missing, it shows an explicit **Not configured** state instead of invented data.
+
+### Minimum environment
+
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=your-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+The service-role key is server-only—never prefix it with `NEXT_PUBLIC_`. Optional ingestion sources, OAuth providers, Gemini, email, and Web Push are documented in [`.env.local.example`](./.env.local.example) and the [deployment guide](./docs/DEPLOYMENT.md).
+
+### Prepare the database
+
+Apply the SQL files in [`supabase/migrations`](./supabase/migrations) in filename order. The optional [`supabase/seed.sql`](./supabase/seed.sql) contains illustrative Bangladesh listings and outcomes; sample-derived results remain visibly labeled as sample data.
+
+```bash
+npm run migrate:status
+npm run migrate
+```
+
+See the [Supabase guide](./supabase/README.md) for migration order and first-admin promotion.
+
+## ✓ Quality checks
+
+```bash
+npm run typecheck     # TypeScript
+npm run lint          # ESLint
+npm test              # Vitest unit suite
+npm run test:e2e      # Playwright at 390px and 1440px
+npm run build         # Production build
+```
+
+The full release gate and failure triage live in the [operations runbook](./docs/RUNBOOK.md).
+
+## 📚 Documentation
+
+| Guide | Purpose |
 |---|---|
-| `npm run dev` | dev server at :3000 |
-| `npm run build` / `npm start` | production build / serve |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm run lint` | ESLint |
-| `npm test` | Vitest suite |
-| `npm run test:e2e` | Playwright, run at 390px and 1440px |
-| `npm run migrate` / `npm run migrate:status` | apply / list migrations |
-| `node scripts/generate-seed.mjs` | regenerates `supabase/seed.sql` and `src/lib/data/seed.ts` from one deterministic source |
+| [Product requirements](./docs/PRD.md) | Users, scope, requirements, and non-goals |
+| [Architecture](./docs/ARCHITECTURE.md) | Runtime shape, authorization, pipelines, and configuration |
+| [Database](./docs/DATABASE.md) | Tables, RLS policies, constraints, and triggers |
+| [Deployment](./docs/DEPLOYMENT.md) | Supabase/Vercel provisioning and production credentials |
+| [Operations runbook](./docs/RUNBOOK.md) | Release gate, verification, ingestion triage, and limitations |
+| [Decision records](./docs/decisions) | Load-bearing engineering decisions and their trade-offs |
+| [Security audit](./ISSUES.md) | Previous findings and remediation record |
 
-The full pre-release gate — and what to do when one of these fails — is in
-[docs/RUNBOOK.md](docs/RUNBOOK.md).
+> [!IMPORTANT]
+> Read [ADR 0001](./docs/decisions/0001-source-filtering.md) before changing source filters and [ADR 0002](./docs/decisions/0002-match-abstention.md) before changing score availability. Both encode deliberate honesty constraints that can look like bugs from the outside.
 
-## 5. Roles
+## Roles and trust boundaries
 
-Three roles live in `public.user_roles`, defaulting to `student`:
+| Role | Capabilities |
+|---|---|
+| **Student** | Discover, evaluate, save, apply, track, build resumes, receive alerts |
+| **Employer** | Maintain a company profile, post internships, manage applicants |
+| **Admin** | Review employers/listings, moderate reports, inspect ingestion and audit logs |
 
-- **student** — discover internships, see match information, apply, track, get alerts
-- **employer** — company profile, post and manage internships, triage applicants
-- **admin** — review employers and listings, handle reports, moderate, read the audit log
+There is no self-service role-escalation API. `public.user_roles` has no self-write policy; the first admin is promoted directly through the Supabase SQL Editor.
 
-There is deliberately no API path to grant yourself a role: `user_roles` has no
-self-write policy. Promote the first admin from the Supabase SQL Editor
-(see `supabase/README.md`).
+## Troubleshooting
 
-## 6. How the honest odds work
+<details>
+<summary><strong>“NOT CONFIGURED” screen</strong></summary>
 
-- Success = a past outcome of `shortlisted` or `offer`.
-- Cohort: same CGPA band (`<3.00`, `3.00–3.49`, `3.50+`) **and** same
-  department; if that cohort has fewer than 8 outcomes it relaxes once to
-  band-only, and the UI says so.
-- Confidence: `HIGH` at n ≥ 20, `MED` at 8 ≤ n < 20.
-- **n < 8 → ABSTAIN.** The screen shows what is known and offers a watch
-  toggle. No number is ever fabricated.
-- "THE ONE THING" = the missing feature with the largest
-  shortlisted-vs-rejected rate gap in your cohort, with a 5-point noise floor.
-- The engines are pure functions — `src/lib/eligibility.ts`,
-  `src/lib/realityCheck.ts` — and are unit-tested.
+Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and make sure they are not placeholder values.
 
-Listings ingested from external boards carry no outcome history, so Reality
-Check abstains on them automatically.
+</details>
 
-## 7. Resume Forge
+<details>
+<summary><strong>Redirect loop at login</strong></summary>
 
-A separate "world" inside Shuru: same pixel design family, deeper
-slate/molten-amber palette, entered from the amber **RESUME FORGE** tile on
-Radar through a short stepped transition.
+Confirm that `NEXT_PUBLIC_SITE_URL` exactly matches the origin in the browser and that the session cookie reaches middleware.
 
-- **Upload** a PDF or DOCX (max 10 MB), extracted server-side via
-  `/api/parse-resume`. With a Gemini key the raw text is structured into the
-  resume schema; without one the text still lands in the editor unstructured.
-- **Editor** with collapsible sections, reordering, live document preview,
-  undo/redo, and a real text-layer PDF export drawn with jsPDF — selectable,
-  copyable, ATS-parseable.
-- **Readiness rating** and a Pending/Completed/Dismissed queue of ATS checks.
-- **JD-Tailor** for keyword match, and an explicit profile sync that is always
-  offered, never applied silently.
+</details>
 
-All scoring is rule-based and free. Gemini is optional everywhere and every AI
-entry point hides itself cleanly when no key is set.
+<details>
+<summary><strong>OAuth button fails</strong></summary>
 
-## 8. Internship ingestion
+The UI flag and Supabase provider must both be enabled, and the provider callback URL must match `<site>/auth/callback`.
 
-Alongside employer-posted internships, Shuru pulls listings from public job
-boards through modular adapters. Sources whose terms prohibit it (LinkedIn,
-Indeed) are deliberately out of scope.
+</details>
 
-Every ingested listing is internship-only filtered, normalized, deduplicated
-by a deterministic id (so a refresh updates rather than duplicates), freshness
-checked, and attributed to its source in the UI.
+<details>
+<summary><strong>Reality Check differs between users</strong></summary>
 
-Honesty rules encoded in the pipeline:
+That is expected. Cohorts are calibrated by CGPA band and department, then relaxed once only when the sample is too small.
 
-- A source that publishes no real closing date yields a rolling window,
-  labelled **Rolling** — never an invented hard deadline.
-- Compensation is claimed only with evidence; otherwise the listing reads
-  "compensation not stated by source".
-- Ingested listings have no outcome history, so Reality Check abstains.
+</details>
 
-Ingestion runs as a scheduled job and an admin action, protected by
-`CRON_SECRET`. Per-source results, including partial failures, are recorded in
-`ingestion_runs` rather than silently swallowed.
+---
 
-## 9. Troubleshooting
+<div align="center">
 
-- **"NOT CONFIGURED" screen** → `NEXT_PUBLIC_SUPABASE_URL` /
-  `NEXT_PUBLIC_SUPABASE_ANON_KEY` are missing or still placeholders.
-- **Redirect loop to /login** → the session cookie isn't reaching middleware;
-  confirm `NEXT_PUBLIC_SITE_URL` matches the origin you're actually browsing.
-- **OAuth button does nothing** → the provider is enabled by env flag but not
-  configured in Supabase → Authentication → Providers, or its callback URL
-  doesn't match `<site>/auth/callback`.
-- **"Email not confirmed" on login** → confirm via the emailed link, or turn
-  off "Confirm email" in Supabase for development.
-- **Fonts look like plain monospace offline** → expected fallback if the first
-  `npm run dev` never ran online; harmless.
-- **Odds differ between two users** → correct. Cohorts are per CGPA band and
-  department; that is the calibration working.
+### শুরু মানে সূচনা — go open some doors.
 
-শুরু মানে সূচনা — go open some doors.
+Built with care by [Niloy Bhuiyan](https://github.com/Niloy-Bhuiyan).
+
+[Back to top](#)
+
+</div>
