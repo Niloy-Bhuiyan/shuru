@@ -113,11 +113,40 @@ generated from the codebase.
 
 ### Scheduling on Vercel
 
-`vercel.json` already declares both cron jobs — ingestion every 6 hours and
-notification dispatch every 15 minutes. **Set `CRON_SECRET` or they refuse to
-run**: `/api/cron` returns 503 when it is unset rather than executing an
-unauthenticated job, because a public URL that triggers ingestion is a
-denial-of-wallet vector.
+> [!IMPORTANT]
+> **Vercel Hobby allows only ONE cron run per day per job**, and it enforces
+> this at deploy time — a `vercel.json` asking for anything finer fails the
+> whole deployment with
+> `Hobby accounts are limited to daily cron jobs`. It is not a warning and the
+> deploy does not partially succeed.
+>
+> `vercel.json` is therefore set to daily: ingest at **02:00 UTC** (08:00
+> Bangladesh, so the overnight refresh is there when students open the app)
+> and dispatch at **03:00 UTC**, an hour later so alerts about new listings go
+> out with the listings already in place.
+>
+> `maxDuration` is capped at **60s** for the same reason; Hobby rejects the
+> 300s an ingest run would ideally get. Ingestion bounds each source at 8s
+> independently, so a handful of sources fits — but a large `LEVER_COMPANIES`
+> or `ASHBY_COMPANIES` list can exceed it. If a run times out, shorten the
+> list or move to an external scheduler.
+
+**Want finer granularity without Pro?** Skip Vercel Cron and drive the
+endpoints from anywhere that can POST with a header — GitHub Actions on a
+`schedule:` trigger is free and unrestricted:
+
+```yaml
+- run: |
+    curl -fsS -X POST "$SITE/api/ingest" -H "x-ingest-secret: ${{ secrets.INGEST_SECRET }}"
+    curl -fsS -X POST "$SITE/api/notifications/dispatch" -H "x-ingest-secret: ${{ secrets.INGEST_SECRET }}"
+```
+
+That path uses `INGEST_SECRET` directly and does not involve `/api/cron` or
+`CRON_SECRET` at all.
+
+**Set `CRON_SECRET` or the Vercel jobs refuse to run**: `/api/cron` returns 503
+when it is unset rather than executing an unauthenticated job, because a public
+URL that triggers ingestion is a denial-of-wallet vector.
 
 Vercel Cron can only issue a GET and cannot attach custom headers — it sends
 `Authorization: Bearer $CRON_SECRET`. The job endpoints are POST with

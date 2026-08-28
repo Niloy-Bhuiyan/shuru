@@ -3,19 +3,19 @@
   "crons": [
     {
       "path": "/api/cron?job=ingest",
-      "schedule": "0 */6 * * *"
+      "schedule": "0 2 * * *"
     },
     {
       "path": "/api/cron?job=dispatch",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 3 * * *"
     }
   ],
   "functions": {
     "src/app/api/ingest/route.ts": {
-      "maxDuration": 300
+      "maxDuration": 60
     },
     "src/app/api/notifications/dispatch/route.ts": {
-      "maxDuration": 120
+      "maxDuration": 60
     }
   }
 }
