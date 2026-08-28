@@ -39,6 +39,26 @@ function LoginForm() {
   // link fails, so the failure is visible instead of a silent bounce.
   const callbackError = params.get("error");
 
+  /**
+   * "That didn't work" is the right message for a wrong password and the
+   * wrong one for a broken email link, where the user did nothing wrong and
+   * retrying the same way fails the same way.
+   *
+   * The PKCE case is worth naming specifically. Requesting a reset stores a
+   * code verifier in the browser that asked; opening the link somewhere else
+   * -- a different browser, incognito, or a different origin such as
+   * localhost versus the deployed site -- means the server cannot find it.
+   * The raw error says "code verifier not found in storage", which tells a
+   * user nothing about what to do next.
+   */
+  const callbackMessage = !callbackError
+    ? null
+    : /verifier|pkce/i.test(callbackError)
+      ? t("auth.errLinkOtherBrowser")
+      : /expired|invalid/i.test(callbackError)
+        ? t("auth.errLinkExpired")
+        : t("auth.errGeneric");
+
   async function onSubmit() {
     if (busy) return;
     setBusy(true);
@@ -103,9 +123,12 @@ function LoginForm() {
 
   return (
     <div className="space-y-4">
-      {callbackError && (
-        <p className="border-3 border-alert bg-paper p-2 font-mono text-xs font-bold text-alert">
-          {t("auth.errGeneric")}
+      {callbackMessage && (
+        <p
+          role="alert"
+          className="border-3 border-alert bg-paper p-2 font-mono text-xs font-bold leading-relaxed text-alert"
+        >
+          {callbackMessage}
         </p>
       )}
 
