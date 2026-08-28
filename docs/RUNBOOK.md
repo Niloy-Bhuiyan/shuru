@@ -133,6 +133,38 @@ Employers are promoted the same way with `role = 'employer'`. An employer then
 creates their company from `/employer`, and an admin verifies it before its
 listings can go live.
 
+## 3a. "I cannot log in with my password"
+
+Check the account first — most of the time there is no password to be wrong:
+
+```sql
+select email,
+       (encrypted_password is not null and encrypted_password <> '') as has_password,
+       raw_app_meta_data->'providers' as providers
+from auth.users where email = 'you@example.com';
+```
+
+`has_password: false` with `providers: ["google"]` means the account was
+created through OAuth and **has no password at all**. Email + password can
+never work against it. Two ways forward:
+
+- sign in with the provider button, or
+- attach a password: `node scripts/set-password.mjs you@example.com`
+  (prompts with echo off; the value is never stored or committed).
+
+**Re-registering does not help and looks like it does.** Supabase answers a
+signup for an existing address with a success-shaped response and creates
+nothing, so an attacker cannot probe which emails exist. The registration form
+detects this (empty `identities` array) and says so, but the auth log is the
+proof: `/signup 200` immediately followed by `/token 400`, with no new row in
+`auth.users`.
+
+**OAuth returns you to localhost in production?** Supabase discarded your
+`redirect_to` because it is not allowlisted, and fell back to its Site URL. Fix
+in Supabase → Authentication → URL Configuration: set Site URL to the
+deployment origin and add both `<origin>/auth/callback` and
+`http://localhost:3000/auth/callback` to Redirect URLs.
+
 ## 4. Ingestion
 
 Trigger a run:
