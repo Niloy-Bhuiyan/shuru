@@ -83,6 +83,23 @@ Next.js  ──POST /api/ask──►  route handler        (verifies the sessio
           public.rag_chunks       the web app already uses
 ```
 
+### Two ways to reach the database
+
+| Backend | Needs | When |
+|---|---|---|
+| `direct` | `SHURU_RAG_DATABASE_URL` (database password) | preferred — faster, and the chunk swap is a real transaction |
+| `rest` | `SHURU_RAG_SUPABASE_URL` + `SHURU_RAG_SUPABASE_SERVICE_KEY` | when you do not have the database password |
+
+The REST path exists because the database password is **not derivable** from
+any other Supabase credential — not the service-role key, not the management
+API. Without it, a deployment holding every other secret still could not index
+or answer. PostgREST covers reads and writes; the one thing it cannot express
+is `order by embedding <=> query`, which migration `0015` supplies as the
+`match_rag_chunks` RPC (SECURITY **INVOKER**, so RLS still applies).
+
+`app/store.py` picks between them automatically and refuses to start if
+neither is configured. Nothing silently degrades.
+
 **The vector store is the app's own Postgres.** No new infrastructure, the
 chunk→listing foreign key is enforced by the database, and deleting a listing
 takes its chunks with it. A separate vector database would need a sync process
@@ -165,7 +182,48 @@ relied on:
 There is also no write policy on `rag_chunks`. A signed-in user cannot insert
 text that would later be retrieved and quoted as if a company had published it.
 
-## 7. Known limitations
+## 7. Tuning the abstention threshold
+
+`SHURU_RAG_MAX_COSINE_DISTANCE` is the single knob that decides when the
+pipeline says "nothing relevant" instead of answering. **Measure it; do not
+guess it.** This shipped at 0.75 in the first draft, which let *every*
+off-topic question through — the model would have been asked to answer "what
+is the weather in Dhaka?" from a Notion job description.
+
+Measured against the live corpus (27 chunks, 5 listings), best distance per
+question:
+
+| | range |
+|---|---|
+| six clearly on-topic questions | **0.239 – 0.385** |
+| six clearly off-topic questions | **0.532 – 0.598** |
+
+A clean 0.147 gap with no overlap, so the threshold is **0.46** — roughly the
+midpoint, ~0.075 of margin either side. `tests/test_threshold.py` pins the
+measurement and fails if the configured value drifts outside the gap.
+
+Re-measure whenever the corpus changes character:
+
+```bash
+.venv/bin/python -c "
+from app.embeddings import get_embedder
+from app.store import search
+e = get_embedder()
+for q in ['does this role require python?', 'what is the weather in dhaka today?']:
+    hits = search(e.embed_query(q), top_k=1, max_distance=2.0)
+    print(q, '->', hits[0].distance if hits else None)
+"
+```
+
+**What the threshold cannot do.** It separates *topic*, not *subject*. Asking
+"is there anything about compensation?" still retrieves passages at ~0.37 even
+though none of these listings state compensation — to a sentence embedding,
+job-description prose is close to any job-related question. That case is
+handled downstream instead: the system prompt requires the model to say what
+is missing, and `verify_grounding` discards an answer that cites nothing.
+Retrieval is recall-oriented on purpose; honesty is enforced after it.
+
+## 8. Known limitations
 
 Written down rather than papered over:
 
@@ -189,7 +247,7 @@ Written down rather than papered over:
   nearest-neighbour match instead of the `deadline` column is precisely how a
   confident wrong date reaches a student.
 
-## 8. Deployment
+## 9. Deployment
 
 The service is a standard ASGI app; anything that runs `uvicorn` works
 (Fly.io, Render, Railway, Cloud Run, a container on a VM).

@@ -272,17 +272,21 @@ def reindex(force: bool = False) -> IndexReport:
 
     Incremental by default: a field whose content hash is unchanged is left
     alone, which is what makes re-running this on a schedule cheap.
+
+    Goes through `store`, not this module's own functions, so it works
+    identically on the direct-Postgres and PostgREST backends.
     """
     from .embeddings import get_embedder
+    from . import store
 
     settings = get_settings()
     embedder = get_embedder()
     report = IndexReport()
 
-    report.deleted_stale = delete_orphans()
-    known = {} if force else existing_hashes()
+    report.deleted_stale = store.delete_orphans()
+    known = {} if force else store.existing_hashes()
 
-    for row in fetch_indexable():
+    for row in store.fetch_indexable():
         report.scanned += 1
         opp_id = row["id"]
         by_field = {
@@ -311,7 +315,7 @@ def reindex(force: bool = False) -> IndexReport:
                 continue
 
             vectors = embedder.embed_documents([c.content for c in chunks])
-            replace_field_chunks(
+            store.replace_field_chunks(
                 opp_id, field, chunks, vectors, settings.embedding_model
             )
             report.chunks_written += len(chunks)

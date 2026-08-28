@@ -42,6 +42,12 @@ class Settings(BaseSettings):
         description="Postgres URI. Supabase -> Project Settings -> Database -> URI.",
     )
 
+    # PostgREST alternative to `database_url`. The service-role key is
+    # available in every Supabase project; the database password is not
+    # derivable from it, so this is the path a deployment can always take.
+    supabase_url: str = Field(default="")
+    supabase_service_key: str = Field(default="")
+
     # ── auth ────────────────────────────────────────────────────────────
     # Shared secret for the Next.js app -> this service hop. Server-to-server
     # only; it is never sent to a browser.
@@ -67,8 +73,20 @@ class Settings(BaseSettings):
 
     # Cosine distance above which a chunk is not considered related at all.
     # pgvector's <=> returns distance (0 = identical), so this is an upper
-    # bound. Tuned against the live corpus; see tests/test_retrieval.py.
-    max_cosine_distance: float = Field(default=0.75, ge=0.0, le=2.0)
+    # bound, and it is the knob that decides when the pipeline abstains.
+    #
+    # MEASURED, not guessed. Against the live corpus (27 chunks, 5 listings),
+    # six clearly on-topic questions ("does this role require python?", "what
+    # degree do they ask for?") scored 0.239-0.385, and six clearly off-topic
+    # ones ("what is the weather in dhaka today?", "how do I cook biryani")
+    # scored 0.532-0.598. That is a clean 0.147 gap with no overlap.
+    #
+    # 0.46 sits near the middle of it, leaving ~0.075 of margin on each side.
+    # The first draft shipped 0.75, which let EVERY off-topic question through
+    # — the pipeline would have been asked to answer "what is the weather in
+    # Dhaka" from a Notion job description. Re-measure this if the corpus
+    # changes character; see the reindex + probe recipe in the service README.
+    max_cosine_distance: float = Field(default=0.46, ge=0.0, le=2.0)
 
     # Below this many surviving chunks, the pipeline abstains rather than
     # answering from thin evidence. This is the knob that implements Shuru's
@@ -106,10 +124,20 @@ class Settings(BaseSettings):
     # ── readiness ───────────────────────────────────────────────────────
 
     def missing_for_retrieval(self) -> list[str]:
-        """Env vars needed to search the index at all."""
+        """Env vars needed to search the index at all.
+
+        Either storage backend satisfies the database half — see store.py — so
+        this reports the direct URL and the REST pair as alternatives rather
+        than demanding both.
+        """
         missing = []
-        if not self.database_url:
-            missing.append("SHURU_RAG_DATABASE_URL")
+        has_direct = bool(self.database_url)
+        has_rest = bool(self.supabase_url and self.supabase_service_key)
+        if not (has_direct or has_rest):
+            missing.append(
+                "SHURU_RAG_DATABASE_URL "
+                "(or SHURU_RAG_SUPABASE_URL + SHURU_RAG_SUPABASE_SERVICE_KEY)"
+            )
         if not self.service_token:
             missing.append("SHURU_RAG_SERVICE_TOKEN")
         return missing

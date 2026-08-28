@@ -34,7 +34,8 @@ from typing import Annotated, Literal, TypedDict
 from langgraph.graph import END, START, StateGraph
 
 from .config import get_settings
-from .db import Passage, search
+from .db import Passage
+from .store import search
 from .embeddings import get_embedder
 from .security import clamp_question, fence
 
