@@ -21,7 +21,7 @@ export function SunriseHeader() {
         <Link href="/radar" className="flex items-center gap-2">
           <PixelSun width={26} withHorizon={false} />
           <span className="font-pixel text-sm leading-none text-ink">SHURU</span>
-          <span className="font-bangla text-sm font-bold leading-none text-amber">
+          <span className="font-bangla text-sm font-bold leading-none text-amberInk">
             শুরু
           </span>
         </Link>

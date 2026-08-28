@@ -73,7 +73,7 @@ export function OAuthButtons({ next = "/radar" }: { next?: string }) {
       </div>
 
       {error && (
-        <p className="border-3 border-alert bg-paper p-2 font-mono text-xs font-bold text-alert">
+        <p className="border-3 border-alert bg-paper p-2 font-mono text-xs font-bold text-alertInk">
           {error}
         </p>
       )}

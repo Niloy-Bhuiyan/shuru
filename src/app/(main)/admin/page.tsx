@@ -212,7 +212,7 @@ export default function AdminPage() {
                     href={c.website}
                     target="_blank"
                     rel="noreferrer"
-                    className="font-mono text-[11px] text-amber underline"
+                    className="font-mono text-[11px] text-amberInk underline"
                   >
                     {c.website} ↗
                   </a>
@@ -262,7 +262,7 @@ export default function AdminPage() {
                 )}
                 <Link
                   href={`/opportunity/${r.opportunity_id}`}
-                  className="font-mono text-[11px] text-amber underline"
+                  className="font-mono text-[11px] text-amberInk underline"
                 >
                   {t("admin.action")} ↗
                 </Link>

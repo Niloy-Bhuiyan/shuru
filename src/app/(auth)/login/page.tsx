@@ -90,7 +90,7 @@ function LoginForm() {
   return (
     <div className="space-y-4">
       {callbackError && (
-        <p className="border-3 border-alert bg-paper p-2 font-mono text-xs font-bold text-alert">
+        <p className="border-3 border-alert bg-paper p-2 font-mono text-xs font-bold text-alertInk">
           {t("auth.errGeneric")}
         </p>
       )}
@@ -120,13 +120,13 @@ function LoginForm() {
       </PixelButton>
 
       <p className="text-center font-mono text-xs text-ink">
-        <Link href="/forgot-password" className="font-bold text-amber underline">
+        <Link href="/forgot-password" className="font-bold text-amberInk underline">
           {t("auth.forgot")}
         </Link>
       </p>
       <p className="text-center font-mono text-xs text-ink">
         {t("auth.noAccount")}{" "}
-        <Link href="/register" className="font-bold text-amber underline">
+        <Link href="/register" className="font-bold text-amberInk underline">
           {t("auth.register")}
         </Link>
       </p>

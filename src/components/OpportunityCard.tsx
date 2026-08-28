@@ -88,7 +88,7 @@ export function OpportunityCard({ item }: { item: EnrichedOpportunity }) {
             <PixelIcon name="signal" size={11} /> {t("odds.low_signal")}
           </span>
         )}
-        <span className="flex items-center gap-1 font-mono text-[11px] font-bold text-amber">
+        <span className="flex items-center gap-1 font-mono text-[11px] font-bold text-amberInk">
           {t("detail.reality")} <PixelIcon name="arrow-right" size={11} />
         </span>
       </div>

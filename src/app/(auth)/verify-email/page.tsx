@@ -100,7 +100,7 @@ export default function VerifyEmailPage() {
             <p className="border-3 border-ink bg-paper p-3 font-mono text-xs text-ink shadow-pixel-sm">
               {t("auth.verifyBody")}
               {email && (
-                <span className="mt-2 block font-bold text-amber">{email}</span>
+                <span className="mt-2 block font-bold text-amberInk">{email}</span>
               )}
             </p>
             <p className="font-mono text-xs text-grey">{t("auth.verifyWhy")}</p>
@@ -122,13 +122,13 @@ export default function VerifyEmailPage() {
             )}
 
             {error && (
-              <p className="border-3 border-alert bg-paper p-2 font-mono text-xs font-bold text-alert">
+              <p className="border-3 border-alert bg-paper p-2 font-mono text-xs font-bold text-alertInk">
                 {error}
               </p>
             )}
 
             <p className="text-center font-mono text-xs text-ink">
-              <Link href="/radar" className="font-bold text-amber underline">
+              <Link href="/radar" className="font-bold text-amberInk underline">
                 {t("nav.radar")} →
               </Link>
             </p>

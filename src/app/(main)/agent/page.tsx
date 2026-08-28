@@ -450,7 +450,7 @@ export default function AgentPage() {
           )}
 
           {attachErr && (
-            <p className="mb-2 font-mono text-[11px] font-bold text-alert">! {attachErr}</p>
+            <p className="mb-2 font-mono text-[11px] font-bold text-alertInk">! {attachErr}</p>
           )}
 
           {/* quick actions */}

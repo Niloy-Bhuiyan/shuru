@@ -9,10 +9,32 @@ const config: Config = {
         cream: "#F4E9D8", // backgrounds
         paper: "#FBF4E6", // raised card surface (one step lighter than cream)
         ink: "#1B2A3A",   // text, borders
-        amber: "#FF7A3C", // primary actions, deadlines, urgency
+        amber: "#FF7A3C", // primary actions, deadlines, urgency — AS A FILL
         mint: "#3FBFA0",  // positive: eligible / qualify / in-your-favour
-        grey: "#8A8578",  // uncertainty / abstention / missing criteria
-        alert: "#E5533D", // closing-very-soon / borderline warnings
+        grey: "#6B6659",  // uncertainty / abstention / missing criteria
+        alert: "#E5533D", // closing-very-soon / borderline — AS A FILL
+
+        /*
+         * TEXT-ON-LIGHT variants. Read this before reaching for `text-amber`
+         * or `text-alert`.
+         *
+         * `amber` and `alert` are tuned as FILLS — `bg-amber text-ink` is
+         * high-contrast and correct, and `text-amber` on the dark forge and
+         * terminal surfaces is fine too. But as text on `cream` / `paper`
+         * they measure 2.16:1 and 3.10:1, well under the 4.5:1 WCAG AA needs.
+         *
+         * These two are the same hues pushed dark enough to pass on both
+         * light backgrounds (amberInk 4.75:1 / 5.21:1, alertInk 4.92:1 /
+         * 5.40:1). Use them wherever the colour is the TEXT and the surface
+         * is light; keep `amber` / `alert` for fills and for dark surfaces.
+         *
+         * `grey` was darkened from #8A8578 for the same reason — it measured
+         * 3.07:1 on cream. It is only ever secondary text or a muted fill,
+         * and darkening improved BOTH directions (cream-on-grey went 3.07 ->
+         * 4.77), so it needed no split.
+         */
+        amberInk: "#B4400F",
+        alertInk: "#B33A28",
         // ── Resume Forge "new world" palette (same family, deeper world) ──
         fslate: "#1E2233",  // forge background
         fpanel: "#2A3047",  // forge raised surface

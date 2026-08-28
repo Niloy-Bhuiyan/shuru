@@ -83,7 +83,7 @@ function ReportCard({ r }: { r: InterviewReport }) {
       <div className="mt-3 flex items-center justify-between border-t-2 border-ink/20 pt-2 font-mono text-[11px]">
         <span className="font-bold text-ink">
           {t("vault.applyToOffer")}:{" "}
-          <span className="text-amber">{r.apply_to_offer_days} {t("vault.days")}</span>
+          <span className="text-amberInk">{r.apply_to_offer_days} {t("vault.days")}</span>
         </span>
         <span className="text-grey">{r.author_anon}</span>
       </div>

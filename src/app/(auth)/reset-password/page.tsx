@@ -98,7 +98,7 @@ export default function ResetPasswordPage() {
           <LoadingBlock />
         ) : !valid ? (
           <div className="space-y-4">
-            <p className="border-3 border-alert bg-paper p-3 font-mono text-xs font-bold text-alert shadow-pixel-sm">
+            <p className="border-3 border-alert bg-paper p-3 font-mono text-xs font-bold text-alertInk shadow-pixel-sm">
               {t("auth.resetInvalid")}
             </p>
             <Link href="/forgot-password" className="block">

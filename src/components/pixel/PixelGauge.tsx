@@ -101,8 +101,8 @@ export function PixelGauge({
         <p
           className={cx(
             "mt-2 inline-block border-2 border-cream/40 px-2 py-1 font-pixel text-[10px]",
-            bucket.tone === "alert" && "text-alert",
-            bucket.tone === "amber" && "text-amber",
+            bucket.tone === "alert" && "text-alertInk",
+            bucket.tone === "amber" && "text-amberInk",
             bucket.tone === "mint" && "text-mint"
           )}
         >

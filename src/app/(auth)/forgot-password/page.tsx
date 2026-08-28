@@ -90,7 +90,7 @@ export default function ForgotPasswordPage() {
               {busy ? "…" : t("auth.sendReset")}
             </PixelButton>
             <p className="text-center font-mono text-xs text-ink">
-              <Link href="/login" className="font-bold text-amber underline">
+              <Link href="/login" className="font-bold text-amberInk underline">
                 {t("auth.login")}
               </Link>
             </p>
