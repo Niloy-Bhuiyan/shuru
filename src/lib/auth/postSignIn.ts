@@ -38,6 +38,25 @@ export function safeInternalPath(raw: string | null | undefined): string {
 }
 
 /**
+ * Where a role belongs when nothing more specific was asked for.
+ *
+ * This is what "role-based login" means here. Separate login PAGES per role
+ * would be the wrong shape: a role is a property of an account, and nobody
+ * has an account until they have authenticated, so three forms would be three
+ * identical forms — and a /admin/login that exists tells an attacker which
+ * addresses are worth attacking. One door, three destinations.
+ *
+ * An explicit `?next=` always wins. It is set by middleware when it bounces
+ * someone off a page they asked for, and sending them somewhere else would
+ * lose what they were doing.
+ */
+export function homeForRole(role: string | null | undefined): string {
+  if (role === "admin") return "/admin";
+  if (role === "employer") return "/employer";
+  return "/radar";
+}
+
+/**
  * Navigate after a session has just been created.
  *
  * Deliberately `window.location.assign`, NOT `router.replace` — see above.

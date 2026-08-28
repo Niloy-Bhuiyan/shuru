@@ -60,14 +60,64 @@ Save opportunities, track application stages, search the pipeline, and receive r
 
 The system follows three rules:
 
-1. **The database is the trust boundary.** Supabase Row Level Security protects data even if a route is called directly.
-2. **Core decisions stay deterministic.** Eligibility, matching, ATS scoring, and abstention are pure, unit-tested domain functions.
+1. **The database is the trust boundary.** Supabase Row Level Security protects data even if a route is called directly. Policies are verified by `npm run verify:rls` (config invariants) and `npm run test:rls` (behaviour, asserting the exact SQLSTATE of each denial).
+2. **Core decisions stay deterministic.** Eligibility, matching, ATS scoring, and abstention are pure, unit-tested domain functions. No model decides whether you qualify.
 3. **External services are optional and isolated.** A missing AI or delivery key disables that feature cleanly; it never creates fake output.
 
-Shuru deploys as two units: the Next.js application, and a Python retrieval
-service (`services/rag`) that answers questions about the free text of listings
-with a citation per claim — and abstains when the sources do not support an
-answer. The second is optional; without it the feature hides itself.
+### Two deployable units
+
+| | Runtime | Responsibility |
+| --- | --- | --- |
+| **Web application** | Next.js 16 (App Router), React 18, TypeScript strict | UI, route handlers, role-aware middleware, ingestion, matching |
+| **Retrieval service** | Python 3.13, FastAPI, LangGraph, LangChain, pgvector | Grounded answers about listing free text, with citations and abstention |
+
+The retrieval service is a separate REST API, not a library. It holds its own
+dependencies, its own 63-test suite, and its own failure mode: when it is not
+deployed, `/api/ask` reports itself unavailable and the feature hides. The web
+app talks to it through one server-only client (`src/lib/rag/client.ts`), so
+nothing about the Python stack leaks into the browser bundle.
+
+### The retrieval pipeline
+
+`services/rag` is a **LangGraph `StateGraph`**, not a chain. The branching is
+the reason: three of its six nodes can end the run without an answer, and one
+of them rejects a draft the model already produced.
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> embed_question
+    embed_question --> retrieve
+    retrieve --> grade
+    grade --> generate: passages clear<br/>the distance bound
+    grade --> abstain: nothing<br/>relevant enough
+    generate --> verify_grounding
+    verify_grounding --> abstain: cites nothing, or<br/>cites a passage<br/>that does not exist
+    verify_grounding --> [*]: answer + citations
+    abstain --> [*]: "I don't know",<br/>with the reason
+```
+
+**`verify_grounding` is the point of the whole design.** A model that answers
+from a job description will happily invent a stipend or a deadline, and Shuru's
+one claim is that it does not manufacture confidence. So the graph reads its own
+draft, checks every citation resolves to a passage that was actually retrieved,
+and throws the answer away if it does not. Written as nested `if`s, that is
+precisely the check an early `return` skips.
+
+| Concern | Choice | Why |
+| --- | --- | --- |
+| Orchestration | **LangGraph** `StateGraph`, 6 nodes, 2 conditional edges | Branching and self-rejection are real control flow, not a chain |
+| Chunking | **LangChain** `RecursiveCharacterTextSplitter` | One well-tested utility; the framework does not own the control flow |
+| Vector store | **pgvector** in the same Supabase Postgres (HNSW, cosine) | No new infrastructure; the chunk → listing foreign key cascades |
+| Embeddings | **fastembed** ONNX, `bge-small-en-v1.5`, 384-dim, local | A real model with **no API key** — clone the repo and retrieval runs |
+| Answer generation | Anthropic, behind an adapter | The only step needing a hosted credential |
+| Abstention threshold | **0.46**, measured | On-topic scored 0.239–0.385, off-topic 0.532–0.598. The shipped default of 0.75 answered *"what is the weather in Dhaka?"* from a job description |
+
+The threshold is pinned by `tests/test_threshold.py`, which includes a test
+that fails if anyone restores the old default. Prompt-injection defence is
+three layers — fenced documents, delimiter sanitising, advisory detection that
+never blocks — and `rag_chunks` has no write policy at all, so no user can
+inject retrievable text in the first place.
 
 Read the complete [architecture guide](./docs/ARCHITECTURE.md) for authorization, data flows, ingestion, matching, and delivery details.
 

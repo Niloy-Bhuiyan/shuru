@@ -7,7 +7,7 @@
  * they trust the page.
  */
 import { describe, expect, it } from "vitest";
-import { safeInternalPath } from "@/lib/auth/postSignIn";
+import { homeForRole, safeInternalPath } from "@/lib/auth/postSignIn";
 
 describe("safeInternalPath", () => {
   it("keeps an ordinary internal path", () => {
@@ -46,5 +46,22 @@ describe("safeInternalPath", () => {
     for (const probe of ["//x.com", "https://x.com", "", null]) {
       expect(safeInternalPath(probe)).toBe("/radar");
     }
+  });
+});
+
+describe("homeForRole", () => {
+  it("sends each role to its own workspace", () => {
+    expect(homeForRole("admin")).toBe("/admin");
+    expect(homeForRole("employer")).toBe("/employer");
+    expect(homeForRole("student")).toBe("/radar");
+  });
+
+  it("treats an unknown or missing role as a student", () => {
+    // A missing user_roles row already reads as "student" server-side in
+    // getSessionUser and client-side in useRole; landing must agree, and the
+    // least-privileged destination is the safe default either way.
+    expect(homeForRole(null)).toBe("/radar");
+    expect(homeForRole(undefined)).toBe("/radar");
+    expect(homeForRole("wat")).toBe("/radar");
   });
 });
