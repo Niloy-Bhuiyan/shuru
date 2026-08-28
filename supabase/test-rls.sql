@@ -186,8 +186,68 @@ begin
     raise exception 'payments has % UPDATE policies; state must move only via the webhook', n;
   end if;
 
+  -- ══ 7. EMPLOYER ACCESS CANNOT BE SELF-GRANTED ═════════════════════════
+  -- 0016 opened the only path by which anyone becomes an employer. The whole
+  -- point is that a user may ASK and only an admin may GRANT, so the three
+  -- ways a request could be turned into a role by its own author are checked
+  -- here rather than trusted to the UI.
+
+  perform set_config('request.jwt.claims',
+    json_build_object('role', 'authenticated', 'sub', stranger)::text, true);
+  set local role authenticated;
+
+  -- (a) The decision RPC must refuse a non-admin. It is SECURITY INVOKER
+  --     precisely so the admin-only policies still bind whoever calls it; a
+  --     DEFINER function here would BE the escalation.
+  begin
+    perform public.decide_employer_access(gen_random_uuid(), true, null);
+    raise exception 'ESCALATION: a non-admin approved an employer request';
+  exception
+    when insufficient_privilege then null;  -- expected
+    when others then
+      -- Any other error means the call died before reaching the check, so
+      -- this test proved nothing. Fail loudly rather than count it as a pass:
+      -- an earlier version of this file passed on 42703 (undefined_column).
+      raise exception
+        'EMPLOYER ACCESS CHECK INVALID: expected 42501, got % (%)',
+        sqlstate, sqlerrm;
+  end;
+
+  -- (b) A non-admin must not be able to decide a request by plain UPDATE.
+  select count(*) into n from pg_policies
+   where schemaname = 'public'
+     and tablename = 'employer_access_requests'
+     and cmd = 'UPDATE'
+     and qual not ilike '%is_admin%';
+  if n <> 0 then
+    raise exception
+      'employer_access_requests has % non-admin UPDATE policies', n;
+  end if;
+
+  -- (c) The INSERT policy must pin both the owner and the pending state, so
+  --     a crafted insert cannot arrive pre-approved.
+  select count(*) into n from pg_policies
+   where schemaname = 'public'
+     and tablename = 'employer_access_requests'
+     and cmd = 'INSERT'
+     and with_check ilike '%pending%'
+     and with_check ilike '%uid()%';
+  if n <> 1 then
+    raise exception
+      'employer_access_requests INSERT policy does not pin owner + pending state (matched %)', n;
+  end if;
+
+  -- (d) The guard trigger must not be callable as an RPC. It is SECURITY
+  --     DEFINER, so an EXECUTE grant to `authenticated` would hand out
+  --     admin-context execution.
+  if has_function_privilege('authenticated',
+       'public.guard_employer_access_request()', 'EXECUTE') then
+    raise exception
+      'guard_employer_access_request is executable by authenticated';
+  end if;
+
   raise notice 'ALL RLS BEHAVIOUR TESTS PASSED';
 end $$;
 
 select 'ALL PASSED' as result,
-       'stranger isolation, public visibility, own-row read, no self-promotion, no cross-user write, payments not self-service' as covered;
+       'stranger isolation, public visibility, own-row read, no self-promotion, no cross-user write, payments not self-service, employer access not self-granted' as covered;

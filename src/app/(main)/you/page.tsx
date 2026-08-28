@@ -13,6 +13,7 @@ import { LoadingBlock } from "@/components/LoadingBlock";
 import { useProfile } from "@/hooks/useProfile";
 import { saveProfile } from "@/lib/data";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { EmployerAccessCard } from "@/components/EmployerAccessCard";
 import { useLang, type Lang } from "@/lib/i18n";
 
 const UNIVERSITIES = ["AIUB", "BUET", "NSU", "BRAC", "IUT", "DU", "JU", "KUET", "CUET", "RUET", "Other"];
@@ -110,6 +111,10 @@ export default function YouPage() {
         <PixelButton full size="lg" onClick={onSave} disabled={busy}>
           {savedOk ? t("you.savedOk") : busy ? "…" : t("you.saveChanges")}
         </PixelButton>
+
+        {/* Asking to BECOME an employer is a request about your own account,
+            so it belongs on your own profile. Renders only for students. */}
+        <EmployerAccessCard />
 
         {/* Operator areas deliberately do NOT live here. /you is the student's
             own profile; employer and admin entry points belong to the app

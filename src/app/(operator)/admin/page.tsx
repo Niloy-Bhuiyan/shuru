@@ -3,8 +3,13 @@
 /**
  * ADMIN MODERATION DASHBOARD
  *
- * Four queues: listings awaiting review, companies awaiting verification,
- * open listing reports, and ingestion source health.
+ * Five queues: listings awaiting review, companies awaiting verification,
+ * open listing reports, employer access requests, and ingestion source health.
+ *
+ * The access queue is the only way anyone becomes an employer. Approving
+ * calls decide_employer_access, a SECURITY INVOKER function, so the
+ * admin-only policies on user_roles still apply to whoever calls it -- this
+ * screen decides what to show, never what is permitted.
  *
  * The role check here only decides what to render. The real boundary is in
  * the database — `moderateListing`/`verifyCompany` re-read the row after
@@ -19,6 +24,12 @@ import { LoadingBlock } from "@/components/LoadingBlock";
 import { EmptyState } from "@/components/EmptyState";
 import { SourceHealthPanel } from "@/components/admin/SourceHealthPanel";
 import {
+  decideEmployerRequest,
+  EmployerAccessDenied,
+  listEmployerRequests,
+  type EmployerAccessRequest,
+} from "@/lib/data/employerAccess";
+import {
   listCompaniesByVerification,
   listListingsByStatus,
   listOpenReports,
@@ -30,7 +41,7 @@ import { useRole } from "@/hooks/useRole";
 import { useLang } from "@/lib/i18n";
 import type { Company, ListingReport, Opportunity } from "@/lib/types";
 
-type Tab = "queue" | "companies" | "reports" | "sources";
+type Tab = "queue" | "companies" | "reports" | "access" | "sources";
 
 export default function AdminPage() {
   const { t } = useLang();
@@ -40,20 +51,23 @@ export default function AdminPage() {
   const [pending, setPending] = useState<Opportunity[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [reports, setReports] = useState<ListingReport[]>([]);
+  const [access, setAccess] = useState<EmployerAccessRequest[]>([]);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reason, setReason] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
-    const [p, c, r] = await Promise.all([
+    const [p, c, r, a] = await Promise.all([
       listListingsByStatus("pending"),
       listCompaniesByVerification("pending"),
       listOpenReports(),
+      listEmployerRequests("pending"),
     ]);
     setPending(p);
     setCompanies(c);
     setReports(r);
+    setAccess(a);
     setReady(true);
   }, []);
 
@@ -82,6 +96,23 @@ export default function AdminPage() {
     }
   }
 
+  /**
+   * Approve or reject. A 42501 comes back as EmployerAccessDenied and is
+   * shown as such: an admin who has lost the role should see why, not a
+   * generic failure.
+   */
+  async function decide(id: string, approve: boolean) {
+    await guarded(async () => {
+      try {
+        await decideEmployerRequest(id, approve, reason[id]);
+      } catch (e) {
+        if (e instanceof EmployerAccessDenied) throw new Error(t("op.accessDenied"));
+        throw e;
+      }
+      setReason((m) => ({ ...m, [id]: "" }));
+    });
+  }
+
   if (roleLoading || !ready) {
     return (
       <main className="px-4 pt-4">
@@ -102,6 +133,7 @@ export default function AdminPage() {
     { id: "queue", label: t("admin.queue"), count: pending.length },
     { id: "companies", label: t("admin.companies"), count: companies.length },
     { id: "reports", label: t("admin.reports"), count: reports.length },
+    { id: "access", label: t("op.access"), count: access.length },
     { id: "sources", label: t("admin.sources"), count: null },
   ];
 
@@ -283,6 +315,75 @@ export default function AdminPage() {
                     className="flex-1 border-2 border-ink bg-grey px-2 py-1 font-mono text-[10px] font-bold uppercase text-cream disabled:opacity-50"
                   >
                     {t("admin.dismiss")}
+                  </button>
+                </div>
+              </article>
+            ))
+          )}
+        </section>
+      )}
+
+      {/* ── employer access requests ── */}
+      {tab === "access" && (
+        <section className="mb-6 mt-4 space-y-2">
+          {access.length === 0 ? (
+            <EmptyState icon="check" title={t("op.accessEmpty")} />
+          ) : (
+            access.map((r) => (
+              <article key={r.id} className="border-3 border-ink bg-paper p-3 shadow-pixel-sm">
+                <p className="font-mono text-xs font-bold text-ink">{r.company_name}</p>
+                <dl className="mt-1 space-y-0.5 font-mono text-[11px] text-ink/80">
+                  {r.company_website && (
+                    <div className="flex gap-1.5">
+                      <dt className="text-grey">web</dt>
+                      {/* Untrusted: an applicant typed this. Opened with
+                          noreferrer and never auto-fetched. */}
+                      <dd className="min-w-0 break-all">
+                        <a
+                          href={r.company_website}
+                          target="_blank"
+                          rel="noopener noreferrer nofollow"
+                          className="underline"
+                        >
+                          {r.company_website}
+                        </a>
+                      </dd>
+                    </div>
+                  )}
+                  {r.contact_role && (
+                    <div className="flex gap-1.5">
+                      <dt className="text-grey">role</dt>
+                      <dd>{r.contact_role}</dd>
+                    </div>
+                  )}
+                </dl>
+
+                <label className="mt-2 block">
+                  <span className="sr-only">{t("op.accessNotes")}</span>
+                  <input
+                    value={reason[r.id] ?? ""}
+                    onChange={(e) => setReason((m) => ({ ...m, [r.id]: e.target.value }))}
+                    placeholder={t("op.accessNotes")}
+                    className="w-full border-3 border-ink bg-cream px-2 py-1.5 font-mono text-[11px] text-ink placeholder:text-grey focus:outline-none"
+                  />
+                </label>
+
+                <div className="mt-2 flex gap-1.5">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => decide(r.id, true)}
+                    className="flex-1 border-2 border-ink bg-mint px-2 py-1 font-mono text-[10px] font-bold uppercase text-ink disabled:opacity-50"
+                  >
+                    {t("op.accessApprove")}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => decide(r.id, false)}
+                    className="flex-1 border-2 border-ink bg-alert px-2 py-1 font-mono text-[10px] font-bold uppercase text-cream disabled:opacity-50"
+                  >
+                    {t("op.accessReject")}
                   </button>
                 </div>
               </article>
