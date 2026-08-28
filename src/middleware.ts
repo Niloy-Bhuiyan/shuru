@@ -33,13 +33,25 @@ const STUDENT_ROUTES = [
 const EMPLOYER_ROUTES = ["/employer"];
 const ADMIN_ROUTES = ["/admin"];
 
-/** Routes reachable while signed out. */
-const PUBLIC_ROUTES = [
-  "/login",
-  "/register",
-  "/forgot-password",
-  "/reset-password",
-];
+/**
+ * Routes reachable while signed out, from which an ALREADY signed-in user is
+ * bounced to /radar — there is nothing for them on a login form.
+ */
+const PUBLIC_ROUTES = ["/login", "/register", "/forgot-password"];
+
+/**
+ * Reachable signed out AND signed in.
+ *
+ * /reset-password has to be here, and it is not an edge case: a Supabase
+ * recovery link works by ESTABLISHING a session, because updateUser() needs
+ * one to set the new password. So the user arriving at this form is always
+ * authenticated by the time they get here.
+ *
+ * While it sat in PUBLIC_ROUTES the rule below bounced them straight to
+ * /radar, and the password could never be changed — clicking the reset link
+ * just silently logged you in. Reported from production.
+ */
+const SIGNED_IN_OK_ROUTES = ["/reset-password"];
 
 function matches(path: string, routes: string[]): boolean {
   return routes.some((r) => path === r || path.startsWith(r + "/"));
@@ -89,7 +101,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && matches(path, PUBLIC_ROUTES)) {
+  if (user && matches(path, PUBLIC_ROUTES) && !matches(path, SIGNED_IN_OK_ROUTES)) {
     const url = request.nextUrl.clone();
     url.pathname = "/radar";
     url.search = "";
