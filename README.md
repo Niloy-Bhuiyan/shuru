@@ -74,7 +74,8 @@ them first will look like fixing a bug and will actually be causing one:
 | `npm run test:e2e` | Playwright, run at 390px and 1440px |
 | `cd services/rag && .venv/bin/pytest` | retrieval-service suite (no database or credentials needed) |
 | `npm run migrate` / `npm run migrate:status` | apply / list migrations |
-| `npm run verify:rls` | ten database security invariants — see docs/RUNBOOK.md §2 |
+| `npm run verify:rls` | database security gate: config invariants + RLS behaviour tests |
+| `npm run test:rls` | the RLS behaviour half only |
 | `node scripts/generate-seed.mjs` | regenerates `supabase/seed.sql` and `src/lib/data/seed.ts` from one deterministic source |
 
 The full pre-release gate — and what to do when one of these fails — is in

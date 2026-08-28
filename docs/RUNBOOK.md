@@ -23,6 +23,10 @@ The database has its own gate, which does need a connection — see §2:
 npm run verify:rls
 ```
 
+The accessibility suite (`e2e/a11y.spec.ts`) runs as part of `test:e2e`:
+contrast, landmarks, `html[lang]`, form labelling, focus visibility and target
+size, across four public pages at both viewports.
+
 `test:e2e` builds and serves a **production** bundle on port 3100 rather than
 running `next dev`, so it exercises middleware and the security headers as
 shipped. It also removes a class of flakiness: `next dev` compiles routes on
@@ -52,9 +56,33 @@ node -e "console.log(require('./.next/server/middleware-manifest.json').sortedMi
 npm run verify:rls
 ```
 
-Ten invariants, all of which must pass. The SQL lives in
-`supabase/verify-rls.sql` and can also be pasted straight into the Supabase
-SQL Editor if you do not have `SUPABASE_DB_URL` set locally.
+Two files run, and both must pass. Either can be pasted straight into the
+Supabase SQL Editor if you do not have `SUPABASE_DB_URL` set locally.
+
+**`supabase/verify-rls.sql` — the SHAPE of the config.** Ten invariants:
+policies exist, grants match them, nothing is over-privileged.
+
+**`supabase/test-rls.sql` — what those policies DO.** It becomes each role
+with a synthetic JWT `sub` — exactly what PostgREST does per request — and
+checks what actually becomes visible. Non-destructive: it creates and deletes
+nothing.
+
+| Check | Asserts |
+|---|---|
+| stranger isolation | an unknown user sees **0** rows in profiles, applications, resumes, notifications, preferences, push subscriptions, user_roles, application_events, admin_audit_log, ingestion_runs, payments |
+| public visibility | they see exactly the approved + unexpired opportunities, and exactly the `rag_chunks` belonging to those |
+| own-row read | a real owner sees their own profile — the positive control, without which the suite would pass on a database that denied everything |
+| no self-promotion | inserting an admin `user_roles` row fails with **42501** |
+| no cross-user write | inserting someone else's profile fails with **42501** |
+| payments not self-service | `payments` has zero UPDATE policies, so state moves only via the webhook |
+
+The last two assert **SQLSTATE 42501 specifically**, not "an error happened".
+An earlier draft caught any exception and passed for the wrong reason — the
+INSERT named a column that did not exist, failed with 42703, and the test
+counted that as a successful block. A negative test that accepts any failure
+will eventually accept the wrong one.
+
+`npm run test:rls` runs only the behaviour half.
 
 | # | Invariant | Why it exists |
 |---|---|---|
