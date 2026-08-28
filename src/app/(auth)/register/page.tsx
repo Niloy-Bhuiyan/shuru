@@ -83,6 +83,23 @@ export default function RegisterPage() {
         setErrors({ email: error.message });
         return;
       }
+      /*
+       * Supabase does NOT error when the email already exists — it returns a
+       * success-shaped response with a decoy user so an attacker cannot probe
+       * which addresses are registered. The tell is an empty `identities`
+       * array; a genuinely new signup always has at least one.
+       *
+       * Without this branch the code fell through to "check your email",
+       * which is how a real user spent an evening re-registering an address
+       * that already had a Google account, being told it worked each time,
+       * and then being unable to log in. The anti-enumeration response is
+       * Supabase's to make; presenting it as success was ours.
+       */
+      if (data.user && (data.user.identities?.length ?? 0) === 0) {
+        setErrors({ email: t("auth.errEmailTaken") });
+        return;
+      }
+
       if (data.session && data.user) {
         await saveProfile(buildProfile(data.user.id));
         router.replace("/radar");
