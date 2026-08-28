@@ -103,9 +103,9 @@ export default function EmployerPage() {
   const NAV: OperatorNavItem[] = [
     { href: "/employer", icon: "hammer", key: "emp.title" },
     { href: "/employer/listings/new", icon: "edit", key: "emp.newListing" },
-    ...(role === "admin"
-      ? [{ href: "/admin", icon: "check" as const, key: "admin.title" as const }]
-      : []),
+    // No cross-link back to /admin. The employer workspace is a product for
+    // employers; an admin who is standing in it should be looking at it as
+    // one, not treating it as a tab of the console.
   ];
 
   if (roleLoading || company === undefined) {

@@ -8,10 +8,10 @@
  * rule, laid out vertically with room for the label — the extra width buys
  * legibility, not more destinations.
  *
- * Student destinations ONLY. Employer and admin used to be appended here for
- * those roles, which put an operator tool inside the student's own
- * navigation. The two workspaces now have separate shells and RoleChip in the
- * header is the single door between them.
+ * Student destinations ONLY, and there is no door to the operator console
+ * anywhere in this app. Employer and admin were once appended here for those
+ * roles, then moved to a chip in the header — which was the same mistake in a
+ * smaller box. Operators arrive at their console by signing in.
  */
 
 import React from "react";

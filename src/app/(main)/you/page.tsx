@@ -116,9 +116,9 @@ export default function YouPage() {
             so it belongs on your own profile. Renders only for students. */}
         <EmployerAccessCard />
 
-        {/* Operator areas deliberately do NOT live here. /you is the student's
-            own profile; employer and admin entry points belong to the app
-            chrome (RoleChip in the header), not inside a user surface. */}
+        {/* Operator areas deliberately do NOT live here, and no longer live
+            anywhere in the student app. Signing in lands an operator in their
+            own console; the student product never advertises it. */}
 
         <div className="border-t-2 border-ink/20 pt-4">
           <PixelButton variant="secondary" full onClick={onSignOut}>

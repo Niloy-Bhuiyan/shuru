@@ -3,9 +3,9 @@
 /**
  * "Hiring interns?" — the student-side half of employer access.
  *
- * Lives on /you rather than in the app chrome. RoleChip's rule is that an
- * operator TOOL does not belong in a user surface; this is not a tool, it is
- * a request about your own account, which is exactly what /you is for.
+ * Lives on /you, and it is the ONE operator-adjacent thing that belongs in
+ * the student app: an operator tool does not belong in a user surface, but a
+ * request about your own account does, and that is exactly what /you is for.
  *
  * Renders nothing for someone who already holds a role — an employer or admin
  * has no reason to ask for what they have.

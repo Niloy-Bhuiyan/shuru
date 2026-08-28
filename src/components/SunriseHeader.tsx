@@ -5,12 +5,19 @@ import Link from "next/link";
 import { cx } from "@/lib/cx";
 import { PixelSun } from "./PixelSun";
 import { NotificationBell } from "./NotificationBell";
-import { RoleChip } from "./RoleChip";
 import { useLang } from "@/lib/i18n";
 
 /**
- * SunriseHeader — top app bar. Static mini sun mark + wordmark on the left,
- * EN/বাং language toggle on the right. Sticky within the app frame.
+ * SunriseHeader — top app bar for the STUDENT app. Static mini sun mark +
+ * wordmark on the left, EN/বাং language toggle on the right.
+ *
+ * There is deliberately no operator entry point here. An "ADMIN" button in
+ * the student header meant a student-facing screen advertised a tool that is
+ * not part of the student product — the same bleed that moving admin into its
+ * own route group was meant to end, just relocated instead of removed.
+ *
+ * Operators reach their console by signing in: postSignIn lands admin on
+ * /admin and employer on /employer. The student app never mentions it.
  */
 export function SunriseHeader() {
   const { lang, setLang } = useLang();
@@ -27,7 +34,6 @@ export function SunriseHeader() {
         </Link>
 
         <div className="flex items-center gap-2">
-          <RoleChip />
           <NotificationBell />
           <div
             className="flex border-2 border-ink shadow-pixel-sm"

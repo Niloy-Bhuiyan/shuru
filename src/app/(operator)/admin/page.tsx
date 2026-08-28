@@ -157,10 +157,14 @@ export default function AdminPage() {
   const workWaiting =
     pending.length + companies.length + reports.length + access.length;
 
+  // Admin destinations ONLY. The rail used to carry a link into the employer
+  // workspace, which meant the maintenance console offered a hop into a
+  // different product — three roles smeared into one navigation. An admin who
+  // genuinely needs the employer view can type the URL; it should not be a
+  // casual click from the moderation queue.
   const NAV: OperatorNavItem[] = [
     { href: "/admin", icon: "check", key: "admin.title", count: workWaiting },
     { href: "/admin/listings/new", icon: "edit", key: "admin.addListing" },
-    { href: "/employer", icon: "hammer", key: "op.employer" },
   ];
 
   if (roleLoading || !ready) {
