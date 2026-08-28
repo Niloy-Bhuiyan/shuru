@@ -10,6 +10,7 @@ import { useLang, StringKey } from "@/lib/i18n";
 const ITEMS: { href: string; icon: IconName; key: StringKey }[] = [
   { href: "/radar", icon: "radar", key: "nav.radar" },
   { href: "/saved", icon: "bookmark", key: "nav.saved" },
+  { href: "/forge", icon: "hammer", key: "nav.forge" },
   { href: "/vault", icon: "vault", key: "nav.vault" },
   { href: "/you", icon: "user", key: "nav.you" },
 ];
@@ -30,7 +31,7 @@ export function PixelNav() {
       aria-label="Main"
       className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-app border-t-3 border-ink bg-ink lg:hidden"
     >
-      <div className="grid grid-cols-4">
+      <div className="grid grid-cols-5">
         {ITEMS.map((item) => {
           const active =
             pathname === item.href || pathname.startsWith(item.href + "/");

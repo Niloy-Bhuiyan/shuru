@@ -8,8 +8,10 @@
  * rule, laid out vertically with room for the label — the extra width buys
  * legibility, not more destinations.
  *
- * Employer and admin entries appear only for those roles. That is a
- * discoverability affordance; the pages re-check and RLS is the boundary.
+ * Student destinations ONLY. Employer and admin used to be appended here for
+ * those roles, which put an operator tool inside the student's own
+ * navigation. The two workspaces now have separate shells and RoleChip in the
+ * header is the single door between them.
  */
 
 import React from "react";
@@ -17,14 +19,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cx } from "@/lib/cx";
 import { PixelIcon, IconName } from "./PixelIcon";
-import { useRole } from "@/hooks/useRole";
 import { useLang, StringKey } from "@/lib/i18n";
 
 type Item = { href: string; icon: IconName; key: StringKey };
 
-const BASE: Item[] = [
+const ITEMS: Item[] = [
   { href: "/radar", icon: "radar", key: "nav.radar" },
   { href: "/saved", icon: "bookmark", key: "nav.saved" },
+  { href: "/forge", icon: "hammer", key: "nav.forge" },
   { href: "/vault", icon: "vault", key: "nav.vault" },
   { href: "/notifications", icon: "signal", key: "nav.alerts" },
   { href: "/you", icon: "user", key: "nav.you" },
@@ -33,15 +35,6 @@ const BASE: Item[] = [
 export function PixelSideNav() {
   const pathname = usePathname();
   const { t } = useLang();
-  const { role } = useRole();
-
-  const items: Item[] = [...BASE];
-  if (role === "employer" || role === "admin") {
-    items.push({ href: "/employer", icon: "hammer", key: "emp.title" });
-  }
-  if (role === "admin") {
-    items.push({ href: "/admin", icon: "check", key: "admin.title" });
-  }
 
   return (
     <nav
@@ -49,7 +42,7 @@ export function PixelSideNav() {
       className="sticky top-[57px] hidden h-[calc(100dvh-57px)] w-[200px] shrink-0 border-r-3 border-ink bg-paper lg:flex lg:flex-col"
     >
       <ul className="flex flex-col gap-1 p-3">
-        {items.map((item) => {
+        {ITEMS.map((item) => {
           const active =
             pathname === item.href || pathname.startsWith(item.href + "/");
           return (

@@ -14,6 +14,7 @@ import { PixelSideNav } from "@/components/pixel/PixelSideNav";
 import { LoadingBlock } from "@/components/LoadingBlock";
 import { getProfile } from "@/lib/data";
 import { ForgePortal } from "@/components/ForgeTransition";
+import { AgentDock } from "@/components/agent/AgentDock";
 
 export default function MainLayout({
   children,
@@ -65,6 +66,10 @@ export default function MainLayout({
         </div>
       </div>
       <PixelNav />
+      {/* The agent rides along on every screen instead of owning one. It
+          renders nothing until the profile guard clears, so it cannot appear
+          over the onboarding redirect. */}
+      {ready && <AgentDock />}
     </ForgePortal>
   );
 }

@@ -13,18 +13,43 @@
  * the entitlement. The flow is genuine; only the money is not.
  */
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PixelButton } from "@/components/pixel/PixelButton";
 import { PixelCard } from "@/components/pixel/PixelCard";
 import { EmptyState } from "@/components/EmptyState";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { useLang } from "@/lib/i18n";
 
 type Outcome = "succeeded" | "failed";
 type Phase = "idle" | "working" | "done" | "error";
 
+/**
+ * useSearchParams() opts its subtree out of prerendering, so it has to sit
+ * under a Suspense boundary or the build fails on this route.
+ *
+ * This used to build only by accident. The student shell this page lived
+ * under withheld its children behind a profile lookup that never resolves
+ * during a prerender, so the component below was simply never reached. The
+ * operator shell renders its children directly and the missing boundary
+ * surfaced immediately.
+ */
 export default function SandboxCheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="px-4 py-6">
+          <LoadingBlock />
+        </main>
+      }
+    >
+      <SandboxCheckout />
+    </Suspense>
+  );
+}
+
+function SandboxCheckout() {
   const { t } = useLang();
   const router = useRouter();
   const sessionId = useSearchParams().get("session");

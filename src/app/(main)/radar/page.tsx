@@ -16,11 +16,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { PixelButton } from "@/components/pixel/PixelButton";
 import { PixelChip } from "@/components/pixel/PixelChip";
 import { PixelSearch } from "@/components/pixel/PixelSearch";
-import { PixelIcon } from "@/components/pixel/PixelIcon";
 import { useProfile } from "@/hooks/useProfile";
-import { useRouter } from "next/navigation";
-import { transitionTo } from "@/components/ForgeTransition";
-import { useAgentEnabled } from "@/hooks/useAgentEnabled";
 import {
   countSeniorsByCompany,
   listOpportunities,
@@ -32,8 +28,6 @@ import { daysLeft } from "@/lib/dates";
 import { useLang } from "@/lib/i18n";
 
 export default function RadarPage() {
-  const router = useRouter();
-  const agentEnabled = useAgentEnabled();
   const { profile } = useProfile();
   const { t, lang } = useLang();
 
@@ -160,47 +154,13 @@ export default function RadarPage() {
           clearLabel={t("common.clear")}
         />
 
-        {/* RESUME FORGE entry — brick-break into the forge */}
-        <button
-          type="button"
-          onClick={() => transitionTo(router, "/forge")}
-          className="mt-3 block w-full border-3 border-ink bg-ink p-3 text-left shadow-pixel active:translate-x-[2px] active:translate-y-[2px] active:shadow-pixel-none"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center border-2 border-amber bg-ink text-amber">
-                <PixelIcon name="hammer" size={16} />
-              </span>
-              <div>
-                <p className="font-pixel text-[10px] text-amber">{t("forge.entry")}</p>
-                <p className="mt-0.5 font-mono text-xs font-bold text-cream">{t("forge.entrySub")}</p>
-              </div>
-            </div>
-            <PixelIcon name="arrow-right" size={14} className="text-amber" />
-          </div>
-        </button>
-
-        {/* ASK YOUR AGENT — hidden entirely when no AI key is configured */}
-        {agentEnabled && (
-          <button
-            type="button"
-            onClick={() => router.push("/agent")}
-            className="mt-3 block w-full border-3 border-ink bg-paper p-3 text-left shadow-pixel active:translate-x-[2px] active:translate-y-[2px] active:shadow-pixel-none"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center border-2 border-ink bg-amber text-ink">
-                  <PixelIcon name="spark" size={16} />
-                </span>
-                <div>
-                  <p className="font-pixel text-[10px] text-ink">{t("agent.entry")}</p>
-                  <p className="mt-0.5 font-mono text-xs font-bold text-grey">{t("agent.entrySub")}</p>
-                </div>
-              </div>
-              <PixelIcon name="arrow-right" size={14} className="text-ink" />
-            </div>
-          </button>
-        )}
+        {/*
+          The Resume Forge and Ask-your-agent promo blocks used to sit here,
+          between the search field and the filters, pushing the actual feed
+          below the fold on a 390px screen. Both are now permanent chrome —
+          Forge is a nav destination, the agent is the corner dock — so the
+          radar shows the radar.
+        */}
 
         {/* filter chips */}
         <div className="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4">
