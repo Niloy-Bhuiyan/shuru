@@ -100,7 +100,7 @@ npm run verify:rls    # database security invariants + RLS behaviour tests
 - [Retrieval service](./services/rag/README.md) — the Python RAG service: design, API, tuning, limitations
 
 > [!IMPORTANT]
-> Read [ADR 0001](./docs/decisions/0001-source-filtering.md) before changing source filters, [ADR 0002](./docs/decisions/0002-match-abstention.md) before changing score availability, and [ADR 0003](./docs/decisions/0003-paid-placement.md) before changing how promoted listings are ranked. All three encode deliberate honesty constraints.
+> Read [ADR 0001](./docs/decisions/0001-source-filtering.md) before changing source filters, [ADR 0002](./docs/decisions/0002-match-abstention.md) before changing score availability, and [ADR 0003](./docs/decisions/0003-paid-placement.md) before changing how promoted listings are ranked. All three encode deliberate honesty constraints. [ADR 0004](./docs/decisions/0004-ai-assisted-discovery.md) is a *proposal*, not built — read it before attempting AI-assisted listing discovery, particularly the part explaining why a Claude or ChatGPT subscription cannot be delegated to a third-party app.
 
 ## License
 
