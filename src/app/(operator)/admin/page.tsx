@@ -24,6 +24,14 @@ import { LoadingBlock } from "@/components/LoadingBlock";
 import { EmptyState } from "@/components/EmptyState";
 import { SourceHealthPanel } from "@/components/admin/SourceHealthPanel";
 import {
+  inviteByEmail,
+  InviteDenied,
+  listOpenInvites,
+  revokeInvite,
+  type InvitableRole,
+  type RoleInvite,
+} from "@/lib/data/roleInvites";
+import {
   decideEmployerRequest,
   EmployerAccessDenied,
   listEmployerRequests,
@@ -52,22 +60,27 @@ export default function AdminPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [reports, setReports] = useState<ListingReport[]>([]);
   const [access, setAccess] = useState<EmployerAccessRequest[]>([]);
+  const [invites, setInvites] = useState<RoleInvite[]>([]);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<InvitableRole>("employer");
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reason, setReason] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
-    const [p, c, r, a] = await Promise.all([
+    const [p, c, r, a, iv] = await Promise.all([
       listListingsByStatus("pending"),
       listCompaniesByVerification("pending"),
       listOpenReports(),
       listEmployerRequests("pending"),
+      listOpenInvites(),
     ]);
     setPending(p);
     setCompanies(c);
     setReports(r);
     setAccess(a);
+    setInvites(iv);
     setReady(true);
   }, []);
 
@@ -110,6 +123,18 @@ export default function AdminPage() {
         throw e;
       }
       setReason((m) => ({ ...m, [id]: "" }));
+    });
+  }
+
+  async function sendInvite() {
+    await guarded(async () => {
+      try {
+        await inviteByEmail(inviteEmail, inviteRole);
+      } catch (e) {
+        if (e instanceof InviteDenied) throw new Error(e.message);
+        throw e;
+      }
+      setInviteEmail("");
     });
   }
 
@@ -323,9 +348,77 @@ export default function AdminPage() {
         </section>
       )}
 
-      {/* ── employer access requests ── */}
+      {/* ── employer access requests + referrals ── */}
       {tab === "access" && (
         <section className="mb-6 mt-4 space-y-2">
+          {/* Referral. Keyed to an address, never a shareable code: see
+              migration 0017 for why that choice removes the need for a
+              privilege-escalation RPC entirely. */}
+          <div className="border-3 border-ink bg-paper p-3 shadow-pixel-sm">
+            <p className="font-pixel text-[10px] uppercase text-ink">
+              {t("op.inviteTitle")}
+            </p>
+            <p className="mt-1 font-mono text-[10px] leading-relaxed text-grey">
+              {t("op.inviteHint")}
+            </p>
+            <div className="mt-2 flex flex-col gap-2">
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder={t("op.inviteEmail")}
+                aria-label={t("op.inviteEmail")}
+                className="w-full border-3 border-ink bg-cream px-2 py-1.5 font-mono text-[11px] text-ink placeholder:text-grey focus:outline-none"
+              />
+              <div className="flex gap-1.5">
+                {(["employer", "admin"] as const).map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setInviteRole(r)}
+                    aria-pressed={inviteRole === r}
+                    className={`flex-1 border-2 border-ink px-2 py-1 font-mono text-[10px] font-bold uppercase ${
+                      inviteRole === r ? "bg-ink text-cream" : "bg-paper text-ink"
+                    }`}
+                  >
+                    {r === "admin" ? t("admin.title") : t("emp.title")}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                disabled={busy || !inviteEmail.includes("@")}
+                onClick={sendInvite}
+                className="border-2 border-ink bg-amber px-2 py-1 font-mono text-[10px] font-bold uppercase text-ink disabled:opacity-50"
+              >
+                {t("op.inviteSend")}
+              </button>
+            </div>
+
+            {invites.length > 0 && (
+              <ul className="mt-3 space-y-1 border-t-2 border-ink/20 pt-2">
+                {invites.map((i) => (
+                  <li key={i.id} className="flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate font-mono text-[11px] text-ink">
+                      {i.email}
+                      <span className="ml-1.5 text-grey">
+                        {i.role === "admin" ? t("admin.title") : t("emp.title")}
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => guarded(() => revokeInvite(i.id))}
+                      className="shrink-0 border-2 border-ink bg-paper px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase text-ink disabled:opacity-50"
+                    >
+                      {t("op.inviteRevoke")}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
           {access.length === 0 ? (
             <EmptyState icon="check" title={t("op.accessEmpty")} />
           ) : (
