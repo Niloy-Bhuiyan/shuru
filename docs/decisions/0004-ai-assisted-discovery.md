@@ -25,20 +25,51 @@ The original request was to let a student **authenticate their Claude Pro/Max
 or ChatGPT Plus/Codex subscription** with Shuru, and have Shuru search using
 that subscription.
 
-**This is not possible and must not be attempted.** Those subscriptions are
-licensed for first-party surfaces. Neither Anthropic nor OpenAI publishes an
-OAuth flow that delegates a consumer subscription to a third-party
-application. The only mechanisms that would "work" are harvesting session
-cookies or driving a headless browser as the signed-in user. Both violate the
-providers' terms, both break on any login change, and both require Shuru to
-hold a credential that grants full account access — for a product whose entire
-claim is that it is careful with what it asserts.
+The mechanisms do exist. An earlier draft of this ADR said no such OAuth flow
+existed, which was wrong and is corrected here, because the difference between
+"impossible" and "prohibited" changes what you build.
 
-**Decision: bring-your-own API key instead.** The student supplies an Anthropic
-or OpenAI **API key**, which is a real, supported, revocable credential scoped
-to metered API access. Both providers ship a first-class server-side web search
-tool, so the search is genuine. The student pays their own tokens, which also
-removes the per-instance rate limit as a scaling concern.
+**Anthropic: exists, explicitly banned, and now pointless.** `claude
+setup-token` mints a one-year OAuth token (`CLAUDE_CODE_OAUTH_TOKEN`), and
+third-party tools did route subscription traffic through it. Anthropic closed
+that deliberately: the terms were updated on **2026-02-20** so developers may
+no longer offer Claude.ai login or route requests on behalf of users with
+Free, Pro or Max credentials, and on **2026-04-04** billing enforcement landed
+— third-party traffic stopped drawing on subscription quota and bills against
+a separate prepaid balance instead. So it is both against the terms and
+economically useless: it would not spend the subscription a student is trying
+to use.
+
+**OpenAI: not restricted the same way, but undocumented.** The Codex
+device-code flow can be driven from a web app, and at least one project does
+exactly that. But OpenAI's own auth documentation presents device codes as a
+headless-CLI convenience and describes no third-party integration path, and
+the author of the best-known implementation says publicly that they do not
+know whether it complies with the terms. It works today; nothing says it is
+allowed to.
+
+Anthropic's timeline is the base rate for how this ends. A gray area existed
+for months, tools were built on it, and it closed in one terms update with
+billing enforcement six weeks later.
+
+Worth separating two things that get conflated: **"Sign in with ChatGPT" as
+identity** — the Sign-in-with-Google equivalent - is legitimate and supported.
+**Spending the user's subscription quota** through that login is the
+undocumented part.
+
+**Decision: bring-your-own API key is the supported path.** The student
+supplies an Anthropic or OpenAI **API key**, which is a real, supported,
+revocable credential scoped to metered API access. Both providers ship a
+first-class server-side web search tool, so the search is genuine. The student
+pays their own tokens, which also removes the per-instance rate limit as a
+scaling concern.
+
+If the OpenAI subscription route is wanted, it goes behind the same provider
+adapter as a **second, clearly experimental** option — never the only way
+discovery works. Then a policy change degrades one feature instead of breaking
+the product. Cookie harvesting and driving a headless browser as the signed-in
+user stay out of scope in every case: both would have Shuru holding a
+credential that grants full account access.
 
 ## Decision
 
@@ -122,6 +153,22 @@ volume that no rate limit has to enforce.
 - Verification cannot detect a *stale* listing — a real URL for a role that
   closed last month resolves fine. Deadlines therefore stay `null` unless
   stated, and the existing expiry rules apply.
+
+## Sources for the delegation findings
+
+- Anthropic authentication and `claude setup-token`:
+  https://code.claude.com/docs/en/authentication
+- Anthropic terms change (2026-02-20) and billing enforcement (2026-04-04):
+  https://alternativeto.net/news/2026/2/anthropic-officially-bans-using-subscription-authentication-for-third-party-claude-use
+- OpenAI Codex authentication (device code presented as a headless-CLI
+  convenience, no third-party path documented):
+  https://learn.chatgpt.com/docs/auth
+- The web reimplementation of the Codex device flow, including its author's
+  own uncertainty about compliance:
+  https://explainx.ai/blog/login-with-chatgpt-codex-subscription-oauth-2026
+
+These are mostly secondary sources. **Confirm directly with OpenAI before
+building on the subscription route.**
 
 ## Not decided here
 
