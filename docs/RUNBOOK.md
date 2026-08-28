@@ -279,11 +279,27 @@ Deliberate, documented, not defects:
   a deployment without provider credentials sends nothing and leaves
   `emailed_at` / `pushed_at` null rather than overstating delivery. Both user
   preferences default to false.
-- **No Content-Security-Policy is set.** Next's App Router injects inline
-  bootstrap scripts, so a useful CSP needs per-request nonces via middleware.
-  A `unsafe-inline` policy was deliberately not added: it would imply XSS
-  protection it does not provide. The other security headers are set
-  (`next.config.mjs`).
+- **The CSP contains `script-src 'unsafe-inline'`, and that is a known
+  limitation rather than an oversight.** A nonce-based policy was built first
+  and broke the app: Next 16's Turbopack production build emits load-bearing
+  inline scripts with no nonce attribute, even when the nonce is supplied on
+  the request header as documented. It works under `next dev` and not under
+  `next build`; the browser reported a CSP violation and the page died with
+  React error #412 (hydration failure). A nonce cannot be kept alongside
+  `'unsafe-inline'` either — its presence makes browsers ignore
+  `'unsafe-inline'`, which is the same broken state.
+
+  So an injected script still executes. What the policy *does* prevent is what
+  that script can then do: `connect-src` names the only reachable origins, so
+  a stolen session cannot be exfiltrated; `form-action 'self'` stops
+  off-origin credential posting; `base-uri 'self'` stops `<base>` hijacking.
+  Containment, not prevention.
+
+  **When Next stamps nonces in production builds**, drop `'unsafe-inline'`,
+  add the nonce and `'strict-dynamic'`, and re-run
+  `.local-scripts/csptest.mjs` — a broken CSP is invisible in a header dump
+  and only shows up as a hydration failure in the browser console.
+  `src/lib/__tests__/csp.test.ts` pins the directives in the meantime.
 - **The service worker caches nothing.** It exists only to receive push
   events. An offline cache for live listing data would serve stale deadlines
   and stale odds, which is worse than an offline error.

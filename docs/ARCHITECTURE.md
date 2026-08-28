@@ -33,6 +33,7 @@ Browser
   │        └── /api/payments/* ──► payment provider adapter
   │
   └── src/middleware.ts ─────────► session refresh + role-aware route guard
+                                   + per-request Content-Security-Policy
 ```
 
 Two deployable units: the Next.js app and the Python retrieval service. Server
@@ -53,8 +54,12 @@ src/
     (auth)/          login, register, onboarding, verify, forgot, reset
     (main)/          student surfaces (radar, opportunity, saved, vault, you,
                      forge, agent, notifications, mentors)
-                     employer/  employer workspace + billing/sandbox
+    (operator)/      employer/  employer workspace + billing/sandbox
                      admin/     admin dashboard
+                     Separate route group with its own shell. URLs are
+                     unchanged — a route group is a code boundary, not a
+                     path segment — so middleware and the guards still
+                     match /employer and /admin exactly as before.
     auth/callback/   OAuth code exchange
     api/
       agent/         LLM chat loop
@@ -89,6 +94,22 @@ docs/
 ## 4. Authorization model
 
 Three roles live in `public.user_roles`, defaulting to `student`.
+
+**There is no self-write path to `user_roles`, and no RPC that grants a role.**
+That is the property the whole model rests on, so the two ways a role can
+change are both designed around preserving it:
+
+| Path | Mechanism | Why it is not an escalation |
+| --- | --- | --- |
+| Employer requests access | `employer_access_requests` + `decide_employer_access` | The function is SECURITY **INVOKER**, so the admin-only policies on `user_roles` still bind whoever calls it. It buys atomicity, not permission — a non-admin calling it gets `42501`. |
+| Admin refers someone | `role_invites`, keyed to an **email** | Consumed by `handle_new_user`, the signup trigger that was already SECURITY DEFINER and already chose the starting role. A trigger is not reachable over `/rest/v1/rpc`, and the address it matches is the one Supabase Auth just verified. |
+
+A shareable invite *code* was designed and rejected: redeeming one cannot be
+SECURITY INVOKER, so it would have required a DEFINER function callable by any
+signed-in user that grants a role in response to an attacker-controlled
+string. The set of SECURITY DEFINER functions callable by `authenticated` is
+still exactly the five RLS policy helpers, and `verify-rls.sql` fails if that
+changes.
 
 Authorization is enforced in **three layers**, each independently sufficient
 for its own scope:

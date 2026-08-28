@@ -1,292 +1,199 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1020" viewBox="0 0 1600 1020" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1190" viewBox="0 0 1600 1190" role="img" aria-labelledby="title desc">
   <title id="title">Shuru reference architecture</title>
-  <desc id="desc">Technical architecture diagram showing public clients, the Next.js application boundary, deterministic domain services, Supabase security and storage, and external integrations.</desc>
+  <desc id="desc">Architecture diagram: public clients and three role workspaces; the Next.js 16 runtime with its request boundary, route handlers and deterministic domain services; a separate Python FastAPI retrieval service running a LangGraph state machine over pgvector; the Supabase project as the authorization boundary; and optional external integrations.</desc>
 
   <style>
-    :root {
-      --bg: #09111f;
-      --panel: #101c2e;
-      --panel-2: #142238;
-      --border: #2b405d;
-      --text: #e7eef8;
-      --muted: #91a4bd;
-      --cyan: #45d4d0;
-      --blue: #7aa2f7;
-      --orange: #ff9e64;
-      --green: #7bdc9a;
-      --red: #f7768e;
-    }
-
     text { font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
-    .eyebrow { fill: var(--muted); font-size: 13px; font-weight: 700; letter-spacing: 2.2px; }
-    .group-title { fill: var(--text); font-size: 15px; font-weight: 700; letter-spacing: 1.4px; }
-    .node-title { fill: var(--text); font-size: 15px; font-weight: 700; }
-    .node-copy { fill: var(--muted); font-size: 12px; font-weight: 500; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-    .micro { fill: var(--muted); font-size: 10px; font-weight: 600; }
-    .tag { fill: var(--text); font-size: 10px; font-weight: 700; }
-    .flow-base { fill: none; stroke: #314861; stroke-width: 3; }
-    .flow-user { fill: none; stroke: var(--cyan); stroke-width: 3; stroke-dasharray: 9 9; animation: travel 1.3s linear infinite; }
-    .flow-data { fill: none; stroke: var(--blue); stroke-width: 3; stroke-dasharray: 9 9; animation: travel 1.55s linear infinite; }
-    .flow-privileged { fill: none; stroke: var(--orange); stroke-width: 3; stroke-dasharray: 7 10; animation: travel 1.2s linear infinite reverse; }
-    .flow-event { fill: none; stroke: var(--green); stroke-width: 3; stroke-dasharray: 6 10; animation: travel 1.7s linear infinite; }
-    .pulse { animation: pulse 1.8s ease-in-out infinite; }
-    .packet { animation: pulse .9s ease-in-out infinite; }
-
-    @keyframes travel { to { stroke-dashoffset: -36; } }
-    @keyframes pulse {
-      0%, 100% { opacity: .35; }
-      50% { opacity: 1; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      * { animation: none !important; }
-      .packet { display: none; }
-    }
+    .h1 { fill: #e7eef8; font-size: 30px; font-weight: 800; letter-spacing: -0.3px; }
+    .eyebrow { fill: #91a4bd; font-size: 12px; font-weight: 700; letter-spacing: 2.2px; }
+    .band { fill: #91a4bd; font-size: 12px; font-weight: 800; letter-spacing: 2.4px; }
+    .card-t { fill: #e7eef8; font-size: 15px; font-weight: 700; }
+    .card-s { fill: #91a4bd; font-size: 12.5px; }
+    .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; fill: #91a4bd; }
+    .tag { font-size: 11px; font-weight: 800; letter-spacing: 1.2px; }
+    .node-t { fill: #e7eef8; font-size: 12.5px; font-weight: 700; }
+    .flow { stroke-width: 2; fill: none; }
+    .rule { fill: #7bdc9a; font-size: 12.5px; font-weight: 700; }
   </style>
 
   <defs>
-    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
-      <path d="M32 0H0V32" fill="none" stroke="#203149" stroke-width="1" opacity=".32"/>
-    </pattern>
-    <marker id="arrow-cyan" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M0 0L10 5L0 10Z" fill="var(--cyan)"/>
+    <marker id="a-cyan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#45d4d0"/>
     </marker>
-    <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M0 0L10 5L0 10Z" fill="var(--blue)"/>
+    <marker id="a-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
     </marker>
-    <marker id="arrow-orange" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M0 0L10 5L0 10Z" fill="var(--orange)"/>
+    <marker id="a-violet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#b48ef7"/>
     </marker>
-    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M0 0L10 5L0 10Z" fill="var(--green)"/>
+    <marker id="a-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#f7768e"/>
     </marker>
   </defs>
 
-  <rect width="1600" height="1020" fill="var(--bg)"/>
-  <rect width="1600" height="1020" fill="url(#grid)"/>
+  <rect width="1600" height="1190" fill="#09111f"/>
 
-  <!-- Header -->
-  <text x="48" y="48" fill="var(--text)" font-size="27" font-weight="750">Shuru — Reference Architecture</text>
-  <text x="48" y="76" class="eyebrow">NEXT.JS 14 / SUPABASE / TYPESCRIPT / VERCEL</text>
+  <!-- header -->
+  <text x="56" y="58" class="eyebrow">NEXT.JS 16 · SUPABASE · PYTHON / FASTAPI · LANGGRAPH · LANGCHAIN · PGVECTOR · VERCEL</text>
+  <text x="56" y="94" class="h1">Shuru reference architecture</text>
+  <text x="56" y="120" class="card-s">Two deployable units. Postgres Row Level Security is the authorization boundary — everything above it is convenience.</text>
 
-  <g transform="translate(1062 38)">
-    <circle cx="6" cy="6" r="6" fill="var(--cyan)"/>
-    <text x="20" y="10" class="micro">USER REQUEST</text>
-    <circle cx="126" cy="6" r="6" fill="var(--blue)"/>
-    <text x="140" y="10" class="micro">RLS DATA</text>
-    <circle cx="224" cy="6" r="6" fill="var(--orange)"/>
-    <text x="238" y="10" class="micro">PRIVILEGED</text>
-    <circle cx="344" cy="6" r="6" fill="var(--green)"/>
-    <text x="358" y="10" class="micro">EVENT / DELIVERY</text>
+  <g transform="translate(1080,40)">
+    <line x1="0" y1="10" x2="26" y2="10" stroke="#45d4d0" class="flow" marker-end="url(#a-cyan)"/>
+    <text x="34" y="14" class="mono">user request</text>
+    <line x1="0" y1="34" x2="26" y2="34" stroke="#7aa2f7" class="flow" marker-end="url(#a-blue)"/>
+    <text x="34" y="38" class="mono">RLS-scoped data</text>
+    <line x1="230" y1="10" x2="256" y2="10" stroke="#b48ef7" class="flow" marker-end="url(#a-violet)"/>
+    <text x="264" y="14" class="mono">retrieval</text>
+    <line x1="230" y1="34" x2="256" y2="34" stroke="#f7768e" class="flow" marker-end="url(#a-red)"/>
+    <text x="264" y="38" class="mono">abstain / privileged</text>
   </g>
 
-  <!-- System boundaries -->
-  <rect x="44" y="112" width="272" height="840" rx="8" fill="var(--panel)" stroke="var(--border)" stroke-width="2"/>
-  <rect x="340" y="112" width="824" height="558" rx="8" fill="var(--panel)" stroke="var(--border)" stroke-width="2"/>
-  <rect x="340" y="698" width="824" height="254" rx="8" fill="var(--panel)" stroke="var(--blue)" stroke-width="2"/>
-  <rect x="1188" y="112" width="368" height="840" rx="8" fill="var(--panel)" stroke="var(--border)" stroke-width="2"/>
+  <!-- band 1 -->
+  <text x="56" y="170" class="band">PUBLIC CLIENT</text>
+  <rect x="56" y="184" width="1488" height="128" rx="14" fill="#101c2e" stroke="#2b405d"/>
+  <g transform="translate(80,206)">
+    <rect width="330" height="86" rx="10" fill="#142238" stroke="#2b405d"/>
+    <text x="18" y="28" class="card-t">Student app</text>
+    <text x="18" y="49" class="card-s">Radar · Saved · Forge · Vault · You</text>
+    <text x="18" y="70" class="mono">src/app/(main)</text>
+  </g>
+  <g transform="translate(430,206)">
+    <rect width="330" height="86" rx="10" fill="#142238" stroke="#2b405d"/>
+    <text x="18" y="28" class="card-t">Operator workspace</text>
+    <text x="18" y="49" class="card-s">Employer pipeline · Admin moderation</text>
+    <text x="18" y="70" class="mono">src/app/(operator)</text>
+  </g>
+  <g transform="translate(780,206)">
+    <rect width="330" height="86" rx="10" fill="#142238" stroke="#2b405d"/>
+    <text x="18" y="28" class="card-t">Agent dock</text>
+    <text x="18" y="49" class="card-s">Corner chat on every signed-in screen</text>
+    <text x="18" y="70" class="mono">SSE · hides with no provider key</text>
+  </g>
+  <g transform="translate(1130,206)">
+    <rect width="390" height="86" rx="10" fill="#142238" stroke="#2b405d"/>
+    <text x="18" y="28" class="card-t">Trust assumption</text>
+    <text x="18" y="49" class="card-s">The client is never trusted. Hiding a link</text>
+    <text x="18" y="70" class="card-s">is an affordance, never a control.</text>
+  </g>
 
-  <text x="64" y="144" class="eyebrow">PUBLIC CLIENT</text>
-  <text x="360" y="144" class="eyebrow">NEXT.JS / VERCEL RUNTIME</text>
-  <text x="360" y="730" class="eyebrow">SUPABASE PROJECT · AUTHORIZATION BOUNDARY</text>
-  <text x="1208" y="144" class="eyebrow">EXTERNAL DEPENDENCIES</text>
+  <line x1="800" y1="312" x2="800" y2="352" stroke="#45d4d0" class="flow" marker-end="url(#a-cyan)"/>
 
-  <!-- Client -->
-  <rect x="68" y="168" width="224" height="104" rx="6" fill="var(--panel-2)" stroke="var(--cyan)" stroke-width="2"/>
-  <circle cx="90" cy="193" r="7" fill="var(--cyan)" class="pulse"/>
-  <text x="108" y="198" class="node-title">Browser / PWA</text>
-  <text x="88" y="222" class="node-copy">Responsive App Router UI</text>
-  <text x="88" y="242" class="node-copy">Service worker + push client</text>
+  <!-- band 2 -->
+  <text x="56" y="378" class="band">NEXT.JS 16 RUNTIME · VERCEL</text>
+  <rect x="56" y="392" width="1488" height="282" rx="14" fill="#101c2e" stroke="#2b405d"/>
 
-  <text x="68" y="316" class="group-title">Role surfaces</text>
-  <rect x="68" y="336" width="224" height="62" rx="5" fill="#0d1828" stroke="var(--border)"/>
-  <text x="84" y="361" class="node-title">Student</text>
-  <text x="84" y="381" class="node-copy">Radar · Vault · Forge · Agent</text>
-  <rect x="68" y="414" width="224" height="62" rx="5" fill="#0d1828" stroke="var(--border)"/>
-  <text x="84" y="439" class="node-title">Employer</text>
-  <text x="84" y="459" class="node-copy">Company · Listings · Applicants</text>
-  <rect x="68" y="492" width="224" height="62" rx="5" fill="#0d1828" stroke="var(--border)"/>
-  <text x="84" y="517" class="node-title">Administrator</text>
-  <text x="84" y="537" class="node-copy">Moderation · Sources · Audit</text>
+  <g transform="translate(80,414)">
+    <rect width="440" height="108" rx="10" fill="#18293f" stroke="#45d4d0" stroke-opacity="0.5"/>
+    <text x="18" y="26" class="tag" fill="#45d4d0">REQUEST BOUNDARY</text>
+    <text x="18" y="50" class="card-t">src/middleware.ts</text>
+    <text x="18" y="71" class="card-s">Session refresh · role gate · CSP per request</text>
+    <text x="18" y="91" class="mono">student / employer / admin route sets</text>
+  </g>
+  <g transform="translate(540,414)">
+    <rect width="440" height="108" rx="10" fill="#142238" stroke="#2b405d"/>
+    <text x="18" y="26" class="tag" fill="#91a4bd">ROUTE HANDLERS</text>
+    <text x="18" y="50" class="card-t">src/app/api/*</text>
+    <text x="18" y="71" class="card-s">agent · ask · ingest · cron · payments</text>
+    <text x="18" y="91" class="mono">timing-safe shared-secret compare</text>
+  </g>
+  <g transform="translate(1000,414)">
+    <rect width="520" height="108" rx="10" fill="#142238" stroke="#2b405d"/>
+    <text x="18" y="26" class="tag" fill="#91a4bd">DATA ACCESS</text>
+    <text x="18" y="50" class="card-t">src/lib/data/*</text>
+    <text x="18" y="71" class="card-s">One module per domain, client-side, RLS-scoped</text>
+    <text x="18" y="91" class="mono">the service-role key never reaches the browser</text>
+  </g>
 
-  <text x="68" y="610" class="group-title">Session model</text>
-  <rect x="68" y="628" width="224" height="92" rx="5" fill="#0d1828" stroke="var(--border)"/>
-  <text x="84" y="654" class="node-copy">Supabase JWT in SSR cookies</text>
-  <text x="84" y="675" class="node-copy">Anon client remains RLS-scoped</text>
-  <text x="84" y="696" class="node-copy">OAuth callback handled server-side</text>
+  <g transform="translate(80,542)">
+    <rect width="900" height="112" rx="10" fill="#18293f" stroke="#7bdc9a" stroke-opacity="0.45"/>
+    <text x="18" y="26" class="tag" fill="#7bdc9a">DETERMINISTIC DOMAIN SERVICES — NO MODEL DECIDES ELIGIBILITY</text>
+    <text x="18" y="52" class="card-t">Matching · Eligibility · Reality Check · ATS scoring · ingest normalise + dedupe</text>
+    <text x="18" y="74" class="card-s">Pure, unit-tested functions. Below MIN_COVERAGE the engine returns null instead of a number.</text>
+    <text x="18" y="98" class="rule">SCORE OR ABSTAIN — ADR 0002</text>
+  </g>
+  <g transform="translate(1000,542)">
+    <rect width="520" height="112" rx="10" fill="#142238" stroke="#b48ef7" stroke-opacity="0.5"/>
+    <text x="18" y="26" class="tag" fill="#b48ef7">RETRIEVAL CLIENT</text>
+    <text x="18" y="50" class="card-t">src/lib/rag/client.ts · server-only</text>
+    <text x="18" y="71" class="card-s">User id comes from the session, never the body</text>
+    <text x="18" y="93" class="mono">service absent → /api/ask says unavailable</text>
+  </g>
 
-  <rect x="68" y="846" width="224" height="74" rx="5" fill="#0d1828" stroke="var(--border)"/>
-  <text x="84" y="873" class="node-title">Trust assumption</text>
-  <text x="84" y="895" class="node-copy">The client is never trusted.</text>
+  <path d="M1260 654 L1260 706" stroke="#b48ef7" class="flow" marker-end="url(#a-violet)"/>
+  <path d="M300 654 L300 962" stroke="#7aa2f7" class="flow" marker-end="url(#a-blue)"/>
 
-  <!-- Runtime: request boundary -->
-  <text x="364" y="184" class="group-title">Request boundary</text>
-  <rect x="364" y="204" width="360" height="104" rx="6" fill="var(--panel-2)" stroke="var(--cyan)" stroke-width="2"/>
-  <text x="386" y="233" class="node-title mono">middleware.ts</text>
-  <text x="386" y="256" class="node-copy">Refresh session · redirect anonymous users</text>
-  <text x="386" y="278" class="node-copy">Gate student / employer / admin routes</text>
-  <text x="386" y="296" class="micro">DEFENCE IN DEPTH — NOT THE FINAL AUTHORITY</text>
+  <!-- band 3 -->
+  <text x="880" y="732" class="band">PYTHON RETRIEVAL SERVICE · services/rag · SEPARATE DEPLOYABLE</text>
+  <rect x="880" y="746" width="664" height="180" rx="14" fill="#101c2e" stroke="#b48ef7" stroke-opacity="0.45"/>
+  <text x="902" y="774" class="card-t">FastAPI · LangGraph StateGraph · LangChain splitter · fastembed ONNX</text>
 
-  <rect x="750" y="204" width="390" height="104" rx="6" fill="var(--panel-2)" stroke="var(--border)" stroke-width="2"/>
-  <text x="772" y="233" class="node-title mono">/auth/callback</text>
-  <text x="772" y="256" class="node-copy">Exchange OAuth code · establish session</text>
-  <text x="772" y="278" class="node-copy">Email verification and recovery flows</text>
+  <g transform="translate(902,788)">
+    <rect width="100" height="32" rx="8" fill="#18293f" stroke="#2b405d"/>
+    <text x="50" y="21" class="node-t" text-anchor="middle">retrieve</text>
+    <line x1="100" y1="16" x2="124" y2="16" stroke="#b48ef7" class="flow" marker-end="url(#a-violet)"/>
 
-  <!-- Runtime: application layer -->
-  <text x="364" y="352" class="group-title">Application layer</text>
-  <rect x="364" y="372" width="360" height="116" rx="6" fill="var(--panel-2)" stroke="var(--border)" stroke-width="2"/>
-  <text x="386" y="401" class="node-title">Server Components</text>
-  <text x="386" y="424" class="node-copy">App Router rendering · role-aware surfaces</text>
-  <text x="386" y="445" class="node-copy mono">src/app/(auth) · src/app/(main)</text>
-  <text x="386" y="466" class="node-copy mono">lib/data/* → session-scoped queries</text>
+    <rect x="124" width="100" height="32" rx="8" fill="#18293f" stroke="#2b405d"/>
+    <text x="174" y="21" class="node-t" text-anchor="middle">grade</text>
+    <line x1="224" y1="16" x2="248" y2="16" stroke="#b48ef7" class="flow" marker-end="url(#a-violet)"/>
 
-  <rect x="750" y="372" width="390" height="116" rx="6" fill="var(--panel-2)" stroke="var(--orange)" stroke-width="2"/>
-  <text x="772" y="401" class="node-title">Route Handlers</text>
-  <text x="772" y="424" class="node-copy mono">agent · explain · forge-section · parse-resume</text>
-  <text x="772" y="445" class="node-copy mono">ingest · cron · notifications/dispatch</text>
-  <text x="772" y="466" class="node-copy">Role rechecks · protected scheduled jobs</text>
+    <rect x="248" width="100" height="32" rx="8" fill="#18293f" stroke="#2b405d"/>
+    <text x="298" y="21" class="node-t" text-anchor="middle">generate</text>
+    <line x1="348" y1="16" x2="372" y2="16" stroke="#b48ef7" class="flow" marker-end="url(#a-violet)"/>
 
-  <!-- Domain services -->
-  <text x="364" y="516" class="group-title">Domain services</text>
-  <rect x="364" y="548" width="144" height="94" rx="5" fill="#0d1828" stroke="var(--border)"/>
-  <text x="380" y="575" class="node-title">Matching</text>
-  <text x="380" y="598" class="node-copy">Eligibility</text>
-  <text x="380" y="617" class="node-copy">Reality Check</text>
-  <text x="380" y="634" class="micro">SCORE OR ABSTAIN</text>
+    <rect x="372" width="146" height="32" rx="8" fill="#18293f" stroke="#f7768e" stroke-opacity="0.6"/>
+    <text x="445" y="21" class="node-t" text-anchor="middle">verify_grounding</text>
 
-  <rect x="522" y="548" width="144" height="94" rx="5" fill="#0d1828" stroke="var(--border)"/>
-  <text x="538" y="575" class="node-title">Resume</text>
-  <text x="538" y="598" class="node-copy">Extract · ATS</text>
-  <text x="538" y="617" class="node-copy">JD match · PDF</text>
-  <text x="538" y="634" class="micro">PDF / DOCX</text>
+    <path d="M174 32 L174 54 L286 54" stroke="#f7768e" class="flow" marker-end="url(#a-red)"/>
+    <path d="M445 32 L445 54 L354 54" stroke="#f7768e" class="flow" marker-end="url(#a-red)"/>
+    <text x="320" y="76" class="tag" fill="#f7768e" text-anchor="middle">ABSTAIN</text>
+  </g>
 
-  <rect x="680" y="548" width="144" height="94" rx="5" fill="#0d1828" stroke="var(--orange)"/>
-  <text x="696" y="575" class="node-title">Ingestion</text>
-  <text x="696" y="598" class="node-copy">Filter · Normalize</text>
-  <text x="696" y="617" class="node-copy">Dedupe · Freshness</text>
-  <text x="696" y="634" class="micro">ISOLATED SOURCES</text>
+  <text x="902" y="896" class="card-s">Three abstain exits and one self-rejection: a draft that cites nothing, or cites a passage that was never</text>
+  <text x="902" y="913" class="card-s">retrieved, is discarded rather than returned. Threshold 0.46 — measured, not the shipped default of 0.75.</text>
 
-  <rect x="838" y="548" width="144" height="94" rx="5" fill="#0d1828" stroke="var(--green)"/>
-  <text x="854" y="575" class="node-title">Notification</text>
-  <text x="854" y="598" class="node-copy">Rows · Priority</text>
-  <text x="854" y="617" class="node-copy">Email · Push</text>
-  <text x="854" y="634" class="micro">STAMP ON SUCCESS</text>
+  <path d="M1212 926 L1212 962" stroke="#b48ef7" class="flow" marker-end="url(#a-violet)"/>
 
-  <rect x="996" y="548" width="144" height="94" rx="5" fill="#0d1828" stroke="var(--border)"/>
-  <text x="1012" y="575" class="node-title">AI adapter</text>
-  <text x="1012" y="598" class="node-copy">Tools · Loop</text>
-  <text x="1012" y="617" class="node-copy">Streaming</text>
-  <text x="1012" y="634" class="micro">OPTIONAL</text>
+  <!-- band 4 -->
+  <text x="56" y="962" class="band">SUPABASE PROJECT · AUTHORIZATION BOUNDARY</text>
+  <rect x="56" y="976" width="1488" height="140" rx="14" fill="#101c2e" stroke="#f7768e" stroke-opacity="0.45"/>
 
-  <!-- Supabase -->
-  <rect x="364" y="756" width="180" height="150" rx="6" fill="var(--panel-2)" stroke="var(--blue)" stroke-width="2"/>
-  <circle cx="386" cy="782" r="6" fill="var(--blue)" class="pulse"/>
-  <text x="404" y="787" class="node-title">Supabase Auth</text>
-  <text x="384" y="814" class="node-copy">Email / password</text>
-  <text x="384" y="835" class="node-copy">Google + GitHub OAuth</text>
-  <text x="384" y="856" class="node-copy">JWT + SSR session</text>
-  <text x="384" y="884" class="micro">auth.users</text>
+  <g transform="translate(80,996)">
+    <rect width="360" height="100" rx="10" fill="#142238" stroke="#2b405d"/>
+    <text x="18" y="26" class="card-t">Postgres · Row Level Security</text>
+    <text x="18" y="47" class="card-s">RLS on every table. Policies are the fine</text>
+    <text x="18" y="65" class="card-s">gate, grants the coarse one; both required.</text>
+    <text x="18" y="87" class="mono">test:rls asserts SQLSTATE 42501</text>
+  </g>
+  <g transform="translate(460,996)">
+    <rect width="360" height="100" rx="10" fill="#142238" stroke="#2b405d"/>
+    <text x="18" y="26" class="card-t">Guard triggers · role model</text>
+    <text x="18" y="47" class="card-s">No self-write path to user_roles. Employer</text>
+    <text x="18" y="65" class="card-s">access is request → approve; invites are</text>
+    <text x="18" y="87" class="card-s">email-keyed, so no escalation RPC exists.</text>
+  </g>
+  <g transform="translate(840,996)">
+    <rect width="330" height="100" rx="10" fill="#142238" stroke="#b48ef7" stroke-opacity="0.5"/>
+    <text x="18" y="26" class="card-t">pgvector · rag_chunks</text>
+    <text x="18" y="47" class="card-s">HNSW + cosine, same database —</text>
+    <text x="18" y="65" class="card-s">no new infrastructure. No write policy</text>
+    <text x="18" y="87" class="card-s">at all, so no user can inject text.</text>
+  </g>
+  <g transform="translate(1190,996)">
+    <rect width="330" height="100" rx="10" fill="#142238" stroke="#2b405d"/>
+    <text x="18" y="26" class="card-t">Auth · Storage</text>
+    <text x="18" y="47" class="card-s">Email + OAuth, SSR cookie sessions.</text>
+    <text x="18" y="65" class="card-s">handle_new_user sets the starting role</text>
+    <text x="18" y="87" class="card-s">and consumes any open invite.</text>
+  </g>
 
-  <rect x="564" y="756" width="380" height="150" rx="6" fill="var(--panel-2)" stroke="var(--blue)" stroke-width="2"/>
-  <circle cx="586" cy="782" r="6" fill="var(--blue)" class="pulse"/>
-  <text x="604" y="787" class="node-title">PostgreSQL + Row Level Security</text>
-  <text x="584" y="814" class="node-copy">Owner policies · employer membership · admin scope</text>
-  <text x="584" y="835" class="node-copy">Column guards · transition triggers · audit history</text>
-  <text x="584" y="856" class="node-copy mono">profiles · roles · opportunities · applications · outcomes</text>
-  <text x="584" y="877" class="node-copy mono">notifications · reports · ingestion_runs · admin_audit_log</text>
-  <rect x="584" y="889" width="340" height="4" rx="2" fill="var(--blue)"/>
-
-  <rect x="964" y="756" width="176" height="150" rx="6" fill="var(--panel-2)" stroke="var(--blue)" stroke-width="2"/>
-  <circle cx="986" cy="782" r="6" fill="var(--blue)" class="pulse"/>
-  <text x="1004" y="787" class="node-title">Storage</text>
-  <text x="984" y="814" class="node-copy">Private resumes bucket</text>
-  <text x="984" y="835" class="node-copy mono">user_id / filename</text>
-  <text x="984" y="856" class="node-copy">Owner-scoped policy</text>
-  <text x="984" y="884" class="micro">PDF / DOCX</text>
-
-  <rect x="364" y="920" width="776" height="18" rx="4" fill="#0c1626" stroke="var(--blue)"/>
-  <text x="752" y="933" fill="var(--blue)" font-size="10" font-weight="700" text-anchor="middle">RLS IS THE FINAL AUTHORIZATION BOUNDARY</text>
-
-  <!-- External dependencies -->
-  <text x="1212" y="184" class="group-title">Deployment + scheduling</text>
-  <rect x="1212" y="204" width="320" height="116" rx="6" fill="var(--panel-2)" stroke="var(--orange)" stroke-width="2"/>
-  <text x="1234" y="233" class="node-title">Vercel Runtime</text>
-  <text x="1234" y="256" class="node-copy">Next.js functions</text>
-  <text x="1234" y="277" class="node-copy mono">ingest: 0 */6 * * *</text>
-  <text x="1234" y="298" class="node-copy mono">dispatch: */15 * * * *</text>
-
-  <text x="1212" y="370" class="group-title">Listing providers</text>
-  <rect x="1212" y="390" width="320" height="126" rx="6" fill="var(--panel-2)" stroke="var(--border)" stroke-width="2"/>
-  <text x="1234" y="419" class="node-title">Adapter Registry</text>
-  <text x="1234" y="443" class="node-copy">RemoteOK · Arbeitnow · Lever</text>
-  <text x="1234" y="464" class="node-copy">Ashby · Adzuna</text>
-  <text x="1234" y="491" class="micro">TIMEOUT-BOUNDED · PARTIAL FAILURE SAFE</text>
-
-  <text x="1212" y="568" class="group-title">Optional intelligence</text>
-  <rect x="1212" y="588" width="320" height="106" rx="6" fill="var(--panel-2)" stroke="var(--border)" stroke-width="2"/>
-  <text x="1234" y="617" class="node-title">Google Gemini</text>
-  <text x="1234" y="641" class="node-copy">Agent · explanations · resume structuring</text>
-  <text x="1234" y="667" class="micro">ENVIRONMENT-GATED · HIDDEN WHEN DISABLED</text>
-
-  <text x="1212" y="746" class="group-title">Notification delivery</text>
-  <rect x="1212" y="766" width="320" height="132" rx="6" fill="var(--panel-2)" stroke="var(--green)" stroke-width="2"/>
-  <text x="1234" y="795" class="node-title">Email</text>
-  <text x="1234" y="817" class="node-copy">Resend · Postmark · console adapter</text>
-  <text x="1234" y="850" class="node-title">Browser Push</text>
-  <text x="1234" y="872" class="node-copy">VAPID · Web Push · service worker</text>
-
-  <!-- Core request flow -->
-  <path d="M292 220H332V256H356" class="flow-base"/>
-  <path d="M292 220H332V256H356" class="flow-user" marker-end="url(#arrow-cyan)"/>
-  <path d="M544 308V350" class="flow-base"/>
-  <path d="M544 308V350" class="flow-user" marker-end="url(#arrow-cyan)"/>
-  <path d="M724 430H742" class="flow-base"/>
-  <path d="M724 430H742" class="flow-user" marker-end="url(#arrow-cyan)"/>
-
-  <!-- Runtime to domain bus -->
-  <path d="M544 488V530H1068V540M436 530V540M594 530V540M752 530V540M910 530V540" class="flow-base"/>
-  <path d="M544 488V530H1068V540M436 530V540M594 530V540M752 530V540M910 530V540" class="flow-user"/>
-
-  <!-- Session to Auth -->
-  <path d="M364 256H328V680H454V748" class="flow-base"/>
-  <path d="M364 256H328V680H454V748" class="flow-data" marker-end="url(#arrow-blue)"/>
-
-  <!-- Domain data bus -->
-  <path d="M436 642V680H754M594 642V680M752 642V680M910 642V680M1068 642V680M754 680V748M1052 680V748" class="flow-base"/>
-  <path d="M436 642V680H754M594 642V680M752 642V680M910 642V680M1068 642V680M754 680V748M1052 680V748" class="flow-data" marker-end="url(#arrow-blue)"/>
-
-  <!-- Privileged server path -->
-  <path d="M945 488V700H836V748" class="flow-base"/>
-  <path d="M945 488V700H836V748" class="flow-privileged" marker-end="url(#arrow-orange)"/>
-  <rect x="870" y="693" width="258" height="22" rx="4" fill="#261b18" stroke="var(--orange)"/>
-  <text x="999" y="708" fill="var(--orange)" font-size="10" font-weight="700" text-anchor="middle">SERVICE ROLE · SERVER ONLY · BYPASSES RLS</text>
-
-  <!-- External integrations -->
-  <path d="M1212 262H1154V430H1140" class="flow-base"/>
-  <path d="M1212 262H1154V430H1140" class="flow-privileged" marker-end="url(#arrow-orange)"/>
-  <path d="M1212 452H1172V595H1148" class="flow-base"/>
-  <path d="M1212 452H1172V595H1148" class="flow-privileged" marker-end="url(#arrow-orange)"/>
-  <path d="M1212 641H1168V610H1148" class="flow-base"/>
-  <path d="M1212 641H1168V610H1148" class="flow-user" marker-end="url(#arrow-cyan)"/>
-  <path d="M1212 832H1180V960H910V650" class="flow-base"/>
-  <path d="M1212 832H1180V960H910V650" class="flow-event" marker-end="url(#arrow-green)"/>
-
-  <!-- Animated packets -->
-  <circle class="packet" r="5" fill="var(--cyan)">
-    <animateMotion dur="2.5s" repeatCount="indefinite" path="M292 220 H332 V256 H356"/>
-  </circle>
-  <circle class="packet" r="5" fill="var(--blue)">
-    <animateMotion dur="3.2s" begin=".7s" repeatCount="indefinite" path="M436 642 V680 H754 V748"/>
-  </circle>
-  <circle class="packet" r="5" fill="var(--orange)">
-    <animateMotion dur="3s" begin=".4s" repeatCount="indefinite" path="M1212 452 H1172 V595 H1148"/>
-  </circle>
-  <circle class="packet" r="5" fill="var(--green)">
-    <animateMotion dur="3.5s" begin="1s" repeatCount="indefinite" path="M910 650 V960 H1180 V832 H1212"/>
-  </circle>
-
-  <!-- Footer -->
-  <text x="48" y="992" class="micro">NO SEPARATE BACKEND SERVICE · ROUTE HANDLERS AND SERVER COMPONENTS FORM THE APPLICATION LAYER</text>
-  <text x="1552" y="992" class="micro" text-anchor="end">OPTIONAL DEPENDENCIES FAIL CLOSED</text>
+  <!-- band 5 -->
+  <text x="56" y="1158" class="band">EXTERNAL — ALL OPTIONAL · A MISSING KEY HIDES THE FEATURE, IT NEVER FAKES OUTPUT</text>
+  <g class="mono">
+    <text x="700" y="1158">Anthropic / Gemini</text>
+    <text x="860" y="1158">Lever · Ashby · Arbeitnow · Adzuna</text>
+    <text x="1130" y="1158">Resend / Postmark</text>
+    <text x="1280" y="1158">Web Push</text>
+    <text x="1390" y="1158">Sandbox payments</text>
+  </g>
 </svg>
