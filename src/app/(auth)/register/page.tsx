@@ -19,6 +19,7 @@ import { PixelButton } from "@/components/pixel/PixelButton";
 import { PixelInput } from "@/components/pixel/PixelInput";
 import { saveProfile } from "@/lib/data";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { goAfterSignIn } from "@/lib/auth/postSignIn";
 import { isSupabaseConfigured } from "@/lib/auth/config";
 import { useLang } from "@/lib/i18n";
 import type { Profile } from "@/lib/types";
@@ -102,7 +103,8 @@ export default function RegisterPage() {
 
       if (data.session && data.user) {
         await saveProfile(buildProfile(data.user.id));
-        router.replace("/radar");
+        // Full document navigation — see goAfterSignIn.
+        goAfterSignIn();
       } else {
         // Email confirmation is ON — park the profile for first login.
         window.localStorage.setItem(

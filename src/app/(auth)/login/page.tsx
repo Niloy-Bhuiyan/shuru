@@ -18,6 +18,7 @@ import { PixelButton } from "@/components/pixel/PixelButton";
 import { PixelInput } from "@/components/pixel/PixelInput";
 import { getProfile, saveProfile } from "@/lib/data";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { goAfterSignIn } from "@/lib/auth/postSignIn";
 import { isSupabaseConfigured } from "@/lib/auth/config";
 import { useLang } from "@/lib/i18n";
 import type { Profile } from "@/lib/types";
@@ -79,7 +80,8 @@ function LoginForm() {
           window.localStorage.removeItem(PENDING_PROFILE_KEY);
         }
       }
-      router.replace("/radar");
+      // Full document navigation, not router.replace — see goAfterSignIn.
+      goAfterSignIn(params.get("next"));
     } catch {
       setError(t("auth.errGeneric"));
     } finally {
@@ -95,7 +97,7 @@ function LoginForm() {
         </p>
       )}
 
-      <OAuthButtons next="/radar" />
+      <OAuthButtons next={params.get("next") ?? "/radar"} />
 
       <PixelInput
         label={t("auth.email")}

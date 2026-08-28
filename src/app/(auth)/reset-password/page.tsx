@@ -18,6 +18,7 @@ import { PixelButton } from "@/components/pixel/PixelButton";
 import { PixelInput } from "@/components/pixel/PixelInput";
 import { LoadingBlock } from "@/components/LoadingBlock";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { goAfterSignIn } from "@/lib/auth/postSignIn";
 import { useLang } from "@/lib/i18n";
 
 const MIN_PASSWORD = 8;
@@ -72,7 +73,8 @@ export default function ResetPasswordPage() {
         return;
       }
       setDone(true);
-      router.replace("/radar");
+      // Full document navigation — see goAfterSignIn.
+      goAfterSignIn();
     } catch {
       setError(t("auth.errGeneric"));
     } finally {
