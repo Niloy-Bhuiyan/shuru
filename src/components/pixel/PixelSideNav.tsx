@@ -20,6 +20,7 @@ import { usePathname } from "next/navigation";
 import { cx } from "@/lib/cx";
 import { PixelIcon, IconName } from "./PixelIcon";
 import { useLang, StringKey } from "@/lib/i18n";
+import { armForgeTransition } from "@/components/ForgeTransition";
 
 type Item = { href: string; icon: IconName; key: StringKey };
 
@@ -49,6 +50,7 @@ export function PixelSideNav() {
             <li key={item.href}>
               <Link
                 href={item.href}
+                onClick={item.href === "/forge" ? armForgeTransition : undefined}
                 aria-current={active ? "page" : undefined}
                 className={cx(
                   "flex items-center gap-2.5 border-3 px-2.5 py-2 font-mono text-[11px] font-bold uppercase tracking-wide",

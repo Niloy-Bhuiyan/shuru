@@ -48,7 +48,13 @@ export function WizardProgress({
               "flex-1 border-2 border-ink pb-1 pt-0.5",
               done && "bg-mint active:translate-x-[1px] active:translate-y-[1px]",
               active && "bg-amber shadow-pixel-sm",
-              !done && !active && "dither-grey bg-paper opacity-60"
+              // Upcoming steps used to carry `opacity-60`, which composites
+              // the whole tile toward the dark forge background and drags the
+              // ink label down with it. A step you have not reached should
+              // read as quieter, not as unreadable — so the muting is done
+              // with a flatter fill and a lighter label, and the text keeps
+              // its own contrast.
+              !done && !active && "dither-grey bg-paper/85"
             )}
           >
             <span
@@ -57,7 +63,9 @@ export function WizardProgress({
                 active && "pixel-blink"
               )}
             />
-            <span className="mt-1 block truncate px-0.5 text-center font-pixel text-[7px] text-ink">
+            {/* 7px was below the point where a pixel font resolves at all;
+                9px is still small enough to fit five steps across 390px. */}
+            <span className="mt-1 block truncate px-0.5 text-center font-pixel text-[9px] text-ink">
               {t(STEP_LABEL[s])}
             </span>
           </button>

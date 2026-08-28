@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { cx } from "@/lib/cx";
 import { PixelIcon, IconName } from "./PixelIcon";
 import { useLang, StringKey } from "@/lib/i18n";
+import { armForgeTransition } from "@/components/ForgeTransition";
 
 const ITEMS: { href: string; icon: IconName; key: StringKey }[] = [
   { href: "/radar", icon: "radar", key: "nav.radar" },
@@ -39,6 +40,9 @@ export function PixelNav() {
             <Link
               key={item.href}
               href={item.href}
+              // Arm the Forge arrival animation; a plain navigation still
+              // happens, so middle-click and new-tab keep working.
+              onClick={item.href === "/forge" ? armForgeTransition : undefined}
               aria-current={active ? "page" : undefined}
               className={cx(
                 "flex flex-col items-center gap-1 py-2 pt-1.5 font-mono text-[10px] font-bold uppercase tracking-wide",

@@ -29,14 +29,29 @@ export function transitionTo(
   router: { push: (href: string) => void },
   href: string
 ) {
-  if (typeof window !== "undefined") {
-    try {
-      window.sessionStorage.setItem(FLAG, "1");
-    } catch {
-      /* storage unavailable → navigate without the animation */
-    }
-  }
+  armForgeTransition();
   router.push(href);
+}
+
+/**
+ * Arm the arrival animation without navigating.
+ *
+ * The nav links are plain <Link>s and should stay that way — intercepting a
+ * navigation to run an animation is how you break middle-click and
+ * open-in-new-tab. Arming the flag on click lets the browser navigate
+ * normally and lets ForgePortal do the rest on the other side.
+ *
+ * This exists because the Forge became a nav destination: the two callers of
+ * transitionTo() were the radar promo block and the Forge's own back button,
+ * and both are gone.
+ */
+export function armForgeTransition() {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(FLAG, "1");
+  } catch {
+    /* storage unavailable → navigate without the animation */
+  }
 }
 
 /**

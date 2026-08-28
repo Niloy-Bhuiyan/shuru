@@ -50,12 +50,17 @@ export default function MainLayout({
       <div className="lg:flex lg:items-start">
         <PixelSideNav />
         {/*
-          Cap the reading column on desktop. Without it, single-column screens
-          (alerts, profile) stretch a form across ~920px, which is wide enough
-          that the eye loses the line. 880px still leaves the radar feed two
-          comfortable card columns.
+          The content column fills exactly the space the sidebar leaves:
+          1120px frame - 200px sidebar = 920px.
+
+          It used to be capped at 880px for reading-line reasons, which left a
+          40px strip of the cream frame showing down the right-hand side. On
+          the ordinary cream screens that was invisible. On the Forge and the
+          agent — full-bleed dark "worlds" — it rendered as a pale gutter
+          beside a dark panel and read as a rendering bug. 920px is still a
+          comfortable measure and still gives the radar feed two card columns.
         */}
-        <div className="min-w-0 flex-1 lg:max-w-[880px]">
+        <div className="min-w-0 flex-1 lg:max-w-[920px]">
           {ready ? (
             <div className="pb-20 lg:pb-8">{children}</div>
           ) : (

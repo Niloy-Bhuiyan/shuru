@@ -12,11 +12,9 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { PixelButton } from "@/components/pixel/PixelButton";
 import { PixelIcon } from "@/components/pixel/PixelIcon";
 import { LoadingBlock } from "@/components/LoadingBlock";
-import { transitionTo } from "@/components/ForgeTransition";
 import {
   WizardProgress,
   type WizardStep,
@@ -34,7 +32,6 @@ import { cx } from "@/lib/cx";
 import type { ResumeContent, ResumeSectionKey } from "@/lib/types";
 
 export default function ForgePage() {
-  const router = useRouter();
   const { profile } = useProfile();
   const { t, lang } = useLang();
 
@@ -225,16 +222,14 @@ export default function ForgePage() {
       <div className="px-4 pt-4">
         {/* ── top bar ── */}
         <div className="flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={() => transitionTo(router, "/radar")}
-            className="flex items-center gap-1 font-mono text-xs font-bold uppercase text-ink"
-          >
-            <span className="inline-block rotate-180">
-              <PixelIcon name="arrow-right" size={11} />
-            </span>
-            {t("common.back")}
-          </button>
+          {/*
+            The "back to radar" control that used to sit here is gone. Forge
+            is a nav destination now, not a screen you enter from the radar,
+            so both navs already offer the way out — and a back arrow at the
+            top-left of a five-step wizard reads as "previous step", which is
+            not what it did.
+          */}
+          <span aria-hidden />
           <h1 className="flex items-center gap-2 font-pixel text-xs text-amber">
             <PixelIcon name="hammer" size={14} /> {t("forge.title")}
           </h1>
