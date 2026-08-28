@@ -1,170 +1,124 @@
-# Shuru — শুরু
+<div align="center">
 
-**Find internships. See your honest, evidence-backed chances — or an honest
-"not enough data yet." Never a fake number.**
+<a href="https://github.com/Niloy-Bhuiyan/shuru">
+  <img src="./public/readme/shuru-hero.svg" alt="Shuru — an honest internship platform" width="100%" />
+</a>
 
-Next.js 16 (App Router) · TypeScript · Tailwind · Supabase (Postgres, Auth,
-Storage, RLS, pgvector) · a Python retrieval service (FastAPI · LangGraph ·
-LangChain) · a committed pixel "cozy retro instrument" design system,
-mobile-first with a deliberately designed desktop layout.
+### Find the right internship. Know where you really stand.
+
+**Shuru** (শুরু — *the beginning*) is an internship platform for students that combines fresh opportunities, evidence-backed matching, application tracking, and an ATS-ready resume studio—without inventing confidence it cannot justify.
+
+[![Next.js](https://img.shields.io/badge/Next.js_14-1B2A3A?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-1B2A3A?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-3FBFA0?style=for-the-badge&logo=supabase&logoColor=1B2A3A)](https://supabase.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-FF7A3C?style=for-the-badge&logo=tailwindcss&logoColor=1B2A3A)](https://tailwindcss.com/)
+[![License](https://img.shields.io/badge/License-Permission_Required-E5533D?style=for-the-badge)](./LICENSE)
+
+[Why Shuru](#why-shuru) · [Features](#core-experience) · [Architecture](#architecture) · [Documentation](#documentation) · [License](#license)
+
+</div>
 
 ---
 
-## 1. Run it
+## Why Shuru
 
-Shuru is database-backed. It does not ship a simulated backend: without a
-Supabase project it tells you it is not configured rather than showing
-invented data.
+Most internship platforms optimize for more listings and bigger match percentages. Shuru optimizes for **truthful decisions**.
+
+> If the evidence is strong enough, Shuru explains the match. If it is not, Shuru abstains. No fake score. No invented deadline. No made-up salary.
+
+- **Fresh over noisy** — listings are filtered, normalized, deduplicated, and freshness checked.
+- **Evidence over confidence theatre** — every match signal can show what produced it.
+- **Useful even without AI** — matching, ATS checks, and scoring remain rule-based and testable.
+
+## Core experience
+
+### `01` Internship Radar
+
+One focused feed for employer-posted and responsibly ingested internships, with source attribution, real freshness information, and honest compensation labels.
+
+### `02` Reality Check
+
+Calibrated match information based on profile evidence and verified outcomes. Small cohorts produce **not enough data yet** instead of a meaningless percentage.
+
+### `03` Resume Forge
+
+PDF/DOCX import, structured editing, ATS readiness checks, job-description tailoring, and selectable text-layer PDF export in one dedicated workspace.
+
+### `04` Application Vault
+
+Save opportunities, track application stages, search the pipeline, and receive relevant deadline and status notifications.
+
+## Architecture
+
+<div align="center">
+
+<img src="./public/readme/shuru-architecture.svg?v=afc059c" alt="Animated architecture diagram of the Shuru platform" width="100%" />
+
+<sub>Requests move through role-aware Next.js boundaries; Postgres RLS remains the final authority.</sub>
+
+</div>
+
+The system follows three rules:
+
+1. **The database is the trust boundary.** Supabase Row Level Security protects data even if a route is called directly.
+2. **Core decisions stay deterministic.** Eligibility, matching, ATS scoring, and abstention are pure, unit-tested domain functions.
+3. **External services are optional and isolated.** A missing AI or delivery key disables that feature cleanly; it never creates fake output.
+
+Shuru deploys as two units: the Next.js application, and a Python retrieval
+service (`services/rag`) that answers questions about the free text of listings
+with a citation per claim — and abstains when the sources do not support an
+answer. The second is optional; without it the feature hides itself.
+
+Read the complete [architecture guide](./docs/ARCHITECTURE.md) for authorization, data flows, ingestion, matching, and delivery details.
+
+## Development
 
 ```bash
 npm install
-cp .env.local.example .env.local   # then fill in the Supabase values
-npm run dev                        # http://localhost:3000
+npm run dev
 ```
 
-Provisioning Supabase takes about ten minutes and is free —
-see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the exact steps and
-**"WHAT I NEED TO PROVIDE FOR PRODUCTION"**, the complete list of accounts,
-keys and settings with the environment variable each one goes in.
+Shuru requires a configured Supabase project. Environment setup, database migrations, and production deployment are documented in the [deployment guide](./docs/DEPLOYMENT.md).
 
-## 2. Database
+The pre-release gate:
 
-Migrations live in `supabase/migrations/` and run in filename order. See
-[`supabase/README.md`](supabase/README.md).
+```bash
+npm run typecheck && npm run lint && npm test
+npm run test:e2e      # Playwright at 390px and 1440px, incl. accessibility
+npm run build         # must print "ƒ Proxy (Middleware)"
+npm run verify:rls    # database security invariants + RLS behaviour tests
+```
 
-`supabase/seed.sql` is **optional sample data**. The outcome history it
-contains is illustrative, not observed — the UI labels anything computed from
-it as sample data. Leave it out of a production database unless you want that
-reference set.
+## Documentation
 
-## 3. Documentation
+- [Product requirements](./docs/PRD.md) — users, scope, requirements, and non-goals
+- [Architecture](./docs/ARCHITECTURE.md) — runtime, authorization, and data pipelines
+- [Database](./docs/DATABASE.md) — tables, RLS policies, constraints, and triggers
+- [Deployment](./docs/DEPLOYMENT.md) — Supabase and Vercel provisioning
+- [Operations runbook](./docs/RUNBOOK.md) — release checks and failure triage
+- [Engineering decisions](./docs/decisions) — load-bearing trade-offs and context
+- [Retrieval service](./services/rag/README.md) — the Python RAG service: design, API, tuning, limitations
 
-| Doc | What's in it |
-|---|---|
-| [docs/PRD.md](docs/PRD.md) | product definition, roles, requirements, non-goals |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | stack, directory map, authorization model, pipelines |
-| [docs/DATABASE.md](docs/DATABASE.md) | tables, RLS, the trigger-based column rules |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | provisioning, deployment, credentials checklist |
-| [docs/RUNBOOK.md](docs/RUNBOOK.md) | pre-release gate, grant verification, ingestion triage, known limitations |
-| [docs/decisions/](docs/decisions/) | engineering decision records (ADRs) |
-| [services/rag/README.md](services/rag/README.md) | the Python retrieval service — design, API, limitations |
-| [supabase/README.md](supabase/README.md) | migration order, promoting an admin |
-| [ISSUES.md](ISSUES.md) | prior independent security/quality audit and its remediation |
+> [!IMPORTANT]
+> Read [ADR 0001](./docs/decisions/0001-source-filtering.md) before changing source filters, [ADR 0002](./docs/decisions/0002-match-abstention.md) before changing score availability, and [ADR 0003](./docs/decisions/0003-paid-placement.md) before changing how promoted listings are ranked. All three encode deliberate honesty constraints.
 
-Two decisions are load-bearing enough that changing the code without reading
-them first will look like fixing a bug and will actually be causing one:
+## License
 
-- [ADR 0001](docs/decisions/0001-source-filtering.md) — why RemoteOK keeping
-  **0** listings is correct, and why "fixing" the filter costs Arbeitnow five
-  real ones.
-- [ADR 0002](docs/decisions/0002-match-abstention.md) — why match scores are
-  blank on scraped listings, and why job-description text does not unlock them.
-- [ADR 0003](docs/decisions/0003-paid-placement.md) — why a promoted listing is
-  shown in its own labelled section and is **never** ranked into the feed.
+> [!WARNING]
+> **PROPRIETARY SOFTWARE — NO OPEN-SOURCE LICENSE IS GRANTED.**
+>
+> Copyright © 2026 Niloy Bhuiyan. All rights reserved. Copying, using, modifying, redistributing, publishing, sublicensing, selling, or creating derivative works from this repository requires prior written permission from Niloy Bhuiyan. Unauthorized use is expressly prohibited.
 
-## 4. Scripts
+Read the complete [LICENSE](./LICENSE) before using any part of this project.
 
-| Command | What it does |
-|---|---|
-| `npm run dev` | dev server at :3000 |
-| `npm run build` / `npm start` | production build / serve |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm run lint` | ESLint |
-| `npm test` | Vitest suite |
-| `npm run test:e2e` | Playwright, run at 390px and 1440px |
-| `cd services/rag && .venv/bin/pytest` | retrieval-service suite (no database or credentials needed) |
-| `npm run migrate` / `npm run migrate:status` | apply / list migrations |
-| `npm run verify:rls` | database security gate: config invariants + RLS behaviour tests |
-| `npm run test:rls` | the RLS behaviour half only |
-| `node scripts/generate-seed.mjs` | regenerates `supabase/seed.sql` and `src/lib/data/seed.ts` from one deterministic source |
+---
 
-The full pre-release gate — and what to do when one of these fails — is in
-[docs/RUNBOOK.md](docs/RUNBOOK.md).
+<div align="center">
 
-## 5. Roles
+### শুরু মানে সূচনা — go open some doors.
 
-Three roles live in `public.user_roles`, defaulting to `student`:
+Designed and built by [Niloy Bhuiyan](https://github.com/Niloy-Bhuiyan).
 
-- **student** — discover internships, see match information, apply, track, get alerts
-- **employer** — company profile, post and manage internships, triage applicants
-- **admin** — review employers and listings, handle reports, moderate, read the audit log
+[Back to top](#)
 
-There is deliberately no API path to grant yourself a role: `user_roles` has no
-self-write policy. Promote the first admin from the Supabase SQL Editor
-(see `supabase/README.md`).
-
-## 6. How the honest odds work
-
-- Success = a past outcome of `shortlisted` or `offer`.
-- Cohort: same CGPA band (`<3.00`, `3.00–3.49`, `3.50+`) **and** same
-  department; if that cohort has fewer than 8 outcomes it relaxes once to
-  band-only, and the UI says so.
-- Confidence: `HIGH` at n ≥ 20, `MED` at 8 ≤ n < 20.
-- **n < 8 → ABSTAIN.** The screen shows what is known and offers a watch
-  toggle. No number is ever fabricated.
-- "THE ONE THING" = the missing feature with the largest
-  shortlisted-vs-rejected rate gap in your cohort, with a 5-point noise floor.
-- The engines are pure functions — `src/lib/eligibility.ts`,
-  `src/lib/realityCheck.ts` — and are unit-tested.
-
-Listings ingested from external boards carry no outcome history, so Reality
-Check abstains on them automatically.
-
-## 7. Resume Forge
-
-A separate "world" inside Shuru: same pixel design family, deeper
-slate/molten-amber palette, entered from the amber **RESUME FORGE** tile on
-Radar through a short stepped transition.
-
-- **Upload** a PDF or DOCX (max 10 MB), extracted server-side via
-  `/api/parse-resume`. With a Gemini key the raw text is structured into the
-  resume schema; without one the text still lands in the editor unstructured.
-- **Editor** with collapsible sections, reordering, live document preview,
-  undo/redo, and a real text-layer PDF export drawn with jsPDF — selectable,
-  copyable, ATS-parseable.
-- **Readiness rating** and a Pending/Completed/Dismissed queue of ATS checks.
-- **JD-Tailor** for keyword match, and an explicit profile sync that is always
-  offered, never applied silently.
-
-All scoring is rule-based and free. Gemini is optional everywhere and every AI
-entry point hides itself cleanly when no key is set.
-
-## 8. Internship ingestion
-
-Alongside employer-posted internships, Shuru pulls listings from public job
-boards through modular adapters. Sources whose terms prohibit it (LinkedIn,
-Indeed) are deliberately out of scope.
-
-Every ingested listing is internship-only filtered, normalized, deduplicated
-by a deterministic id (so a refresh updates rather than duplicates), freshness
-checked, and attributed to its source in the UI.
-
-Honesty rules encoded in the pipeline:
-
-- A source that publishes no real closing date yields a rolling window,
-  labelled **Rolling** — never an invented hard deadline.
-- Compensation is claimed only with evidence; otherwise the listing reads
-  "compensation not stated by source".
-- Ingested listings have no outcome history, so Reality Check abstains.
-
-Ingestion runs as a scheduled job and an admin action, protected by
-`CRON_SECRET`. Per-source results, including partial failures, are recorded in
-`ingestion_runs` rather than silently swallowed.
-
-## 9. Troubleshooting
-
-- **"NOT CONFIGURED" screen** → `NEXT_PUBLIC_SUPABASE_URL` /
-  `NEXT_PUBLIC_SUPABASE_ANON_KEY` are missing or still placeholders.
-- **Redirect loop to /login** → the session cookie isn't reaching middleware;
-  confirm `NEXT_PUBLIC_SITE_URL` matches the origin you're actually browsing.
-- **OAuth button does nothing** → the provider is enabled by env flag but not
-  configured in Supabase → Authentication → Providers, or its callback URL
-  doesn't match `<site>/auth/callback`.
-- **"Email not confirmed" on login** → confirm via the emailed link, or turn
-  off "Confirm email" in Supabase for development.
-- **Fonts look like plain monospace offline** → expected fallback if the first
-  `npm run dev` never ran online; harmless.
-- **Odds differ between two users** → correct. Cohorts are per CGPA band and
-  department; that is the calibration working.
-
-শুরু মানে সূচনা — go open some doors.
+</div>
