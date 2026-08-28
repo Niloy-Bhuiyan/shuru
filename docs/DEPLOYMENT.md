@@ -206,14 +206,18 @@ is never emailed or pushed.
 and a wrong slug returns 404 rather than an error you would notice. These were
 verified live (`scripts/probe-boards.mjs` re-checks them):
 
-- Lever — `palantir` **no longer resolves** (verified against production on
-  2026-08-28: the run reported `unreachable boards: palantir`). It did when
-  this list was written, which is the point of the health reporting: a board
-  going away shows up as a per-source error in `ingestion_runs` and degrades
-  the run instead of failing it. `netflix`, `brex`, `ramp`, `figma`, `shopify`
-  return 404; `spotify` and `plaid` resolve but list no interns. **Lever
-  currently contributes nothing** — set `LEVER_COMPANIES` to a board you have
-  verified, or leave it empty.
+- Lever — **contributes nothing as of 2026-08-28, so `LEVER_COMPANIES` is
+  deliberately empty in production.** Probed directly: `palantir` returns HTTP
+  200 with **0 postings** (it had intern listings when this note was first
+  written); `spotify` returns 89 postings but **0 interns**; `plaid`, `ramp`,
+  `figma`, `netflix`, `brex`, `shopify` all 404. An empty value makes the
+  adapter *inactive*; a slug that no longer works makes every run report a
+  per-source error forever, which trains you to ignore the health panel.
+  Re-probe before adding one back:
+
+  ```bash
+  curl -s "https://api.lever.co/v0/postings/<slug>?mode=json"     | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log(j.length,'postings,',j.filter(p=>/intern/i.test(p.text)).length,'interns')})"
+  ```
 - Ashby — `openai`, `notion`, `ramp`, `vanta`, `replit` all resolve and carry
   intern postings. `deel` returns nothing; `linear` and `posthog` list no interns.
 
