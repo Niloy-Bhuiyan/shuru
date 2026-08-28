@@ -17,6 +17,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { LoadingBlock } from "@/components/LoadingBlock";
+import { OperatorShell, StatTile } from "@/components/operator/OperatorShell";
+import type { OperatorNavItem } from "@/components/operator/OperatorSideNav";
 import { EmptyState } from "@/components/EmptyState";
 import { PixelButton } from "@/components/pixel/PixelButton";
 import { PixelInput } from "@/components/pixel/PixelInput";
@@ -96,30 +98,41 @@ export default function EmployerPage() {
     load().catch(() => setCompany(null));
   }, [role, roleLoading, load]);
 
+  // The rail. An employer sees only their own workspace; an admin visiting
+  // it keeps a way back to moderation.
+  const NAV: OperatorNavItem[] = [
+    { href: "/employer", icon: "hammer", key: "emp.title" },
+    { href: "/employer/listings/new", icon: "edit", key: "emp.newListing" },
+    ...(role === "admin"
+      ? [{ href: "/admin", icon: "check" as const, key: "admin.title" as const }]
+      : []),
+  ];
+
   if (roleLoading || company === undefined) {
     return (
-      <main className="px-4 pt-4">
+      <OperatorShell items={NAV} role="employer" title={t("emp.title")}>
         <LoadingBlock />
-      </main>
+      </OperatorShell>
     );
   }
 
   if (role !== "employer" && role !== "admin") {
     return (
-      <main className="px-4 pt-4">
+      <OperatorShell items={NAV} role="employer" title={t("emp.title")}>
         <EmptyState icon="warn" title={t("emp.notEmployer")} />
-      </main>
+      </OperatorShell>
     );
   }
 
   // ── first run: create the company ──
   if (!company) {
     return (
-      <main className="px-4 pt-4">
-        <h1 className="font-pixel text-xs text-ink">{t("emp.setupTitle")}</h1>
-        <p className="mt-2 font-mono text-[11px] leading-relaxed text-grey">
-          {t("emp.setupHint")}
-        </p>
+      <OperatorShell
+        items={NAV}
+        role="employer"
+        title={t("emp.setupTitle")}
+        subtitle={t("emp.setupHint")}
+      >
 
         <form
           className="mt-4 space-y-3"
@@ -171,7 +184,7 @@ export default function EmployerPage() {
             {busy ? t("emp.creating") : t("emp.create")}
           </PixelButton>
         </form>
-      </main>
+      </OperatorShell>
     );
   }
 
@@ -207,8 +220,12 @@ export default function EmployerPage() {
   }
 
   return (
-    <main className="px-4 pt-4">
-      <h1 className="font-pixel text-xs text-ink">{company.name}</h1>
+    <OperatorShell
+      items={NAV}
+      role="employer"
+      title={company.name}
+      subtitle={t("emp.dashSubtitle")}
+    >
 
       {/* verification is admin-owned: reported, never editable here */}
       <p className="mt-2 inline-block border-2 border-ink bg-paper px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-ink">
@@ -397,6 +414,6 @@ export default function EmployerPage() {
           </ul>
         )}
       </section>
-    </main>
+    </OperatorShell>
   );
 }

@@ -23,6 +23,8 @@ import Link from "next/link";
 import { LoadingBlock } from "@/components/LoadingBlock";
 import { EmptyState } from "@/components/EmptyState";
 import { SourceHealthPanel } from "@/components/admin/SourceHealthPanel";
+import { OperatorShell, StatTile } from "@/components/operator/OperatorShell";
+import type { OperatorNavItem } from "@/components/operator/OperatorSideNav";
 import {
   inviteByEmail,
   InviteDenied,
@@ -46,6 +48,7 @@ import {
   verifyCompany,
 } from "@/lib/data/admin";
 import { useRole } from "@/hooks/useRole";
+import type { IconName } from "@/components/pixel/PixelIcon";
 import { useLang } from "@/lib/i18n";
 import type { Company, ListingReport, Opportunity } from "@/lib/types";
 
@@ -138,43 +141,71 @@ export default function AdminPage() {
     });
   }
 
+  // The queues double as the console's navigation, so the counts are built
+  // once and used in both places.
+  const TABS: { id: Tab; label: string; icon: IconName; count: number | null }[] = [
+    { id: "queue", label: t("admin.queue"), icon: "clock", count: pending.length },
+    { id: "companies", label: t("admin.companies"), icon: "check", count: companies.length },
+    { id: "reports", label: t("admin.reports"), icon: "warn", count: reports.length },
+    { id: "access", label: t("op.access"), icon: "user", count: access.length },
+    { id: "sources", label: t("admin.sources"), icon: "signal", count: null },
+  ];
+
+  // Everything an admin can act on right now. Drives the header subtitle and
+  // the rail badge, so "is there work" is answered in two places from one
+  // number rather than two that can disagree.
+  const workWaiting =
+    pending.length + companies.length + reports.length + access.length;
+
+  const NAV: OperatorNavItem[] = [
+    { href: "/admin", icon: "check", key: "admin.title", count: workWaiting },
+    { href: "/admin/listings/new", icon: "edit", key: "admin.addListing" },
+    { href: "/employer", icon: "hammer", key: "op.employer" },
+  ];
+
   if (roleLoading || !ready) {
     return (
-      <main className="px-4 pt-4">
+      <OperatorShell items={NAV} role="admin" title={t("admin.title")}>
         <LoadingBlock />
-      </main>
+      </OperatorShell>
     );
   }
 
   if (role !== "admin") {
     return (
-      <main className="px-4 pt-4">
+      <OperatorShell items={NAV} role={null} title={t("admin.title")}>
         <EmptyState icon="warn" title={t("admin.notAdmin")} />
-      </main>
+      </OperatorShell>
     );
   }
 
-  const TABS: { id: Tab; label: string; count: number | null }[] = [
-    { id: "queue", label: t("admin.queue"), count: pending.length },
-    { id: "companies", label: t("admin.companies"), count: companies.length },
-    { id: "reports", label: t("admin.reports"), count: reports.length },
-    { id: "access", label: t("op.access"), count: access.length },
-    { id: "sources", label: t("admin.sources"), count: null },
-  ];
-
   return (
-    <main className="px-4 pt-4">
-      <div className="flex items-center justify-between">
-        <h1 className="font-pixel text-xs text-ink">{t("admin.title")}</h1>
+    <OperatorShell
+      items={NAV}
+      role="admin"
+      title={t("admin.title")}
+      subtitle={
+        workWaiting > 0 ? t("op.workWaiting") : t("op.allClear")
+      }
+      actions={
         <Link
           href="/admin/listings/new"
-          className="border-2 border-ink bg-amber px-2 py-1 font-mono text-[11px] font-bold uppercase text-ink shadow-pixel-sm"
+          className="border-2 border-ink bg-amber px-2.5 py-1.5 font-mono text-[11px] font-bold uppercase text-ink shadow-pixel-sm active:translate-x-[1px] active:translate-y-[1px]"
         >
           + {t("admin.addListing")}
         </Link>
-      </div>
+      }
+    >
+      {/* Overview. The tiles that represent WORK go amber when non-zero, so
+          "is there anything to do" is answered before anything is read. */}
+      <section aria-label={t("op.overview")} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <StatTile label={t("admin.queue")} value={pending.length} tone="action" hint={t("op.tileQueue")} />
+        <StatTile label={t("admin.companies")} value={companies.length} tone="action" hint={t("op.tileCompanies")} />
+        <StatTile label={t("admin.reports")} value={reports.length} tone="action" hint={t("op.tileReports")} />
+        <StatTile label={t("op.access")} value={access.length} tone="action" hint={t("op.tileAccess")} />
+      </section>
 
-      <div className="no-scrollbar mt-3 flex gap-1.5 overflow-x-auto">
+      <div className="no-scrollbar mt-5 flex gap-1.5 overflow-x-auto border-b-3 border-ink/20 pb-3">
         {TABS.map((x) => (
           <button
             key={x.id}
@@ -486,6 +517,6 @@ export default function AdminPage() {
       )}
 
       {tab === "sources" && <SourceHealthPanel />}
-    </main>
+    </OperatorShell>
   );
 }
