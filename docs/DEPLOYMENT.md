@@ -206,9 +206,14 @@ is never emailed or pushed.
 and a wrong slug returns 404 rather than an error you would notice. These were
 verified live (`scripts/probe-boards.mjs` re-checks them):
 
-- Lever — `palantir` resolves and carries intern postings **with full
-  descriptions**. `netflix`, `brex`, `ramp`, `figma`, `shopify` return 404;
-  `spotify` and `plaid` resolve but list no interns.
+- Lever — `palantir` **no longer resolves** (verified against production on
+  2026-08-28: the run reported `unreachable boards: palantir`). It did when
+  this list was written, which is the point of the health reporting: a board
+  going away shows up as a per-source error in `ingestion_runs` and degrades
+  the run instead of failing it. `netflix`, `brex`, `ramp`, `figma`, `shopify`
+  return 404; `spotify` and `plaid` resolve but list no interns. **Lever
+  currently contributes nothing** — set `LEVER_COMPANIES` to a board you have
+  verified, or leave it empty.
 - Ashby — `openai`, `notion`, `ramp`, `vanta`, `replit` all resolve and carry
   intern postings. `deel` returns nothing; `linear` and `posthog` list no interns.
 

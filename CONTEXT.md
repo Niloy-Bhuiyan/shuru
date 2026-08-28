@@ -4,7 +4,7 @@
 top to bottom before touching anything. It records verified state only: every
 "pass" / "done" below was observed, not assumed.
 
-**Last updated:** 2026-08-28 — session 1, after the RLS behaviour-test checkpoint.
+**Last updated:** 2026-08-28 — session 1. **PRODUCTION IS NOW LIVE.**
 
 ---
 
@@ -33,7 +33,37 @@ below is not verified, it says so.
 | Branched from | `a44d4ad` (`main`) |
 | Safety tag on pre-existing work | `safety/pre-hardening-2026-08-27` → `a44d4ad` |
 | Remote | `origin` → `https://github.com/Niloy-Bhuiyan/shuru` (private) |
-| Latest commit (pushed) | `2658865` add rls behaviour tests that assert the exact denial code |
+| Branch | merged into `main` and deployed |
+| Production | **https://shuru-ten.vercel.app — live and configured** |
+
+### Deployment state (verified 2026-08-28)
+
+`main` was fast-forwarded from `production-hardening` and deployed. Before this
+session the Vercel project had **only** `GEMINI_API_KEY` and `GEMINI_MODEL`
+set, so the public URL served the "NOT CONFIGURED" screen and `/radar`
+returned 200 instead of a redirect. 18 further variables are now set on
+Production.
+
+Verified live after deploy:
+
+| Check | Result |
+|---|---|
+| `/login` | 200, real form (no longer NOT CONFIGURED) |
+| `/radar` signed out | **307** → the middleware guard is active |
+| Security headers | all five present; `x-powered-by` absent |
+| `/api/ingest`, `/api/notifications/dispatch` anonymous | 401 |
+| unsigned `POST /api/payments/webhook` | 400 |
+| `GET /api/ask` anonymous | 401 |
+| `/api/cron` wrong secret / unknown job / valid | 401 / 400 / **200** |
+| real ingest run | fetched 1470, kept 13, 12 upserted |
+
+**Preview environment is NOT configured** — `vercel env add ... preview`
+needs a `--git-branch` and failed non-interactively. Production only. Preview
+deployments will show the NOT CONFIGURED screen, which is the safe direction.
+
+**`vercel env pull` redacts encrypted values** — every variable reads back as
+`""`, including ones that demonstrably work. Do not use it to audit whether a
+value is set; it is not evidence of emptiness.
 
 **Why a sibling directory and not a nested worktree:** a git worktree placed
 inside `D:\SHURU Internship` would appear as untracked content in the parent
@@ -389,6 +419,31 @@ verified there.**
      security policy".
    - `npm run verify:rls` now runs both files; `npm run test:rls` runs the
      behaviour half.
+
+11. **Retrieval service runs without a database password.**
+   `SHURU_RAG_DATABASE_URL` needs the Postgres password, which is **not
+   derivable** from the service-role key or the management API — so the
+   service was unrunnable for anyone who had every other credential. Added a
+   PostgREST backend (`app/rest_store.py`) selected by `app/store.py`, plus
+   migration `0015`'s `match_rag_chunks` RPC for the one thing PostgREST
+   cannot express (`order by embedding <=> query`). Deliberately SECURITY
+   **INVOKER**, so RLS still applies and it does not trip the
+   SECURITY-DEFINER invariant in `verify-rls.sql`.
+12. **The corpus is indexed and retrieval is verified against it.**
+   27 chunks across 5 listings; 24 listings skipped because they publish no
+   prose — the expected outcome, not a gap.
+13. **The abstention threshold was measured, and the shipped default was
+   wrong.** It was 0.75, which admitted *every* off-topic question — "what is
+   the weather in Dhaka?" scored 0.598 and would have been answered from a
+   Notion job description. Measured on-topic 0.239-0.385 vs off-topic
+   0.532-0.598, a clean 0.147 gap, so it is now **0.46**.
+   `tests/test_threshold.py` pins the measurement and includes a test proving
+   the old default would fail the suite.
+14. **Test isolation bug found and fixed.** Creating `services/rag/.env` broke
+   `test_an_unset_token_refuses_rather_than_running_open` — the test's
+   `monkeypatch.delenv` was being undone by the file underneath it. Added
+   `tests/conftest.py` disabling the env file for the session; the suite now
+   passes identically with and without a local `.env`.
 
 **Verified with evidence, not assumed:**
 - The pgvector SQL path was probed against the live database with synthetic
