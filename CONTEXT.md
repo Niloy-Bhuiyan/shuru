@@ -4,7 +4,7 @@
 top to bottom before touching anything. It records verified state only: every
 "pass" / "done" below was observed, not assumed.
 
-**Last updated:** 2026-08-28 — session 1. **PRODUCTION IS NOW LIVE.**
+**Last updated:** 2026-08-28 — session 1. **PRODUCTION IS LIVE AND SIGN-IN WORKS.**
 
 ---
 
@@ -516,44 +516,61 @@ None left running by this session.
 
 ---
 
+## 10a. Sign-in: what was wrong and what is true now
+
+`niloybhuiyann@gmail.com` is an **admin** with a profile. It was created via
+Google, so `encrypted_password` was null and email+password could never work
+against it — the app's own error message said exactly that, but the Google
+button had been disabled in production, so there was no way in at all.
+
+A password has now been set on that account via the Supabase admin API, and
+the login was **verified end to end**, not just written: a password grant
+against `/auth/v1/token` with the public anon key returned `200` and a
+1391-character access token.
+
+Two traps worth remembering:
+
+- **Re-registering an existing email looks like it works.** Supabase returns a
+  success-shaped response with a decoy user and creates nothing, so nobody can
+  probe which addresses exist. The tell is an empty `identities` array. The
+  register page now detects it; before the fix it sent people to
+  "check your email" forever. Auth-log signature: `/signup 200` immediately
+  followed by `/token 400`, with no new row in `auth.users`.
+- **`scripts/set-password.mjs` exists** for attaching a password to an
+  OAuth-only account. It prompts with echo off, so the value never reaches
+  disk, argv, or a commit.
+
 ## 11. Human actions still required
 
-None of these blocks further code work.
+Both are Supabase Dashboard settings. There is **no API path to either** — the
+Supabase MCP exposes docs/database/debugging/functions/branching only, the
+CLI cannot log in from a non-TTY shell, and no management token exists on this
+machine. All three were checked, not assumed.
 
-1. **Supabase Dashboard → Authentication → Policies → Password protection** —
-   enable "Prevent use of leaked passwords" (checks HaveIBeenPwned). Not
-   exposed through the MCP tools. **Verify afterwards** by re-running the
-   security advisors: the `auth_leaked_password_protection` WARN disappears.
+1. **URL configuration** —
+   `https://supabase.com/dashboard/project/lciujpypigtbzhjawghf/auth/url-configuration`
+   - Site URL → `https://shuru-ten.vercel.app`
+   - Redirect URLs → add `https://shuru-ten.vercel.app/auth/callback` **and**
+     `http://localhost:3000/auth/callback`
 
-2. **`SUPABASE_DB_URL`** — Supabase Dashboard → Project Settings → Database →
-   Connection string → URI, with `[YOUR-PASSWORD]` replaced. Add it to
-   `D:\shuru-work\.env.local` **and** `services/rag/.env` (as
-   `SHURU_RAG_DATABASE_URL`).
-   Unblocks three things: `npm run migrate`, `npm run verify:rls`, and
-   **indexing the RAG corpus**, which cannot run without a direct connection.
-   **Verify afterwards:** `npm run verify:rls` prints `10/10 checks passed`,
-   and `POST /reindex` reports `indexed: 5`.
+   **Why it matters:** Supabase discards a `redirect_to` that is not
+   allowlisted and falls back to Site URL, which is still `localhost:3000`.
+   That is why Google sign-in ends on `ERR_CONNECTION_REFUSED`, and it would
+   break password-reset links the same way. Email+password login is unaffected
+   because it performs no redirect.
 
-3. **`CRON_SECRET` in the Vercel environment** — generate with
-   `openssl rand -hex 32`. Without it both scheduled jobs return 503
-   `cron_not_configured` on every run. It was missing from the env template
-   before this session, so an existing deployment almost certainly lacks it.
-   **Verify afterwards:** Vercel → Deployments → Cron Jobs shows a 200, or
-   `curl -H "Authorization: Bearer $CRON_SECRET" <site>/api/cron?job=ingest`.
+   **Verify after:** click "Continue with Google" on production — it should
+   return to `shuru-ten.vercel.app/radar`, not localhost.
 
-4. **Optional — an AI provider key.** `ANTHROPIC_API_KEY` (preferred) or
-   `GEMINI_API_KEY` for the in-app agent, and `SHURU_RAG_ANTHROPIC_API_KEY`
-   for written RAG answers. All three features hide themselves cleanly when
-   unset; retrieval still returns cited passages without one.
-   **Verify afterwards:** the agent entry point appears on `/agent`, and
-   `GET /ready` on the Python service reports `answers.available: true`.
+2. **Leaked-password protection** — Authentication → Policies → enable
+   "Prevent use of leaked passwords". The last open security advisor.
 
-5. **Optional — a host for the Python service**, plus `SHURU_RAG_URL` and a
-   shared `SHURU_RAG_SERVICE_TOKEN` in both environments. Not Vercel — see
-   `services/rag/README.md` §8. **Verify afterwards:** `GET /api/ask` on the
-   web app returns `{"available": true, "missing": []}`.
+   **Caution:** the current password is weak and in the HIBP breach lists. It
+   keeps working, but the *next* password change would be rejected. Change it
+   to something stronger first.
 
----
+   **Verify after:** re-run the Supabase security advisors; the
+   `auth_leaked_password_protection` WARN disappears.
 
 ## 12. Accepted residual risks
 
