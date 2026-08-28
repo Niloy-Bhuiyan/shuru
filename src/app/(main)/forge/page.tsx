@@ -230,7 +230,17 @@ export default function ForgePage() {
             not what it did.
           */}
           <span aria-hidden />
-          <h1 className="flex items-center gap-2 font-pixel text-xs text-amber">
+          {/*
+            START carries its own full-size headline, so showing this one too
+            put the same words on screen twice, 150px apart. Hidden visually
+            rather than removed — the page still needs its h1.
+          */}
+          <h1
+            className={cx(
+              "flex items-center gap-2 font-pixel text-xs text-amber",
+              step === "start" && "sr-only"
+            )}
+          >
             <PixelIcon name="hammer" size={14} /> {t("forge.title")}
           </h1>
           {step === "build" ? (

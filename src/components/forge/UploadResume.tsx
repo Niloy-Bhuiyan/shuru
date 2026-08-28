@@ -61,7 +61,7 @@ export function UploadResume({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2">
       <div
         role="button"
         tabIndex={0}
@@ -79,18 +79,23 @@ export function UploadResume({
           if (f) handleFile(f);
         }}
         className={cx(
-          "cursor-pointer border-3 border-ink p-4 text-center shadow-pixel",
-          dragOver ? "dither-amber bg-paper" : "bg-paper",
-          "active:translate-x-[2px] active:translate-y-[2px] active:shadow-pixel-none"
+          "cursor-pointer border-3 p-6 text-center shadow-pixel transition-none",
+          // The primary route wears the accent border; "start from scratch"
+          // stays quiet. Two identical cards made the user pick blind.
+          dragOver ? "dither-amber border-amber bg-paper" : "border-amber bg-paper",
+          "hover:-translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-pixel-none"
         )}
       >
-        <span className="mx-auto flex h-9 w-9 items-center justify-center border-2 border-ink bg-amber text-ink">
-          <PixelIcon name="upload" size={16} />
+        <span className="mx-auto flex h-12 w-12 items-center justify-center border-3 border-ink bg-amber text-ink shadow-pixel-sm">
+          <PixelIcon name="upload" size={22} />
         </span>
-        <p className="mt-2 font-pixel text-[10px] text-ink">
+        <p className="mt-3 font-pixel text-[13px] text-ink">
           {busy ? t("forge.parsing") : t("forge.upload")}
         </p>
-        <p className="mt-1 font-mono text-[11px] text-grey">{t("forge.uploadHint")}</p>
+        <p className="mt-1.5 font-mono text-xs text-ink/70">{t("forge.uploadHint")}</p>
+        <p className="mt-2 inline-block border-2 border-ink bg-amber px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-ink">
+          {t("forge.fastest")}
+        </p>
         {error && (
           <p className="mt-2 font-mono text-[11px] font-bold text-alert">! {error}</p>
         )}
@@ -110,13 +115,13 @@ export function UploadResume({
       <button
         type="button"
         onClick={onScratch}
-        className="border-3 border-ink bg-paper p-4 text-center shadow-pixel active:translate-x-[2px] active:translate-y-[2px] active:shadow-pixel-none"
+        className="border-3 border-ink bg-paper p-6 text-center shadow-pixel hover:-translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-pixel-none"
       >
-        <span className="mx-auto flex h-9 w-9 items-center justify-center border-2 border-ink bg-mint text-ink">
-          <PixelIcon name="edit" size={16} />
+        <span className="mx-auto flex h-12 w-12 items-center justify-center border-3 border-ink bg-mint text-ink shadow-pixel-sm">
+          <PixelIcon name="edit" size={22} />
         </span>
-        <p className="mt-2 font-pixel text-[10px] text-ink">{t("forge.scratch")}</p>
-        <p className="mt-1 font-mono text-[11px] text-grey">→</p>
+        <p className="mt-3 font-pixel text-[13px] text-ink">{t("forge.scratch")}</p>
+        <p className="mt-1.5 font-mono text-xs text-ink/70">{t("forge.scratchHint")}</p>
       </button>
       {busy && <span className="sr-only" aria-live="polite">{t("forge.parsing")}</span>}
     </div>
