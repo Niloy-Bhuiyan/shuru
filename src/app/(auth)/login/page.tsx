@@ -90,7 +90,7 @@ function LoginForm() {
   return (
     <div className="space-y-4">
       {callbackError && (
-        <p className="border-3 border-alert bg-paper p-2 font-mono text-xs font-bold text-alertInk">
+        <p className="border-3 border-alert bg-paper p-2 font-mono text-xs font-bold text-alert">
           {t("auth.errGeneric")}
         </p>
       )}

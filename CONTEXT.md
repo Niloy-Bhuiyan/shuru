@@ -353,6 +353,22 @@ verified there.**
    - New `e2e/a11y.spec.ts`: 6 checks x 4 public pages x 2 viewports = **48
      tests** covering contrast, landmark/heading structure, `html[lang]`, form
      labelling, focus visibility, and target size.
+   - **A follow-up sweep of the DARK surfaces** (which the browser audit could
+     not reach, since the forge and terminal screens need a session) found two
+     more failures by computing every palette pair directly:
+     `text-cream` on `bg-alert` at **3.10:1** — used in ~26 places — and
+     `fviolet` on `fslate` at 4.05:1.
+   - `alert` was therefore darkened #E5533D -> **#B33A28**, which fixes both
+     directions at once (4.92:1 as a fill under cream text, 4.92:1 as text on
+     cream). That let the earlier `alertInk` token be **removed** — one value
+     does both jobs. Amber genuinely cannot: `text-ink` on #FF7A3C is 5.63:1
+     but on #B4400F only 2.56:1, so bright-enough-to-carry-dark-text and
+     dark-enough-to-be-read-on-cream are mutually exclusive there. That
+     asymmetry is why amber is split and alert is not, and it is written into
+     the config so it does not look like an inconsistency later.
+   - `fviolet` turned out to have **zero usages** — a dead token. Left in
+     place with a comment recording its measurement rather than deleted.
+   - Final state: **all 19 colour pairs in real use pass WCAG AA.**
 
 **Verified with evidence, not assumed:**
 - The pgvector SQL path was probed against the live database with synthetic

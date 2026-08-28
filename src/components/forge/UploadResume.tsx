@@ -92,7 +92,7 @@ export function UploadResume({
         </p>
         <p className="mt-1 font-mono text-[11px] text-grey">{t("forge.uploadHint")}</p>
         {error && (
-          <p className="mt-2 font-mono text-[11px] font-bold text-alertInk">! {error}</p>
+          <p className="mt-2 font-mono text-[11px] font-bold text-alert">! {error}</p>
         )}
         <input
           ref={inputRef}

@@ -49,7 +49,7 @@ export function PixelInput(props: InputProps | SelectProps) {
         className="mb-1 block font-mono text-[11px] font-bold uppercase tracking-widest text-ink"
       >
         {label}
-        {required && <span className="text-alertInk"> *</span>}
+        {required && <span className="text-alert"> *</span>}
       </label>
 
       {props.as === "select" ? (
@@ -84,7 +84,7 @@ export function PixelInput(props: InputProps | SelectProps) {
       )}
 
       {error ? (
-        <p className="mt-1 flex items-center gap-1 font-mono text-[11px] font-bold text-alertInk">
+        <p className="mt-1 flex items-center gap-1 font-mono text-[11px] font-bold text-alert">
           ! {error}
         </p>
       ) : hint ? (

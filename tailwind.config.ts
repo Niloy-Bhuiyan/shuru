@@ -12,36 +12,49 @@ const config: Config = {
         amber: "#FF7A3C", // primary actions, deadlines, urgency — AS A FILL
         mint: "#3FBFA0",  // positive: eligible / qualify / in-your-favour
         grey: "#6B6659",  // uncertainty / abstention / missing criteria
-        alert: "#E5533D", // closing-very-soon / borderline — AS A FILL
+        alert: "#B33A28", // closing-very-soon / borderline warnings
 
         /*
          * TEXT-ON-LIGHT variants. Read this before reaching for `text-amber`
          * or `text-alert`.
          *
-         * `amber` and `alert` are tuned as FILLS — `bg-amber text-ink` is
-         * high-contrast and correct, and `text-amber` on the dark forge and
-         * terminal surfaces is fine too. But as text on `cream` / `paper`
-         * they measure 2.16:1 and 3.10:1, well under the 4.5:1 WCAG AA needs.
+         * `amber` is tuned as a FILL — `bg-amber text-ink` is high-contrast
+         * and correct, and `text-amber` on the dark forge and terminal
+         * surfaces measures 5.63:1. But as text on `cream` / `paper` it is
+         * 2.16:1, well under the 4.5:1 WCAG AA needs.
          *
-         * These two are the same hues pushed dark enough to pass on both
-         * light backgrounds (amberInk 4.75:1 / 5.21:1, alertInk 4.92:1 /
-         * 5.40:1). Use them wherever the colour is the TEXT and the surface
-         * is light; keep `amber` / `alert` for fills and for dark surfaces.
+         * `amberInk` is that hue pushed dark enough to pass on both light
+         * backgrounds (4.75:1 on cream, 5.21:1 on paper). Use it wherever the
+         * colour is the TEXT and the surface is light; keep `amber` for fills
+         * and for dark surfaces.
          *
          * `grey` was darkened from #8A8578 for the same reason — it measured
          * 3.07:1 on cream. It is only ever secondary text or a muted fill,
          * and darkening improved BOTH directions (cream-on-grey went 3.07 ->
          * 4.77), so it needed no split.
+         *
+         * `alert` needed no split either, and that is worth explaining because
+         * it looks inconsistent next to amber. It was #E5533D, which failed
+         * BOTH ways: 3.10:1 as text on cream, and 3.10:1 for the `text-cream`
+         * that sits on `bg-alert` in ~26 places. Both wanted a darker red, so
+         * one darker value (#B33A28, 4.92:1 in both directions) fixes both.
+         *
+         * Amber cannot do that. Its fill role needs it BRIGHT — `text-ink` on
+         * #FF7A3C is 5.63:1, but on #B4400F it collapses to 2.56:1. Bright
+         * enough to carry dark text and dark enough to be read as text on
+         * cream are mutually exclusive, which is why amber alone is split.
          */
         amberInk: "#B4400F",
-        alertInk: "#B33A28",
         // ── Resume Forge "new world" palette (same family, deeper world) ──
         fslate: "#1E2233",  // forge background
         fpanel: "#2A3047",  // forge raised surface
         fedge: "#0C0F1A",   // forge borders/shadows
         fwhite: "#EDEAF2",  // forge text
         famber: "#FF9E45",  // molten forge glow (primary accent)
-        fviolet: "#7C6FF0", // cool secondary accent
+        // Cool secondary accent. Currently UNUSED — left in place as part of
+        // the forge palette. Measures 4.05:1 on fslate, so darken the surface
+        // or lighten this before using it as text.
+        fviolet: "#7C6FF0",
       },
       fontFamily: {
         pixel: ["var(--font-pixel)", "monospace"],

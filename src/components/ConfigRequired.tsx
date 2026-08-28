@@ -20,7 +20,7 @@ export function ConfigRequired() {
       <div className="mb-5 flex items-end gap-3">
         <PixelSun width={44} />
         <div>
-          <h1 className="font-pixel text-sm text-alertInk">{t("config.title")}</h1>
+          <h1 className="font-pixel text-sm text-alert">{t("config.title")}</h1>
           <p className="mt-1 font-mono text-xs text-grey">{t("tagline")}</p>
         </div>
       </div>
