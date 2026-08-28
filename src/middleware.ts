@@ -1,6 +1,7 @@
 import { createServerClient, type SetAllCookies } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isSupabaseConfigured } from "@/lib/auth/config";
+import { buildCsp } from "@/lib/auth/csp";
 
 /**
  * Session refresh + role-aware route guard.
@@ -58,7 +59,25 @@ function matches(path: string, routes: string[]): boolean {
 }
 
 export async function middleware(request: NextRequest) {
-  if (!isSupabaseConfigured()) return NextResponse.next();
+  /*
+   * CSP lives here rather than in next.config.mjs because it depends on the
+   * environment (dev needs 'unsafe-eval' for HMR) and on the Supabase URL.
+   *
+   * There is deliberately no nonce: Next 16's production build does not stamp
+   * one onto its scripts, and a nonce present in script-src makes browsers
+   * ignore 'unsafe-inline', which breaks hydration outright. Read the header
+   * of lib/auth/csp.ts before changing this — it was measured.
+   */
+  const csp = buildCsp(process.env.NODE_ENV !== "production");
+
+  const withCsp = <T extends NextResponse>(res: T): T => {
+    res.headers.set("content-security-policy", csp);
+    return res;
+  };
+
+  if (!isSupabaseConfigured()) {
+    return withCsp(NextResponse.next({ request }));
+  }
 
   let response = NextResponse.next({ request });
 
@@ -98,14 +117,14 @@ export async function middleware(request: NextRequest) {
     url.pathname = "/login";
     // come back here after signing in
     url.searchParams.set("next", path);
-    return NextResponse.redirect(url);
+    return withCsp(NextResponse.redirect(url));
   }
 
   if (user && matches(path, PUBLIC_ROUTES) && !matches(path, SIGNED_IN_OK_ROUTES)) {
     const url = request.nextUrl.clone();
     url.pathname = "/radar";
     url.search = "";
-    return NextResponse.redirect(url);
+    return withCsp(NextResponse.redirect(url));
   }
 
   // Role gates. Only queried for the two role-scoped areas, so ordinary
@@ -126,11 +145,11 @@ export async function middleware(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = "/radar";
       url.search = "";
-      return NextResponse.redirect(url);
+      return withCsp(NextResponse.redirect(url));
     }
   }
 
-  return response;
+  return withCsp(response);
 }
 
 export const config = {

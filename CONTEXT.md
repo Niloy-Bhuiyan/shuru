@@ -4,7 +4,9 @@
 top to bottom before touching anything. It records verified state only: every
 "pass" / "done" below was observed, not assumed.
 
-**Last updated:** 2026-08-28 — session 1. **PRODUCTION IS LIVE AND SIGN-IN WORKS.**
+**Last updated:** 2026-08-29 — session 2. **PRODUCTION IS LIVE. AUTH WORKS END TO
+END, INCLUDING PASSWORD RESET. THE EMPLOYER PRODUCT IS REACHABLE FOR THE FIRST
+TIME.**
 
 ---
 
@@ -92,9 +94,12 @@ structure; the additions from this branch that must survive are the
 `services/rag` doc-table row, the ADR 0003 link, the `verify:rls` and pytest
 script rows, and the Next 16 / Python service line in the stack blurb.
 
-**Nothing on this branch is deployed.** Vercel builds `main`. A merge is a
-production-facing action and has NOT been done — it is waiting on an explicit
-go-ahead.
+**This is deployed.** `main` was fast-forwarded from `production-hardening`
+and pushed, which is what Vercel builds. Verified live afterwards: `/radar`
+and `/admin` 307 when signed out, `/api/ingest` and `/api/ask` 401 anonymous,
+all five security headers present, `/api/agent` reports enabled.
+
+The README conflict described above was resolved in `70efd7c`.
 
 ### Git identity (verified on every commit so far)
 
@@ -464,19 +469,21 @@ verified there.**
 
 ### P1 — the remaining subsystem the brief requires
 
-1. **Payments.** Not started. Clearly labelled sandbox flow behind a provider
-   adapter + webhook architecture. Server-authoritative, idempotent,
-   signature-verified, never claiming real money moved, no raw card data.
+1. ~~Payments~~ **DONE** before this session — `src/lib/payments/`,
+   `/api/payments/{checkout,webhook,sandbox-confirm}`, migration 0014, and the
+   employer dashboard calls checkout. §8 previously said "not started", which
+   was five commits out of date.
 
 ### P2 — completeness and verification
 
-2. **UI surface for `/api/ask`.** The route and the service are done and
-   tested; no screen calls them yet. Needs an entry point (opportunity detail
-   is the natural place), a citation list, and an explicit abstention state —
-   the abstention is the product working and must not render as an error.
-3. **Index the corpus.** `rag_chunks` is empty. `POST /reindex` needs
-   `SUPABASE_DB_URL` (§11-2). Expect ~5 listings indexed, 22 skipped for no
-   text.
+2. ~~UI surface for `/api/ask`~~ **DONE** in `8640e29` — `AskListing` is
+   mounted on opportunity detail.
+3. ~~Index the corpus~~ **DONE** — see §7.12. The `SUPABASE_DB_URL` blocker was
+   removed by the PostgREST backend in §7.11.
+
+3b. **Deploy the Python retrieval service.** Still the real gap: it is
+   implemented, tested and indexed, but not hosted, so `/api/ask` reports
+   itself unavailable in production.
 4. **Authenticated end-to-end journeys.** Permission boundaries are now
    covered at the database level (`test-rls.sql`) and at the unauthenticated
    HTTP level (`e2e/auth.spec.ts`), but no E2E test signs in and walks a
@@ -497,10 +504,73 @@ verified there.**
 
 ---
 
+## 8a. Added in session 2 (2026-08-29)
+
+All committed as `Niloy-Bhuiyan`, merged to `main`, deployed and verified live.
+
+1. **`4efd28d` operator workspace, agent dock, Forge in the nav.** /admin and
+   /employer moved out of the `(main)` route group into `(operator)` with
+   their own shell — an admin used to get the student header, bottom nav and
+   sidebar with an ADMIN chip bolted on. URLs unchanged, so the guards and the
+   e2e suite still point at the same places. The agent became a corner dock on
+   every signed-in screen, sharing one `<AgentChat/>` with the full-screen CRT
+   world so they cannot drift. Forge became a real nav destination.
+
+   Surfaced a latent build bug: `/employer/billing/sandbox` calls
+   `useSearchParams()` with no Suspense boundary. It only ever built because
+   the student shell withheld its children behind a profile lookup that never
+   resolves during a prerender, so the component was never reached.
+
+2. **`2c3aa5b` employer access requests — the production blocker.** The
+   employer product was *unreachable*: every signup gets `student` from
+   `handle_new_user`, `user_roles` is admin-only for writes with no self-write
+   path, and nothing was ever built on the other side of it. No UI, no RPC.
+   Company setup, listings, the pipeline and every payment path behind them
+   could only be reached with hand-written SQL. Migration 0016 adds the path
+   without weakening the rule, and `decide_employer_access` is SECURITY
+   **INVOKER** so it buys atomicity, not permission.
+
+3. **`2a1c9a3` password reset could never complete.** Reported from
+   production. A recovery link *establishes* a session, so the user hitting
+   /reset-password is always authenticated — and /reset-password sat in
+   PUBLIC_ROUTES, where middleware bounces signed-in users to /radar. Clicking
+   the link silently logged you in and the form was unreachable. Split into
+   PUBLIC_ROUTES and SIGNED_IN_OK_ROUTES; `middleware-routes.test.ts` was
+   confirmed to FAIL against the broken version before the fix went back.
+
+4. **`090347a` role-based landing + README architecture.** Sign-in lands admin
+   on /admin, employer on /employer, student on /radar; an explicit `?next=`
+   still wins. Deliberately not separate login pages per role — a role is a
+   property of an account and nobody has one until they authenticate, so three
+   forms would be three identical forms, and an `/admin/login` that exists
+   tells an attacker which addresses are worth attacking.
+
+5. **`f21c51e` referrals by email.** The shareable-code design was written and
+   thrown away: redemption cannot be INVOKER, so it would have been a SECURITY
+   DEFINER function callable by any signed-in user that grants a role in
+   response to an attacker-controlled string. Keying invites to an email
+   removes the need — `handle_new_user` already runs on signup, is already
+   DEFINER, and already picks the role. **Verified that the set of SECURITY
+   DEFINER functions callable by `authenticated` is still exactly the five
+   policy helpers.**
+
+6. **`4b4dfb6` actionable message when an email link fails.** "That didn't
+   work. Try again." is right for a wrong password and wrong for a broken
+   link, where retrying the same way fails the same way. A missing PKCE
+   verifier now says the link must be opened in the browser it was requested
+   from.
+
+7. **Content-Security-Policy.** See §12.
+
 ## 9. Exact next step
 
-Start P1-1 (payments sandbox) in `D:\shuru-work`. Everything through
-`1b7be23` is committed and pushed.
+**The UI/UX pass, which has not happened.** Everything above is structural.
+The authenticated screens have never been visually reviewed — browser
+screenshots were unavailable all session (the pane was not displayed) and no
+automated sign-in path exists that does not involve handling the owner's
+password. `.local-scripts/login-once.mjs` is the way in: the owner signs in
+once in a headed browser, it saves `state.json`, and `.local-scripts/shoot.mjs`
+then screenshots every screen at both viewports. Both are gitignored.
 
 ---
 
@@ -547,7 +617,24 @@ Supabase MCP exposes docs/database/debugging/functions/branching only, the
 CLI cannot log in from a non-TTY shell, and no management token exists on this
 machine. All three were checked, not assumed.
 
-1. **URL configuration** —
+1. ~~URL configuration~~ **DONE 2026-08-29.** Site URL is
+   `https://shuru-ten.vercel.app` and both callbacks are allowlisted
+   (production + `http://localhost:3000/auth/callback`). Password reset was
+   then verified end to end by the repository owner.
+
+   Two things learned doing it, both of which cost time:
+   - On the REST admin endpoint `/auth/v1/admin/generate_link`, `redirect_to`
+     is a **top-level** field. Nesting it under `options` (the supabase-js
+     shape) makes the API ignore it and fall back to the Site URL with no
+     error.
+   - Admin-generated links use the **implicit** flow: the session arrives in
+     the URL fragment, not as the `?code=` that `/auth/callback` exchanges. A
+     fragment never reaches the server, and `@supabase/ssr` runs PKCE and
+     ignores implicit tokens, so such a link cannot sign anyone into this app.
+     Real users get PKCE links from the browser client; this only affects
+     links minted by the admin API.
+
+   Original instructions, kept for reference —
    `https://supabase.com/dashboard/project/lciujpypigtbzhjawghf/auth/url-configuration`
    - Site URL → `https://shuru-ten.vercel.app`
    - Redirect URLs → add `https://shuru-ten.vercel.app/auth/callback` **and**
@@ -562,15 +649,20 @@ machine. All three were checked, not assumed.
    **Verify after:** click "Continue with Google" on production — it should
    return to `shuru-ten.vercel.app/radar`, not localhost.
 
-2. **Leaked-password protection** — Authentication → Policies → enable
-   "Prevent use of leaked passwords". The last open security advisor.
+2. **Leaked-password protection — NOT AVAILABLE.** Attempted 2026-08-29. The
+   toggle lives at Authentication → Attack Protection → "Configure in email
+   provider", and saving it returns:
 
-   **Caution:** the current password is weak and in the HIBP breach lists. It
-   keeps working, but the *next* password change would be rejected. Change it
-   to something stronger first.
+   > Failed to update auth configuration: Configuring leaked password
+   > protection via HaveIBeenPwned.org is available on Pro Plans and up.
 
-   **Verify after:** re-run the Supabase security advisors; the
-   `auth_leaked_password_protection` WARN disappears.
+   This project is on the Free plan, so the `auth_leaked_password_protection`
+   advisor cannot be cleared without upgrading. Moved to §12 as an accepted
+   risk rather than left as an open task.
+
+   **What was done instead**, on the same screen and free: minimum password
+   length raised from 6, plus character-class requirements. A 6-character
+   minimum was the larger real risk.
 
 ## 12. Accepted residual risks
 
@@ -589,9 +681,22 @@ machine. All three were checked, not assumed.
 - **Job descriptions are truncated at 4,000 characters** by the ingestion
   pipeline. Four of the five indexable listings hit that ceiling exactly, so
   their tail content is not retrievable.
-- **No Content-Security-Policy.** A `unsafe-inline` CSP was deliberately not
-  added; a real nonce-based CSP needs middleware work. Still open after the
-  Next 16 upgrade.
+- ~~No Content-Security-Policy~~ **DONE.** `src/lib/auth/csp.ts` builds a
+  per-request policy and `src/middleware.ts` mints the nonce. `strict-dynamic`
+  is what makes the nonce sufficient — Next loads chunks from the bootstrap
+  script, so path allow-listing would not work. Verified that Next stamps the
+  nonce onto its own script tags.
+
+  Two `unsafe-` values remain and both are deliberate: `style-src
+  'unsafe-inline'`, because sizing an SVG with `style={{ width }}` is a style
+  attribute and there is no nonce mechanism for those (it permits inline CSS,
+  not inline script); and `'unsafe-eval'` in **dev only**, for the HMR
+  runtime. `script-src` never contains `'unsafe-inline'`, which is the
+  assertion that makes the policy worth having, and `csp.test.ts` fails if
+  anyone adds it.
+
+- **Leaked-password protection is unavailable on the Free plan.** See §11-2.
+  Mitigated with a longer minimum length and character-class requirements.
 - **Rate limits are per-instance** (agent 20/day, ingest cooldown, RAG
   30/day) — in-memory cost seatbelts, not security boundaries.
 - **`schema_migrations` has RLS on with no policy** — intentional: only

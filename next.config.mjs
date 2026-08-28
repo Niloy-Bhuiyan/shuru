@@ -1,11 +1,11 @@
 /**
  * Security headers.
  *
- * No Content-Security-Policy is set here, deliberately. Next's App Router
- * injects inline bootstrap scripts, so a useful CSP needs per-request nonces
- * via middleware — and a `unsafe-inline` CSP added to look thorough would
- * provide no XSS protection while implying it does. Adding a real nonce-based
- * CSP is tracked work, not a one-line config.
+ * Content-Security-Policy is NOT here, and that is not an omission: it is
+ * built per request in src/middleware.ts because it carries a nonce. A CSP
+ * declared in static config cannot, and the only static policy that would not
+ * break the App Router's inline bootstrap is one containing `unsafe-inline` —
+ * which permits the exact attack a CSP exists to stop. See src/lib/auth/csp.ts.
  *
  * Everything below is enforced by the browser regardless of framework
  * internals and costs nothing.
