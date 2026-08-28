@@ -4,7 +4,7 @@
 top to bottom before touching anything. It records verified state only: every
 "pass" / "done" below was observed, not assumed.
 
-**Last updated:** 2026-08-28 — session 1, after the accessibility checkpoint.
+**Last updated:** 2026-08-28 — session 1, after the RLS behaviour-test checkpoint.
 
 ---
 
@@ -33,7 +33,7 @@ below is not verified, it says so.
 | Branched from | `a44d4ad` (`main`) |
 | Safety tag on pre-existing work | `safety/pre-hardening-2026-08-27` → `a44d4ad` |
 | Remote | `origin` → `https://github.com/Niloy-Bhuiyan/shuru` (private) |
-| Latest commit (pushed) | `cc5efa1` meet wcag aa contrast on light surfaces (+ tap targets, a11y suite) |
+| Latest commit (pushed) | `2658865` add rls behaviour tests that assert the exact denial code |
 
 **Why a sibling directory and not a nested worktree:** a git worktree placed
 inside `D:\SHURU Internship` would appear as untracked content in the parent
@@ -212,7 +212,7 @@ nothing for `anon`, **no write policy at all**).
 | `npm audit` | 7 vulns (6 high, 1 moderate) | **0 vulnerabilities** |
 | `pytest` (services/rag) | did not exist | **pass — 63/63** |
 | WCAG AA contrast (public pages) | **12 failures** | **0 failures** |
-| `npm run verify:rls` | did not exist | **10/10 PASS** (run via MCP against the live DB; the npm script itself is unrun — needs `SUPABASE_DB_URL`, §11) |
+| `npm run verify:rls` | did not exist | **10/10 config invariants + 6 behaviour tests PASS** (run via MCP against the live DB; the npm script itself is unrun — needs `SUPABASE_DB_URL`, §11) |
 | Supabase security advisors | 1 INFO, 6 WARN | 1 INFO, 6 WARN (5 are the intended policy helpers; 1 is the dashboard action in §11) |
 | Supabase performance advisors | 29 + 15 WARN, 10 + 8 INFO | **0 WARN**; only `unused_index` INFO remains |
 
@@ -370,6 +370,26 @@ verified there.**
      place with a comment recording its measurement rather than deleted.
    - Final state: **all 19 colour pairs in real use pass WCAG AA.**
 
+10. **`2658865` add rls behaviour tests that assert the exact denial code**
+   - New `supabase/test-rls.sql`. `verify-rls.sql` checks the *shape* of the
+     security config; this checks what the policies actually **do**, by
+     becoming each role with a synthetic JWT `sub` — exactly what PostgREST
+     does per request — and looking. Non-destructive: creates and deletes
+     nothing.
+   - Covers stranger isolation across 11 tables, public visibility (approved +
+     unexpired only, and `rag_chunks` never out-reaching its listings),
+     own-row read as a positive control, no self-promotion, no cross-user
+     write, and that `payments` has zero UPDATE policies.
+   - **A draft of this file passed for the wrong reason and was caught.** The
+     cross-user write test caught `others`, and the INSERT it ran named a
+     column that does not exist — so it failed with 42703 (undefined_column)
+     and the test counted that as a successful RLS block. Both negative tests
+     now assert **SQLSTATE 42501 specifically**. Re-verified against the live
+     database: both denials are genuinely 42501, "new row violates row-level
+     security policy".
+   - `npm run verify:rls` now runs both files; `npm run test:rls` runs the
+     behaviour half.
+
 **Verified with evidence, not assumed:**
 - The pgvector SQL path was probed against the live database with synthetic
   unit vectors: identical vector -> distance `0.0000`, 45-degree vector ->
@@ -402,10 +422,14 @@ verified there.**
 3. **Index the corpus.** `rag_chunks` is empty. `POST /reindex` needs
    `SUPABASE_DB_URL` (§11-2). Expect ~5 listings indexed, 22 skipped for no
    text.
-4. E2E coverage for employer / admin permission boundaries, OAuth edge cases,
-   ingestion, notifications, payments sandbox, and `/api/ask`.
-5. Accessibility audit + automated checks; responsive visual QA at 390px and
-   1440px.
+4. **Authenticated end-to-end journeys.** Permission boundaries are now
+   covered at the database level (`test-rls.sql`) and at the unauthenticated
+   HTTP level (`e2e/auth.spec.ts`), but no E2E test signs in and walks a
+   student / employer / admin journey. That needs seeded test accounts, which
+   should live in a separate Supabase project rather than production.
+5. ~~Accessibility audit~~ **DONE** — see §7.10 and `e2e/a11y.spec.ts`.
+   Still outstanding: visual QA of the *authenticated* screens, which the
+   browser tooling could not reach without a session.
 6. **`docs/ARCHITECTURE.md` is stale** and not yet fixed: it describes
    `lib/match/` (actually `lib/matching.ts`), `app/employer/` and `app/admin/`
    (actually under `app/(main)/`), `/api/cron/*` (actually `/api/cron`), says
