@@ -51,7 +51,7 @@ export default function ForgotPasswordPage() {
   return (
     <>
       <SunriseHeader />
-      <main className="px-4 pb-16 pt-6">
+      <main className="mx-auto w-full max-w-[440px] px-4 pb-16 pt-6">
         <div className="mb-5 flex items-end gap-3">
           <PixelSun width={44} />
           <div>

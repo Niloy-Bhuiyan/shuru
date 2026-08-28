@@ -1,0 +1,63 @@
+# Render blueprint for the retrieval service.
+#
+# Chosen as the documented default because it deploys straight from this
+# repo's Dockerfile with no CLI and no local Docker install, which matters
+# when the only machine available is Windows.
+#
+# NOTE ON THE FREE TIER: a free web service sleeps after inactivity and takes
+# ~30s to wake. That is survivable here — /api/ask already has an explicit
+# unavailable state and the Next.js client has a timeout — but the first
+# question after a quiet period will be slow. Upgrade the plan if that
+# matters more than the cost.
+#
+# Every value below is non-secret. The four secrets are marked sync: false
+# and must be set in the Render dashboard, never committed.
+
+services:
+  - type: web
+    name: shuru-rag
+    runtime: docker
+    dockerfilePath: ./services/rag/Dockerfile
+    dockerContext: ./services/rag
+    plan: free
+    region: singapore # closest region to Bangladesh
+    healthCheckPath: /health
+    autoDeploy: false # deploy deliberately; this service holds a service key
+
+    envVars:
+      # ── connection ────────────────────────────────────────────────────
+      # Prefer the PostgREST path: it needs no database password, which is
+      # not derivable from the service-role key (see CONTEXT.md §7.11).
+      - key: SHURU_RAG_SUPABASE_URL
+        sync: false
+      - key: SHURU_RAG_SUPABASE_SERVICE_KEY
+        sync: false
+
+      # ── auth ──────────────────────────────────────────────────────────
+      # Must equal SHURU_RAG_SERVICE_TOKEN in the Vercel project, or every
+      # call from the web app is refused. Generate with:
+      #   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+      - key: SHURU_RAG_SERVICE_TOKEN
+        sync: false
+
+      # ── answer generation ─────────────────────────────────────────────
+      # Retrieval works without this (embeddings are local); only the written
+      # answer needs it. Absent, the service reports itself unavailable
+      # rather than answering from a degraded path.
+      - key: SHURU_RAG_ANTHROPIC_API_KEY
+        sync: false
+
+      # ── pinned, non-secret ────────────────────────────────────────────
+      # Measured, not guessed: on-topic scored 0.239-0.385 and off-topic
+      # 0.532-0.598, so 0.46 sits in the gap. The shipped default of 0.75
+      # answered "what is the weather in Dhaka?" from a job description.
+      # tests/test_threshold.py fails if this drifts back.
+      - key: SHURU_RAG_MAX_COSINE_DISTANCE
+        value: "0.46"
+      # Changing this invalidates the index: a different model means a
+      # different vector space, and mismatched vectors return nothing
+      # relevant without erroring.
+      - key: SHURU_RAG_EMBEDDING_MODEL
+        value: BAAI/bge-small-en-v1.5
+      - key: SHURU_RAG_DAILY_ANSWER_LIMIT
+        value: "30"

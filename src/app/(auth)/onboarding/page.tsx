@@ -137,7 +137,7 @@ export default function OnboardingPage() {
     return (
       <>
         <SunriseHeader />
-        <main className="px-4 pt-6">
+        <main className="mx-auto w-full max-w-[440px] px-4 pt-6">
           <LoadingBlock />
         </main>
       </>
@@ -147,7 +147,7 @@ export default function OnboardingPage() {
   return (
     <>
       <SunriseHeader />
-      <main className="px-4 pb-10 pt-6">
+      <main className="mx-auto w-full max-w-[440px] px-4 pb-10 pt-6">
         <h1 className="font-pixel text-xs text-ink">{t("onboard.title")}</h1>
         <p className="mt-2 font-mono text-[11px] leading-relaxed text-grey">
           {t("onboard.hint")}

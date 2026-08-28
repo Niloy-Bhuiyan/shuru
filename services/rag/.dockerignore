@@ -1,0 +1,11 @@
+# Never let a local .env reach an image — it holds the Supabase service key.
+.env
+.env.*
+!.env.example
+
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+tests/
+README.md
