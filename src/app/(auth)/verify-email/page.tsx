@@ -128,7 +128,7 @@ export default function VerifyEmailPage() {
             )}
 
             <p className="text-center font-mono text-xs text-ink">
-              <Link href="/radar" className="font-bold text-amberInk underline">
+              <Link href="/radar" className="inline-block py-1.5 font-bold text-amberInk underline">
                 {t("nav.radar")} →
               </Link>
             </p>

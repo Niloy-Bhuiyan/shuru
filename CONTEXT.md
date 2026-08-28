@@ -4,8 +4,7 @@
 top to bottom before touching anything. It records verified state only: every
 "pass" / "done" below was observed, not assumed.
 
-**Last updated:** 2026-08-27 — session 1, after the Python retrieval service
-checkpoint.
+**Last updated:** 2026-08-28 — session 1, after the accessibility checkpoint.
 
 ---
 
@@ -34,7 +33,7 @@ below is not verified, it says so.
 | Branched from | `a44d4ad` (`main`) |
 | Safety tag on pre-existing work | `safety/pre-hardening-2026-08-27` → `a44d4ad` |
 | Remote | `origin` → `https://github.com/Niloy-Bhuiyan/shuru` (private) |
-| Latest commit (pushed) | `1b7be23` add python retrieval service with cited answers and abstention |
+| Latest commit (pushed) | `cc5efa1` meet wcag aa contrast on light surfaces (+ tap targets, a11y suite) |
 
 **Why a sibling directory and not a nested worktree:** a git worktree placed
 inside `D:\SHURU Internship` would appear as untracked content in the parent
@@ -44,6 +43,28 @@ Sibling placement is the documented fallback.
 `D:\shuru-work` has its own `node_modules` (installed from the committed
 lockfile) and its own copy of `.env.local` (git-ignored, copied from the main
 checkout — **not** committed).
+
+### ⚠ `main` HAS MOVED — read before merging
+
+This branch was cut from `a44d4ad`. The repository owner has since committed
+**four documentation changes directly to `main`**:
+
+```
+af4811b docs: refresh architecture diagram cache
+afc059c docs: polish README architecture and license
+d0733c8 docs: simplify README and add proprietary license
+4834565 docs: redesign project README
+```
+
+`README.md` was rewritten on both sides, so **a merge will conflict there**.
+Their `main` version is the owner's deliberate redesign and should win on
+structure; the additions from this branch that must survive are the
+`services/rag` doc-table row, the ADR 0003 link, the `verify:rls` and pytest
+script rows, and the Next 16 / Python service line in the stack blurb.
+
+**Nothing on this branch is deployed.** Vercel builds `main`. A merge is a
+production-facing action and has NOT been done — it is waiting on an explicit
+go-ahead.
 
 ### Git identity (verified on every commit so far)
 
@@ -185,11 +206,12 @@ nothing for `anon`, **no write policy at all**).
 |---|---|---|
 | `npm run typecheck` | pass | **pass** |
 | `npm run lint` | pass | **pass — 0 errors**, 19 warnings (see §12) |
-| `npm test` | pass — 210/210, 26 files | **pass — 254/254, 30 files** |
+| `npm test` | pass — 210/210, 26 files | **pass — 271/271, 31 files** |
 | `npm run build` | not run | **pass**, exit 0, prints `ƒ Proxy (Middleware)` |
-| `npm run test:e2e` | not run | **pass — 50/50** (mobile 390px + desktop 1440px, production build) |
+| `npm run test:e2e` | not run | **pass — 114/114** (mobile 390px + desktop 1440px, production build) |
 | `npm audit` | 7 vulns (6 high, 1 moderate) | **0 vulnerabilities** |
 | `pytest` (services/rag) | did not exist | **pass — 63/63** |
+| WCAG AA contrast (public pages) | **12 failures** | **0 failures** |
 | `npm run verify:rls` | did not exist | **10/10 PASS** (run via MCP against the live DB; the npm script itself is unrun — needs `SUPABASE_DB_URL`, §11) |
 | Supabase security advisors | 1 INFO, 6 WARN | 1 INFO, 6 WARN (5 are the intended policy helpers; 1 is the dashboard action in §11) |
 | Supabase performance advisors | 29 + 15 WARN, 10 + 8 INFO | **0 WARN**; only `unused_index` INFO remains |
@@ -310,6 +332,28 @@ nothing for `anon`, **no write policy at all**).
 **Both database migrations and `0013` are applied to the live database and
 verified there.**
 
+9. **`cc5efa1` meet wcag aa contrast on light surfaces**
+   - An audit of the signed-out surface found **12 WCAG AA contrast
+     failures**, all from three palette tokens used as TEXT on the cream
+     background: `grey` #8A8578 at **3.07:1**, `amber` #FF7A3C at **2.16:1**,
+     `alert` #E5533D at **3.10:1**, against a 4.5:1 requirement.
+   - `grey` was darkened to `#6B6659` outright (4.77:1 / 5.23:1). It is only
+     ever secondary text or a muted fill, and darkening improved BOTH
+     directions — cream-on-grey went 3.07 -> 4.77, so those 13 `bg-grey`
+     usages got better too.
+   - `amber` and `alert` were NOT changed: they are tuned as FILLS
+     (`bg-amber text-ink` is correct) and are fine as text on the dark forge
+     and terminal surfaces. Instead two new tokens, `amberInk` #B4400F and
+     `alertInk` #B33A28, were added for text-on-light, and **only the 22
+     usages verified to sit on cream/paper** were swapped. The 24 remaining
+     `text-amber` usages are all on dark surfaces and were left alone.
+   - Three standalone links (16px tall) were padded to ~28px for WCAG 2.2 AA
+     2.5.8. Two others were left alone deliberately — they sit inline in a
+     sentence, which the spec exempts.
+   - New `e2e/a11y.spec.ts`: 6 checks x 4 public pages x 2 viewports = **48
+     tests** covering contrast, landmark/heading structure, `html[lang]`, form
+     labelling, focus visibility, and target size.
+
 **Verified with evidence, not assumed:**
 - The pgvector SQL path was probed against the live database with synthetic
   unit vectors: identical vector -> distance `0.0000`, 45-degree vector ->
@@ -318,6 +362,10 @@ verified there.**
   working. Probe rows were deleted afterwards (`rag_chunks` is back to 0).
 - `fastembed` was run end to end: 384-dim vectors, cosine 0.77 between a
   related question and passage.
+- **The accessibility gate was proven able to fail.** `grey` was temporarily
+  reverted to #8A8578 and the contrast test failed as intended, naming each
+  offending element and its class (`"honest odds. real doors." 3.07:1 (needs
+  4.5) — ... text-grey`). A gate that passes but cannot fail is not a gate.
 
 ---
 

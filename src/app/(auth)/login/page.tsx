@@ -120,7 +120,7 @@ function LoginForm() {
       </PixelButton>
 
       <p className="text-center font-mono text-xs text-ink">
-        <Link href="/forgot-password" className="font-bold text-amberInk underline">
+        <Link href="/forgot-password" className="inline-block py-1.5 font-bold text-amberInk underline">
           {t("auth.forgot")}
         </Link>
       </p>
