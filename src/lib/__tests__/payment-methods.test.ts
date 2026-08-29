@@ -1,14 +1,16 @@
 /**
  * Payment method catalogue and the two input normalisers.
  *
- * The normalisers are the only validation between a text box and a row an
- * admin will later act on, so their job is narrow and worth pinning: reject
- * anything that cannot be a receipt number, and never mangle one that can.
+ * The load-bearing assertion in this file is that EVERY method reports itself
+ * as a demo out of the box. `payments.is_sandbox` is written from `isDemo`, and
+ * the UI decides from it whether to tell someone money is moving — so a
+ * regression here is not a cosmetic one, it is a screen that quietly implies a
+ * real charge.
  *
- * The catalogue assertions exist because the entries encode a security rule —
- * bKash, Nagad and Rocket MUST settle by human review, because settling them
- * automatically would mean holding merchant API credentials this deployment
- * does not have, and the shortcut for that is a PIN field.
+ * The settlement assignments matter for a second reason: bKash, Nagad and
+ * Rocket settle by human review rather than automatically, because settling
+ * them automatically would need merchant API credentials, and the shortcut for
+ * not having those is a PIN field.
  */
 import { afterEach, describe, expect, it } from "vitest";
 import {
@@ -56,39 +58,54 @@ describe("the method catalogue", () => {
 });
 
 describe("availability", () => {
-  it("marks a wallet unavailable until its merchant number is configured", () => {
-    const bkash = methodAvailability().find((m) => m.method.id === "bkash")!;
-    expect(bkash.available).toBe(false);
-    expect(bkash.merchantNumber).toBeNull();
-    // The operator is told exactly which variable to set, rather than the
-    // method silently vanishing from the page.
-    expect(bkash.unconfiguredEnvVar).toBe("PAYMENT_MERCHANT_BKASH");
-  });
-
-  it("publishes the number once it is set", () => {
-    process.env.PAYMENT_MERCHANT_BKASH = " 01712345678 ";
-    const bkash = methodAvailability().find((m) => m.method.id === "bkash")!;
-    expect(bkash.available).toBe(true);
-    expect(bkash.merchantNumber).toBe("01712345678");
-    expect(bkash.unconfiguredEnvVar).toBeNull();
-  });
-
-  it("treats a blank variable as unset", () => {
-    process.env.PAYMENT_MERCHANT_NAGAD = "   ";
-    expect(merchantNumber(methodById("nagad")!)).toBeNull();
-  });
-
-  it("keeps the sandbox paths always usable", () => {
-    // The demo and card paths need no operator configuration, which is what
-    // lets anyone open the deployed link and walk the full payment flow.
-    for (const id of ["card", "demo"] as const) {
-      const m = methodAvailability().find((x) => x.method.id === id)!;
-      expect(m.available).toBe(true);
+  it("marks EVERY method a demo when nothing is configured", () => {
+    // The default state, and the deployed one. If any of these flips to false
+    // without a real merchant number behind it, a screen starts implying a
+    // charge that does not happen.
+    for (const m of methodAvailability()) {
+      expect(m.isDemo, `${m.method.id} should be a demo`).toBe(true);
     }
   });
 
-  it("returns unavailable methods rather than hiding them", () => {
+  it("leaves every method usable, so the whole flow is walkable", () => {
+    for (const m of methodAvailability()) {
+      expect(m.available, `${m.method.id} should be usable`).toBe(true);
+    }
     expect(methodAvailability()).toHaveLength(PAYMENT_METHODS.length);
+  });
+
+  it("gives each wallet a placeholder number that nobody could hold", () => {
+    for (const id of ["bkash", "nagad", "rocket"] as const) {
+      const m = methodAvailability().find((x) => x.method.id === id)!;
+      expect(m.merchantNumber).toMatch(/^01[3-9]0{8}$/);
+    }
+  });
+
+  it("stops being a demo once a real merchant number is configured", () => {
+    // The upgrade path: setting the variable is the whole change, and
+    // is_sandbox follows it without anyone editing the checkout route.
+    process.env.PAYMENT_MERCHANT_BKASH = " 01712345678 ";
+    const bkash = methodAvailability().find((m) => m.method.id === "bkash")!;
+    expect(bkash.merchantNumber).toBe("01712345678");
+    expect(bkash.isDemo).toBe(false);
+    // The others are untouched by one wallet being configured.
+    expect(
+      methodAvailability().find((m) => m.method.id === "nagad")!.isDemo
+    ).toBe(true);
+  });
+
+  it("treats a blank variable as unset and stays a demo", () => {
+    process.env.PAYMENT_MERCHANT_NAGAD = "   ";
+    const nagad = merchantNumber(methodById("nagad")!);
+    expect(nagad?.isDemo).toBe(true);
+  });
+
+  it("has no merchant target for the webhook methods", () => {
+    // Card and Demo are redirected to a hosted checkout; there is nowhere to
+    // send money to, and offering a number would be meaningless.
+    for (const id of ["card", "demo"] as const) {
+      expect(merchantNumber(methodById(id)!)).toBeNull();
+    }
   });
 });
 

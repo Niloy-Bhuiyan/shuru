@@ -84,7 +84,8 @@ export type MethodInfo = {
   region: "bd" | "international" | "any";
   available: boolean;
   merchant_number: string | null;
-  unconfigured_env_var: string | null;
+  /** True while the method moves no money — true for every method today. */
+  is_demo: boolean;
 };
 
 export type Catalogue = {
@@ -113,6 +114,7 @@ export type CheckoutResult =
       status: "awaiting_review";
       payment_id: string;
       merchant_number: string;
+      is_demo: boolean;
       notice: string;
     };
 

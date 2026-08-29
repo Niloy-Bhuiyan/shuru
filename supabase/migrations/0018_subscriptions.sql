@@ -19,17 +19,20 @@
 --                      idempotency key and server-authoritative fulfilment are
 --                      all genuine, only the money is not.
 --
---   manual_review    — the payer sends money from their own bKash / Nagad /
---                      Rocket wallet to the published merchant number, then
---                      submits the transaction id. An ADMIN matches it against
---                      the merchant statement and approves or rejects it.
+--   manual_review    — the payer submits a wallet transaction id and an ADMIN
+--                      approves or rejects it before anything is granted.
 --
--- The second path is not a shortcut around an integration we could not build.
--- It is how a very large number of Bangladeshi businesses actually take mobile
--- money, and it is the only honest option without merchant API credentials:
--- the alternative would be a screen that collects a wallet PIN, which this
--- codebase must never do. It also has a property the automated path does not —
--- a human confirms the money arrived before anything is granted.
+-- BOTH PATHS ARE DEMONSTRATIONS TODAY. `is_sandbox` is written from the
+-- application's method catalogue, not hardcoded, so it is true for every row
+-- this deployment writes and becomes false per-wallet the moment a real
+-- merchant number is configured. Reporting must filter on it rather than
+-- assume.
+--
+-- The manual path is modelled rather than integrated because bKash Tokenized
+-- Checkout and the Nagad merchant API both need credentials issued after a
+-- business KYC; without them the alternative is a screen that collects a
+-- wallet PIN, which this codebase must never do. It also has a property the
+-- automated path does not — a human decides before anything is granted.
 --
 -- THE ESCALATION THAT IS DELIBERATELY ABSENT
 --
@@ -67,10 +70,10 @@ alter table public.payments
 alter table public.payments
   add column if not exists settlement text not null default 'provider_webhook';
 
--- The transaction id the payer read off their wallet's confirmation SMS, and
--- the number they sent it from. Both exist so an admin can find the row in the
--- merchant statement. Neither is a credential: a bKash TrxID is a receipt
--- number, and it is useless to anyone who does not also hold the merchant
+-- The transaction id the payer submits, and the number they sent from. Both
+-- exist so a reviewer can match the row against a merchant statement in a
+-- deployment that has one. Neither is a credential: a wallet TrxID is a
+-- receipt number, useless to anyone who does not also hold the merchant
 -- account. NOTHING HERE MAY EVER HOLD A PIN, an OTP or a card number.
 alter table public.payments
   add column if not exists payer_reference text;

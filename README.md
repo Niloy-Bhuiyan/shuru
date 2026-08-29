@@ -50,7 +50,7 @@ Save opportunities, track application stages, search the pipeline, and receive r
 
 ### `05` Shuru Pro
 
-An optional subscription over the three features that call a language model — the agent, grounded listing Q&A, and AI rewriting in the Forge. Everything Shuru computes for itself stays free and complete. Payable from a Bangladeshi mobile wallet or, from anywhere else, by card.
+An optional subscription over the three features that call a language model — the agent, grounded listing Q&A, and AI rewriting in the Forge. Everything Shuru computes for itself stays free and complete. The checkout is a **demonstration**: bKash, Nagad, Rocket and card are all sandbox paths that charge nobody, built so the two settlement mechanisms — a signed webhook, and an administrator approving a transaction — can be walked end to end.
 
 ## Architecture
 
@@ -162,21 +162,26 @@ radar feed, saving and the whole application pipeline stay free — those are th
 parts Shuru computes itself, and charging for them would mean charging for the
 half that cannot be wrong while giving away the half that can.
 
-Two settlement paths, both real:
+> [!IMPORTANT]
+> **Every payment method is a demonstration. Nothing charges anybody** — not
+> card, and not bKash, Nagad or Rocket. The merchant numbers shown in the
+> wallet flow are placeholders (`017` followed by eight zeros) and no money
+> should ever be sent to them. What is real is the machinery around the money.
 
-| Path | Methods | How it settles |
+Two settlement mechanisms, and both of them genuinely run:
+
+| Path | Methods | What actually executes |
 | --- | --- | --- |
-| **Automatic** | Card, Demo | Hosted sandbox checkout → **HMAC-signed webhook** with a unique event id. Real signature check, real idempotency, real server-authoritative fulfilment. No money moves and no card is collected. |
-| **Human** | bKash, Nagad, Rocket | The payer sends from their own wallet app and submits the transaction ID. **An admin matches it against the merchant statement** before anything is granted. Real money. |
+| **Automatic** | Card, Demo | Hosted sandbox checkout → **HMAC-signed webhook** carrying a unique event id. The signature check, the idempotency guard and the server-authoritative state transition are all real code on the real handler. |
+| **Human** | bKash, Nagad, Rocket | The payer submits a transaction ID; it lands in the admin console, and **an administrator approves or rejects it** before Pro is granted. The queue, the decision, the audit-log entry and the entitlement are all real. |
 
-The second path is not a stub standing in for an integration. bKash Tokenized
-Checkout and the Nagad merchant API both need credentials issued after a
-business KYC, so without them the choice is not "API or manual" — it is
-"manual, or a screen that asks for a wallet PIN and pretends". Publishing a
-merchant number and taking the transaction ID afterwards is what a great many
-Bangladeshi merchants genuinely do, and the payer's PIN never leaves their
-wallet app. **No screen in this repository collects a card number, a CVV, a
-wallet PIN or an OTP, and none may be added.**
+The human path mirrors what a great many Bangladeshi merchants genuinely do —
+publish a number, take the transaction ID afterwards, reconcile by hand — and
+it is modelled rather than integrated because bKash Tokenized Checkout and the
+Nagad merchant API both need credentials issued after a business KYC. Without
+those, the alternative to this flow is a screen that asks for a wallet PIN.
+**No screen in this repository collects a card number, a CVV, a wallet PIN or
+an OTP, in any mode, and none may be added.**
 
 Four properties hold regardless of which path was used:
 
@@ -196,12 +201,13 @@ Four properties hold regardless of which path was used:
    period rather than restarting it — renewing early must not silently delete
    the days already bought.
 
-Mobile methods are available only while a receiving number is configured
-(`PAYMENT_MERCHANT_BKASH`, `PAYMENT_MERCHANT_NAGAD`, `PAYMENT_MERCHANT_ROCKET`);
-otherwise the method reports itself unconfigured and names the variable, rather
-than showing a payer a number to send money to that nobody owns. Card and Demo
-need no configuration, so the full sign-in → checkout → entitlement path is
-walkable on any deployment.
+Every method is usable on every deployment with no configuration, so the full
+sign-in → checkout → review → entitlement path is walkable on the live URL
+today. `PAYMENT_MERCHANT_BKASH`, `PAYMENT_MERCHANT_NAGAD` and
+`PAYMENT_MERCHANT_ROCKET` exist as the upgrade path: setting one swaps the
+placeholder for a real receiving number and flips `payments.is_sandbox` to
+false for that wallet, with no code change. Until then every row is recorded
+as what it is.
 
 Read the complete [architecture guide](./docs/ARCHITECTURE.md) for authorization, data flows, ingestion, matching, and delivery details.
 

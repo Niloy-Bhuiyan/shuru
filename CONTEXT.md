@@ -140,12 +140,19 @@ probe whether a third party subscribes.
 | `POST /api/agent` anonymous | **401** — was unauthenticated before |
 | unsigned `POST /api/payments/webhook` | 400 |
 
-**`PAYMENT_MERCHANT_BKASH` / `_NAGAD` / `_ROCKET` are NOT set on Vercel.** That
-is not a bug: without a receiving number those three methods report themselves
-unconfigured and name the variable, rather than showing a payer a number to
-send money to that nobody owns. Card and Demo need no configuration, so the
-full sign-in → checkout → entitlement path is walkable on the live URL today.
-Setting them requires the owner's real merchant numbers.
+**EVERY PAYMENT METHOD IS A DEMONSTRATION, INCLUDING THE WALLETS.** The first
+version of this work made bKash / Nagad / Rocket move real money settled by an
+admin, which was a misreading of the request; it was corrected the same day.
+All five methods now charge nobody, `is_sandbox` is written true for every row,
+and each wallet shows a placeholder receiving number (`017` + eight zeros,
+struck through and labelled) rather than anything money could be sent to.
+
+`PAYMENT_MERCHANT_BKASH` / `_NAGAD` / `_ROCKET` are unset on Vercel and are
+meant to stay that way. They are the upgrade path, not a requirement: setting
+one swaps in a real receiving number and flips `is_sandbox` to false for that
+wallet, with no code change. Nothing is gated on them — every method is usable
+on the live URL today, so the full sign-in → checkout → admin review →
+entitlement path is walkable by anyone.
 
 **Not verified end to end:** the signed-in 402 branch. Every anonymous refusal
 above was exercised against production, but confirming that a signed-in

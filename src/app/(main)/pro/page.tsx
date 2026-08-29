@@ -11,11 +11,12 @@
  *     scoring, résumé building and export are the parts Shuru computes itself,
  *     and charging for those would be charging for the honest half.
  *
- *  2. BE HONEST ABOUT WHICH MONEY IS REAL. Card and Demo run a labelled
- *     sandbox: nothing is charged. bKash, Nagad and Rocket move real money the
- *     payer sends from their own wallet app. Those are different enough that
- *     one generic "checkout" would be a lie to one of the two groups, so each
- *     path states its own truth before the payer commits.
+ *  2. SAY, UNMISSABLY, THAT NO MONEY MOVES. Every method here is a
+ *     demonstration — bKash, Nagad and Rocket included. What differs between
+ *     them is the settlement mechanism being shown: a signed webhook, or an
+ *     administrator approving the transaction. A banner states it before the
+ *     methods, and each method restates it on its own tile, because a payment
+ *     screen is exactly where a reader stops believing generic disclaimers.
  *
  *  3. NEVER ASK FOR A CREDENTIAL. There is no card field and no PIN field on
  *     this page, and there must never be one. The mobile-money flow collects a
@@ -283,6 +284,20 @@ export default function ProPage() {
             {isPro ? t("pro.renewHeading") : t("pro.payHeading")}
           </h2>
 
+          {/* Ahead of the methods, not after them. A reader deciding how to
+              pay has stopped reading by the time they reach a footnote. */}
+          <div
+            role="status"
+            className="mt-3 rounded-lg border border-amber bg-amber/5 p-3.5"
+          >
+            <p className="font-pixel text-[13px] text-ink">
+              {t("pro.demoBanner")}
+            </p>
+            <p className="mt-1.5 font-mono text-[12px] leading-relaxed text-ui-muted">
+              {t("pro.demoBannerBody")}
+            </p>
+          </div>
+
           <MethodPicker
             methods={catalogue!.methods}
             selected={method}
@@ -295,21 +310,7 @@ export default function ProPage() {
             t={t}
           />
 
-          {selected && !selected.available && (
-            <p
-              role="status"
-              className="mt-3 rounded-lg border border-ui-lineStrong bg-cream p-3 font-mono text-[12px] leading-relaxed text-ui-muted"
-            >
-              {t("pro.methodUnavailable")}
-              {selected.unconfigured_env_var && (
-                <span className="mt-1 block font-code text-[11px] text-ink">
-                  {selected.unconfigured_env_var}
-                </span>
-              )}
-            </p>
-          )}
-
-          {selected?.available && (
+          {selected && (
             <div className="mt-4">
               {isManual ? (
                 <ManualPayForm
@@ -506,12 +507,14 @@ function MethodPicker({
                 <span className="block font-mono text-[13px] font-bold text-ink">
                   {m.label}
                 </span>
+                {/* Names the MECHANISM, and says "demo" on every single tile.
+                    One banner at the top of the section is not enough on a
+                    screen where the reader is deciding whether to part with
+                    money — the reassurance has to be where the choice is. */}
                 <span className="mt-0.5 block font-mono text-[10px] leading-tight text-ui-muted">
-                  {!m.available
-                    ? t("pro.notEnabled")
-                    : m.settlement === "manual_review"
-                      ? t("pro.tagVerified")
-                      : t("pro.tagSandbox")}
+                  {m.settlement === "manual_review"
+                    ? t("pro.tagVerified")
+                    : t("pro.tagSandbox")}
                 </span>
               </button>
             ))}
@@ -556,13 +559,21 @@ function ManualPayForm({
         </Step>
         <Step n={2}>
           {t("pro.manualStep2")}
-          <span className="mt-1.5 flex items-center gap-2">
-            <code className="rounded border border-ui-lineStrong bg-cream px-2 py-1 font-code text-[14px] font-bold tracking-wider text-ink tabular">
+          <span className="mt-1.5 flex flex-wrap items-center gap-2">
+            <code className="rounded border border-ui-lineStrong bg-cream px-2 py-1 font-code text-[14px] font-bold tracking-wider text-ui-muted line-through tabular">
               {method.merchant_number}
             </code>
             <span className="font-mono text-[12px] text-ui-muted">
               · {amount}
             </span>
+            {/* Struck through AND labelled. Someone skimming a payment screen
+                sees a number next to an amount and reaches for their wallet;
+                the number itself has to look unusable. */}
+            {method.is_demo && (
+              <span className="font-mono text-[11px] font-bold text-amberInk">
+                {t("pro.demoNumberWarning")}
+              </span>
+            )}
           </span>
         </Step>
         <Step n={3}>{t("pro.manualStep3")}</Step>
@@ -715,7 +726,6 @@ function formatDate(iso: string, lang: string): string {
 const CHECKOUT_ERRORS: Record<string, StringKey> = {
   reference_required: "pro.errReferenceRequired",
   reference_already_submitted: "pro.errReferenceDuplicate",
-  method_not_configured: "pro.errMethodOff",
   bad_period: "pro.errGeneric",
   bad_method: "pro.errGeneric",
   could_not_record_payment: "pro.errServer",

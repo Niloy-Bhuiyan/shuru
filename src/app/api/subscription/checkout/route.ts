@@ -16,19 +16,23 @@
  * — and every consequential field is read from `PRO_PLANS` here, server side.
  * The user's identity comes from `requireUser()`, not from the body.
  *
- * ── Two outcomes ──────────────────────────────────────────────────────────
+ * ── Two outcomes, NEITHER OF WHICH CHARGES ANYBODY ────────────────────────
  *
  *   card / demo   → a hosted-checkout session; the response is a redirect URL.
- *                   Settlement is the signed webhook. Sandbox: no money moves.
+ *                   Settlement is the signed webhook.
  *
  *   bKash / Nagad / Rocket
- *                 → the payer has ALREADY sent money from their own wallet app
- *                   and is submitting the transaction id. The response is
+ *                 → the payer submits a transaction id and the response is
  *                   "awaiting review". Nothing is granted until an admin
- *                   matches it against the merchant statement.
+ *                   approves it in the console.
  *
- * The second path never touches a PIN or an OTP. It cannot: the payer's wallet
- * app took those, and this endpoint only ever sees a receipt number.
+ * Every method is a demonstration: no money moves on any of them, and
+ * `is_sandbox` is written from `methodAvailability()` rather than assumed, so
+ * a deployment that later configures a real merchant number starts recording
+ * those rows correctly without a code change.
+ *
+ * No path here touches a PIN, an OTP or a card number. The manual one sees a
+ * receipt number and nothing else.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -69,13 +73,14 @@ export async function GET() {
       region: m.method.region,
       available: m.available,
       merchant_number: m.merchantNumber,
-      unconfigured_env_var: m.unconfiguredEnvVar,
+      is_demo: m.isDemo,
     })),
     provider: paymentStatus(),
     notice:
-      "Card and Demo run a labelled sandbox checkout: no card is collected and no money is charged. " +
-      "bKash, Nagad and Rocket move real money, sent by you from your own wallet app, and are " +
-      "verified by an administrator before Pro is granted.",
+      "DEMONSTRATION ONLY — no method here charges anybody. Card and Demo run a sandbox " +
+      "checkout settled by a signed webhook; bKash, Nagad and Rocket run the review flow, " +
+      "where an administrator approves the transaction before Pro is granted. No card " +
+      "number, PIN or OTP is collected on any path.",
   });
 }
 
@@ -113,14 +118,6 @@ export async function POST(req: NextRequest) {
     const availability = methodAvailability().find(
       (m) => m.method.id === method.id
     )!;
-    if (!availability.available) {
-      // No merchant number configured. Telling the payer to send money to
-      // nowhere is worse than saying the method is off.
-      return NextResponse.json(
-        { error: "method_not_configured", method: method.id },
-        { status: 409 }
-      );
-    }
 
     const reference = normaliseReference(body.payer_reference);
     if (!reference) {
@@ -138,9 +135,11 @@ export async function POST(req: NextRequest) {
       .from("payments")
       .insert({
         provider: "manual",
-        // This money is REAL — the payer sent it from their own wallet. Saying
-        // otherwise would put it on the wrong side of every revenue report.
-        is_sandbox: false,
+        // True for every method today. Read from the catalogue rather than
+        // hardcoded either way: a deployment that configures a real merchant
+        // number must start recording these as real without anyone
+        // remembering to change this line.
+        is_sandbox: availability.isDemo,
         provider_session_id: `man_${randomUUID()}`,
         user_id: userId,
         created_by: userId,
@@ -179,9 +178,10 @@ export async function POST(req: NextRequest) {
       status: "awaiting_review",
       settlement: "manual_review",
       merchant_number: availability.merchantNumber,
+      is_demo: availability.isDemo,
       notice:
-        "Recorded. An administrator checks this transaction against the merchant " +
-        "statement before Pro is granted. Nothing is active yet.",
+        "Recorded. An administrator reviews it before Pro is granted, so nothing " +
+        "is active yet. DEMO: no money was moved and none is owed.",
     });
   }
 
@@ -241,6 +241,7 @@ export async function POST(req: NextRequest) {
     settlement: "provider_webhook",
     redirect_url: session.redirectUrl,
     is_sandbox: provider.isSandbox,
-    notice: "SANDBOX ONLY. No card is collected and no money will be charged.",
+    is_demo: true,
+    notice: "DEMO ONLY. No card is collected and no money will be charged.",
   });
 }
