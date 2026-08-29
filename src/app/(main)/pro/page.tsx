@@ -277,11 +277,25 @@ export default function ProPage() {
         </div>
       </section>
 
-      {/* ── how to pay ───────────────────────────────────────────────── */}
-      {!isPro || subscription ? (
-        <section aria-labelledby="pro-pay" className="mt-6">
+      {/*
+        ── how to pay ─────────────────────────────────────────────────────
+        Rendered for everyone, deliberately.
+
+        This used to be hidden whenever `isPro` was true with no subscription
+        row — which is exactly an administrator, since their access comes from
+        their role. The result was that the one account most likely to be
+        checking the payment flow was the one account that could not see it.
+
+        An admin is also genuinely allowed to buy: the checkout route asks for
+        a session and nothing more. Hiding a purchase someone is permitted to
+        make is the wrong call even when they have no reason to want it.
+
+        The heading keys off whether they actually HOLD a subscription, not off
+        entitlement — "renew" is nonsense to someone who has never bought one.
+      */}
+      <section aria-labelledby="pro-pay" className="mt-6">
           <h2 id="pro-pay" className="font-pixel text-sm text-ink">
-            {isPro ? t("pro.renewHeading") : t("pro.payHeading")}
+            {subscription ? t("pro.renewHeading") : t("pro.payHeading")}
           </h2>
 
           {/* Ahead of the methods, not after them. A reader deciding how to
@@ -365,8 +379,7 @@ export default function ProPage() {
               )}
             </div>
           )}
-        </section>
-      ) : null}
+      </section>
 
       {/* ── the receipts ─────────────────────────────────────────────── */}
       {payments.length > 0 && (
