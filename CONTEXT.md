@@ -114,6 +114,46 @@ listed as author or co-author. Never force-push. Never make the repo public.
 
 ---
 
+### Pro subscriptions — added 2026-08-29, session 4
+
+**Migration 0018 IS APPLIED to the live database.** It was applied through the
+Supabase MCP connection, not `npm run migrate`, because this checkout's
+`.env.local` has no `SUPABASE_DB_URL` — that variable lives only in
+`D:\shuru-work`'s copy. `schema_migrations` in the local runner therefore does
+**not** know about it. Verified after applying: 9 new columns on `payments`,
+11 CHECK constraints, `subscriptions` with exactly one policy (SELECT), and
+`is_pro()` callable and returning false for a stranger.
+
+A follow-up, `0018a_is_pro_caller_guard`, is folded into the 0018 file rather
+than shipped as a separate migration — it is a `create or replace`, so a fresh
+clone running 0018 gets the guarded version directly. The Supabase advisor
+flagged the first version: `is_pro(uuid)` is SECURITY DEFINER and reachable at
+`/rest/v1/rpc/is_pro`, so without the caller check any signed-in user could
+probe whether a third party subscribes.
+
+| Check | Result (live, after deploy) |
+|---|---|
+| `/pro` signed out | 307 → `/login?next=%2Fpro` |
+| `POST /api/subscription/checkout` anonymous | 401 |
+| `POST /api/admin/payments/decide` anonymous | 401 |
+| `POST /api/forge-section` anonymous | **401** — was unauthenticated before |
+| `POST /api/agent` anonymous | **401** — was unauthenticated before |
+| unsigned `POST /api/payments/webhook` | 400 |
+
+**`PAYMENT_MERCHANT_BKASH` / `_NAGAD` / `_ROCKET` are NOT set on Vercel.** That
+is not a bug: without a receiving number those three methods report themselves
+unconfigured and name the variable, rather than showing a payer a number to
+send money to that nobody owns. Card and Demo need no configuration, so the
+full sign-in → checkout → entitlement path is walkable on the live URL today.
+Setting them requires the owner's real merchant numbers.
+
+**Not verified end to end:** the signed-in 402 branch. Every anonymous refusal
+above was exercised against production, but confirming that a signed-in
+non-subscriber gets a 402 with `code: pro_required` needs a real session, and
+no test account credentials were available in this session.
+
+---
+
 ## 3. Architecture as it actually exists
 
 Next.js **16.3.3** App Router · React 18.3.1 · TypeScript strict · Tailwind +
