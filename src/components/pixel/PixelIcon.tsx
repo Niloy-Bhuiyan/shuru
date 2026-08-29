@@ -36,7 +36,8 @@ export type IconName =
   | "edit"
   | "spark"
   | "arrow-up"
-  | "arrow-down";
+  | "arrow-down"
+  | "lock";
 
 /*
  * Path data on a 24×24 grid, drawn to be stroked rather than filled — a
@@ -112,6 +113,16 @@ const ICONS: Record<IconName, { d: string; fill?: string }[]> = {
   spark: [{ d: "M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2Z" }],
   "arrow-up": [{ d: "M12 20V5M6 11l6-6 6 6" }],
   "arrow-down": [{ d: "M12 4v15M6 13l6 6 6-6" }],
+  /*
+   * Shackle and body drawn as two strokes on the same 24-grid as everything
+   * else, so it carries the family's weight rather than arriving from an icon
+   * font. Used to mark a Pro feature the viewer has not paid for — always
+   * beside its own label, never as the whole control.
+   */
+  lock: [
+    { d: "M8 10V7.5a4 4 0 0 1 8 0V10" },
+    { d: "M5.5 10h13v10h-13Z" },
+  ],
 };
 
 export function PixelIcon({

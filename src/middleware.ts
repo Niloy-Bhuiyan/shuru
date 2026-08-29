@@ -25,6 +25,9 @@ const STUDENT_ROUTES = [
   "/forge",
   "/agent",
   "/notifications",
+  // Billing. Signed-in only — there is nothing to buy without an account, and
+  // the checkout return lands under it too.
+  "/pro",
   "/verify-email",
   // Requires a session but NOT a profile — it is where a profile is created.
   // Must never be listed as public, or middleware would bounce the very users

@@ -2,15 +2,22 @@
 
 /**
  * "FORGE THIS SECTION" — per-section AI rewrite. Hidden entirely when no
- * Gemini key is configured (probes /api/forge-section once). Returns 2
+ * model key is configured (probes /api/forge-section once). Returns 2
  * options; the user explicitly accepts one or discards. Never silent.
+ *
+ * Pro-gated. The probe reports availability and entitlement separately, and
+ * the two states look different on purpose: unconfigured renders nothing,
+ * unsubscribed renders a lock naming the price. Everything else in the Forge —
+ * editing, ATS scoring, export — is unaffected.
  */
 
 import React, { useEffect, useState } from "react";
 import { PixelButton } from "@/components/pixel/PixelButton";
+import { ProLock } from "@/components/ProLock";
 import { useLang } from "@/lib/i18n";
 
-let cachedEnabled: boolean | null = null;
+type Probe = { enabled: boolean; pro: boolean };
+let cachedProbe: Probe | null = null;
 
 export function ForgeSectionButton({
   section,
@@ -24,25 +31,31 @@ export function ForgeSectionButton({
   onAccept: (rewritten: string) => void;
 }) {
   const { t, lang } = useLang();
-  const [enabled, setEnabled] = useState<boolean | null>(cachedEnabled);
+  const [probe, setProbe] = useState<Probe | null>(cachedProbe);
   const [busy, setBusy] = useState(false);
   const [options, setOptions] = useState<string[] | null>(null);
 
   useEffect(() => {
-    if (cachedEnabled !== null) return;
+    if (cachedProbe) return;
+    let cancelled = false;
     fetch("/api/forge-section")
       .then((r) => r.json())
-      .then((d: { enabled: boolean }) => {
-        cachedEnabled = d.enabled;
-        setEnabled(d.enabled);
-      })
-      .catch(() => {
-        cachedEnabled = false;
-        setEnabled(false);
+      .then((d: Partial<Probe>) => ({
+        enabled: Boolean(d.enabled),
+        pro: Boolean(d.pro),
+      }))
+      .catch(() => ({ enabled: false, pro: false }))
+      .then((p) => {
+        cachedProbe = p;
+        if (!cancelled) setProbe(p);
       });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  if (!enabled) return null;
+  // Not configured on this deployment, or still probing: render nothing.
+  if (!probe?.enabled) return null;
 
   async function forge() {
     if (busy || !text.trim()) return;
@@ -61,6 +74,8 @@ export function ForgeSectionButton({
       setBusy(false);
     }
   }
+
+  if (!probe.pro) return <ProLock featureKey="pro.lockForge" className="mt-2" />;
 
   if (options) {
     return (

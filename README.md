@@ -48,13 +48,17 @@ PDF/DOCX import, structured editing, ATS readiness checks, job-description tailo
 
 Save opportunities, track application stages, search the pipeline, and receive relevant deadline and status notifications.
 
+### `05` Shuru Pro
+
+An optional subscription over the three features that call a language model — the agent, grounded listing Q&A, and AI rewriting in the Forge. Everything Shuru computes for itself stays free and complete. Payable from a Bangladeshi mobile wallet or, from anywhere else, by card.
+
 ## Architecture
 
 <div align="center">
 
-<img src="./public/readme/shuru-architecture.svg?v=2" alt="Architecture diagram: public clients, the Next.js 16 runtime, a separate Python FastAPI retrieval service running a LangGraph state machine, and the Supabase authorization boundary" width="100%" />
+<img src="./public/readme/shuru-architecture.svg?v=3" alt="Architecture diagram in four lanes: sign-in through Supabase Auth into the signup trigger that assigns a role; the three role-separated workspaces; the Pro checkout with its two settlement paths converging on one grant function; and the Pro-gated Python FastAPI retrieval service running a LangGraph state machine over pgvector. Postgres row level security underpins all of it." width="100%" />
 
-<sub>Two deployable units. Requests pass role-aware Next.js boundaries; Postgres RLS remains the final authority.</sub>
+<sub>Sign-in to payment, end to end. Two deployable units; requests pass role-aware Next.js boundaries, and Postgres RLS remains the final authority.</sub>
 
 </div>
 
@@ -118,6 +122,86 @@ that fails if anyone restores the old default. Prompt-injection defence is
 three layers — fenced documents, delimiter sanitising, advisory detection that
 never blocks — and `rag_chunks` has no write policy at all, so no user can
 inject retrievable text in the first place.
+
+### Three roles, three products
+
+A role is decided once, at signup, by `handle_new_user()` — a trigger on
+`auth.users` that claims a matching row in `role_invites` and otherwise writes
+`student`. Each role then lands in a workspace that does not acknowledge the
+others exist.
+
+| Role | Workspace | Sees |
+| --- | --- | --- |
+| **Student** | `(main)` | Radar, Reality Check, Forge, Vault, their own billing |
+| **Employer** | `(operator)/employer` | Their company, listings, applicant pipeline |
+| **Admin** | `(operator)/admin` | Moderation queues, employer access, referrals, transactions |
+
+The student app contains **no link to either console** — not in the sidebar,
+not in the header, not on the profile page. Operators arrive at their console
+by signing in. That is deliberate: an earlier version appended an "ADMIN" chip
+to the student navigation, which meant one account wearing two products at once
+with no way to tell which one you were in.
+
+**Only an admin can make another admin.** Referral is keyed to an email
+address rather than a shareable code, and every policy on `role_invites` is
+gated on `is_admin()`. There is no redemption RPC anywhere in the schema, and
+[migration 0017](./supabase/migrations/0017_role_invites_by_email.sql) explains
+at length why: a `SECURITY DEFINER` function that grants a role in response to
+an attacker-controllable string is a privilege-escalation primitive however
+carefully it is written. Keying the invite to the address Supabase Auth has
+already verified removes the need for one. A leaked invite is useless to
+anyone but the named address — that is the same property as its main cost.
+
+### Shuru Pro, and how money actually moves
+
+Pro covers exactly three capabilities, and they are the three that spend money
+on a model call per use: the agent (`/api/agent`), grounded listing Q&A
+(`/api/ask`), and AI rewriting in the Forge (`/api/forge-section`). Matching,
+the Reality Check, eligibility, ATS scoring, résumé building and export, the
+radar feed, saving and the whole application pipeline stay free — those are the
+parts Shuru computes itself, and charging for them would mean charging for the
+half that cannot be wrong while giving away the half that can.
+
+Two settlement paths, both real:
+
+| Path | Methods | How it settles |
+| --- | --- | --- |
+| **Automatic** | Card, Demo | Hosted sandbox checkout → **HMAC-signed webhook** with a unique event id. Real signature check, real idempotency, real server-authoritative fulfilment. No money moves and no card is collected. |
+| **Human** | bKash, Nagad, Rocket | The payer sends from their own wallet app and submits the transaction ID. **An admin matches it against the merchant statement** before anything is granted. Real money. |
+
+The second path is not a stub standing in for an integration. bKash Tokenized
+Checkout and the Nagad merchant API both need credentials issued after a
+business KYC, so without them the choice is not "API or manual" — it is
+"manual, or a screen that asks for a wallet PIN and pretends". Publishing a
+merchant number and taking the transaction ID afterwards is what a great many
+Bangladeshi merchants genuinely do, and the payer's PIN never leaves their
+wallet app. **No screen in this repository collects a card number, a CVV, a
+wallet PIN or an OTP, and none may be added.**
+
+Four properties hold regardless of which path was used:
+
+1. **Price and duration are server-side.** The request body says only which
+   plan and which method. `amount_minor` and `entitlement_days` are read from
+   `PRO_PLANS` in `src/lib/subscription.ts`, never from the client — a policy
+   permissive enough to let a browser insert a subscription payment is
+   permissive enough to let it buy a decade for one paisa.
+2. **Nobody can grant themselves anything.** `subscriptions` has exactly one
+   RLS policy and it is `SELECT`. The only writer is the service role, from
+   the webhook handler or the admin decision route.
+3. **An admin cannot approve their own payment.** Shuru mints admins by
+   referral from other admins, so without that check a free subscription would
+   be one referral away, with an audit trail saying it was reviewed.
+4. **One function grants.** Both paths call `grantEntitlement()`, which reads
+   the stored payment row and nothing else, and which extends an unexpired
+   period rather than restarting it — renewing early must not silently delete
+   the days already bought.
+
+Mobile methods are available only while a receiving number is configured
+(`PAYMENT_MERCHANT_BKASH`, `PAYMENT_MERCHANT_NAGAD`, `PAYMENT_MERCHANT_ROCKET`);
+otherwise the method reports itself unconfigured and names the variable, rather
+than showing a payer a number to send money to that nobody owns. Card and Demo
+need no configuration, so the full sign-in → checkout → entitlement path is
+walkable on any deployment.
 
 Read the complete [architecture guide](./docs/ARCHITECTURE.md) for authorization, data flows, ingestion, matching, and delivery details.
 

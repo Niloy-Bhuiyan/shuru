@@ -11,6 +11,11 @@
  *
  *   - NOT CONFIGURED  → the panel does not render at all. No teaser, no
  *                       "coming soon", no disabled button.
+ *   - NOT SUBSCRIBED  → a lock naming the feature and its price. Different
+ *                       from the state above, and it has to be: the retrieval
+ *                       service IS running here and would answer. Hiding it
+ *                       would be hiding a working feature; showing an enabled
+ *                       box would be a 402 on submit.
  *   - ABSTAINED       → said plainly, in the same visual weight as an answer.
  *                       An abstention is the product working, so it must not
  *                       look like an error.
@@ -21,6 +26,7 @@
 import { useEffect, useState } from "react";
 import { PixelButton } from "@/components/pixel/PixelButton";
 import { PixelCard } from "@/components/pixel/PixelCard";
+import { ProLock } from "@/components/ProLock";
 import { useLang } from "@/lib/i18n";
 
 type Citation = {
@@ -45,6 +51,7 @@ type Phase = "idle" | "asking" | "answered" | "limit" | "error";
 export function AskListing({ opportunityId }: { opportunityId: string }) {
   const { t } = useLang();
   const [available, setAvailable] = useState<boolean | null>(null);
+  const [pro, setPro] = useState(false);
   const [question, setQuestion] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<Answer | null>(null);
@@ -52,9 +59,11 @@ export function AskListing({ opportunityId }: { opportunityId: string }) {
   useEffect(() => {
     let cancelled = false;
     fetch("/api/ask")
-      .then((r) => (r.ok ? r.json() : { available: false }))
+      .then((r) => (r.ok ? r.json() : { available: false, pro: false }))
       .then((d) => {
-        if (!cancelled) setAvailable(Boolean(d.available));
+        if (cancelled) return;
+        setAvailable(Boolean(d.available));
+        setPro(Boolean(d.pro));
       })
       // A probe that fails means unavailable. Never optimistically available:
       // that would render a box whose every submission errors.
@@ -68,6 +77,9 @@ export function AskListing({ opportunityId }: { opportunityId: string }) {
 
   // Hidden entirely, not disabled. A dead control is worse than no control.
   if (available !== true) return null;
+
+  // Available here, but not to this account.
+  if (!pro) return <ProLock featureKey="pro.lockAsk" className="mt-4" />;
 
   async function ask() {
     const q = question.trim();

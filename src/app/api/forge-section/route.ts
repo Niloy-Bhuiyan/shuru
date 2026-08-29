@@ -3,13 +3,24 @@
  * to a pasted JD, through the agent adapter (this file knows nothing about
  * providers). GET reports availability; missing key → the button hides
  * client-side. Not a chatbot: one request in, 1–2 rewrite options out.
+ *
+ * Pro-gated, and until now unauthenticated entirely — this endpoint would run
+ * a model call for any anonymous caller who found it. `requirePro` fixes both:
+ * it requires a session and a subscription before a single token is spent.
+ * Everything else in the Forge — editing, ATS scoring, the keyword match, PDF
+ * export — stays free, because Shuru computes those itself.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { agentEnabled, askAgent } from "@/lib/agent/adapter";
+import { proAccess, proRequiredResponse, requirePro } from "@/lib/auth/pro";
+import { authErrorResponse } from "@/lib/auth/session";
 
 export async function GET() {
-  return NextResponse.json({ enabled: agentEnabled() });
+  const pro = await proAccess()
+    .then((a) => a.isPro)
+    .catch(() => false);
+  return NextResponse.json({ enabled: agentEnabled(), pro });
 }
 
 type ForgeBody = {
@@ -22,6 +33,16 @@ type ForgeBody = {
 export async function POST(req: NextRequest) {
   if (!agentEnabled()) {
     return NextResponse.json({ error: "not_configured" }, { status: 503 });
+  }
+
+  try {
+    await requirePro("forge_ai");
+  } catch (err) {
+    const paid = proRequiredResponse(err);
+    if (paid) return paid;
+    const res = authErrorResponse(err);
+    if (res) return res;
+    throw err;
   }
 
   let body: ForgeBody;

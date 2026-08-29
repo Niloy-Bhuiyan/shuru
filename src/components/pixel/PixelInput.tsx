@@ -43,6 +43,17 @@ type SelectProps = Common & {
  */
 export function PixelInput(props: InputProps | SelectProps) {
   const { label, name, error, hint, required, className } = props;
+
+  /*
+   * The field already had a real <label for>. What it did not have was any
+   * connection between the input and the message under it: a screen reader
+   * read the label, then the value, then stopped — the error was on screen and
+   * absent from the accessible name. `aria-describedby` attaches whichever
+   * message is rendered, `aria-invalid` marks the field itself as failing, and
+   * `role="alert"` announces a new error without the user having to go looking
+   * for it.
+   */
+  const describedBy = error ? `${name}-error` : hint ? `${name}-hint` : undefined;
   const fieldClass = cx(
     "w-full rounded-lg border bg-paper px-3 py-2.5 font-sans text-[14px] text-ink",
     "placeholder:text-ui-faint focus:outline-none focus:ring-2",
@@ -68,6 +79,8 @@ export function PixelInput(props: InputProps | SelectProps) {
           required={required}
           value={props.value}
           onChange={(e) => props.onChange(e.target.value)}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
           className={fieldClass}
         >
           {props.options.map((o) => (
@@ -88,16 +101,24 @@ export function PixelInput(props: InputProps | SelectProps) {
           step={props.step}
           placeholder={props.placeholder}
           onChange={(e) => props.onChange(e.target.value)}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
           className={fieldClass}
         />
       )}
 
       {error ? (
-        <p className="mt-1.5 font-sans text-[13px] font-medium text-alert">
+        <p
+          id={`${name}-error`}
+          role="alert"
+          className="mt-1.5 font-sans text-[13px] font-medium text-alert"
+        >
           {error}
         </p>
       ) : hint ? (
-        <p className="mt-1.5 font-sans text-[13px] text-ui-muted">{hint}</p>
+        <p id={`${name}-hint`} className="mt-1.5 font-sans text-[13px] text-ui-muted">
+          {hint}
+        </p>
       ) : null}
     </div>
   );

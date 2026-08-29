@@ -18,12 +18,14 @@ import { LoadingBlock } from "@/components/LoadingBlock";
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { AgentChat } from "@/components/agent/AgentChat";
 import { CrtReveal } from "@/components/CrtReveal";
-import { useAgentEnabled } from "@/hooks/useAgentEnabled";
+import { useAgentProbe } from "@/hooks/useAgentEnabled";
+import { ProLock } from "@/components/ProLock";
 import { useLang } from "@/lib/i18n";
 import { cx } from "@/lib/cx";
 
 export default function AgentPage() {
-  const enabled = useAgentEnabled();
+  const probe = useAgentProbe();
+  const enabled = probe?.enabled ?? null;
   const { t } = useLang();
   const [revealed, setRevealed] = useState(false);
 
@@ -43,6 +45,27 @@ export default function AgentPage() {
             ← {t("common.back")}
           </Link>
         </p>
+      </main>
+    );
+  }
+
+  /*
+   * Configured, but this account has not paid. Distinct from the branch above
+   * on purpose: that one says the feature does not exist here, this one says
+   * it exists and costs money. The dark agent "world" is not entered — that
+   * environment is the feature, and dressing an upsell in it would be selling
+   * the thing while pretending to give it away.
+   */
+  if (probe && !probe.pro) {
+    return (
+      <main className="px-4 pt-6">
+        <ProLock featureKey="pro.lockAgent" />
+        <Link
+          href="/radar"
+          className="mt-3 inline-block font-mono text-[12px] underline"
+        >
+          ← {t("common.back")}
+        </Link>
       </main>
     );
   }

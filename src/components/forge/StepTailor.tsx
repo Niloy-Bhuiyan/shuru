@@ -14,7 +14,8 @@ import React, { useMemo, useState } from "react";
 import { PixelButton } from "@/components/pixel/PixelButton";
 import { PixelIcon } from "@/components/pixel/PixelIcon";
 import { jdMatch } from "@/lib/resume/jdMatch";
-import { useAgentEnabled } from "@/hooks/useAgentEnabled";
+import { useAgentProbe } from "@/hooks/useAgentEnabled";
+import { ProLock } from "@/components/ProLock";
 import { useLang } from "@/lib/i18n";
 import type { EntryRef } from "@/components/forge/ResumePreview";
 import type { ResumeContent } from "@/lib/types";
@@ -35,7 +36,13 @@ export function StepTailor({
   onContinue: () => void;
 }) {
   const { t } = useLang();
-  const aiEnabled = useAgentEnabled();
+  /*
+   * The keyword match below this is computed by `jdMatch` and stays free —
+   * only the AI rewrite is Pro. Splitting them here rather than gating the
+   * whole step is the point: a free user still gets the honest, deterministic
+   * half of tailoring.
+   */
+  const ai = useAgentProbe();
   /** the JD the user last RAN — results stay live against this */
   const [ranJd, setRanJd] = useState("");
 
@@ -93,7 +100,10 @@ export function StepTailor({
               </div>
             </>
           )}
-          {aiEnabled && (
+          {ai?.enabled && !ai.pro && (
+            <ProLock featureKey="pro.lockForge" className="mt-3" />
+          )}
+          {ai?.enabled && ai.pro && (
             <PixelButton
               size="sm"
               className="mt-3"

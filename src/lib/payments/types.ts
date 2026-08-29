@@ -14,8 +14,14 @@
  * and calls it paid.
  */
 
-/** What an employer can buy. One product today. */
-export type PaymentPurpose = "feature_listing";
+/**
+ * What can be bought.
+ *
+ * `feature_listing` is a company purchase (see migration 0014);
+ * `pro_subscription` is an individual one (0018). The database enforces that
+ * each carries exactly the payer the other does not — `payments_one_payer`.
+ */
+export type PaymentPurpose = "feature_listing" | "pro_subscription";
 
 export type PaymentStatus = "pending" | "succeeded" | "failed" | "expired";
 
@@ -27,12 +33,20 @@ export type Money = {
 
 export type CheckoutRequest = {
   paymentId: string;
-  companyId: string;
-  opportunityId: string;
   purpose: PaymentPurpose;
   money: Money;
   /** Where the provider returns the payer once they are done. */
   returnUrl: string;
+
+  /*
+   * Exactly one of these is set, matching `purpose`. Both are optional here
+   * rather than split into two request types because no adapter branches on
+   * them — a hosted checkout needs the amount and a return URL, and the
+   * database already refuses a row that carries the wrong payer.
+   */
+  companyId?: string;
+  opportunityId?: string;
+  userId?: string;
 };
 
 export type CheckoutSession = {

@@ -14,6 +14,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { saveProfile } from "@/lib/data";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { EmployerAccessCard } from "@/components/EmployerAccessCard";
+import { PlanCard } from "@/components/PlanCard";
 import { useLang, type Lang } from "@/lib/i18n";
 
 const UNIVERSITIES = ["AIUB", "BUET", "NSU", "BRAC", "IUT", "DU", "JU", "KUET", "CUET", "RUET", "Other"];
@@ -111,6 +112,11 @@ export default function YouPage() {
         <PixelButton full size="lg" onClick={onSave} disabled={busy}>
           {savedOk ? t("you.savedOk") : busy ? "…" : t("you.saveChanges")}
         </PixelButton>
+
+        {/* Your plan, for the same reason the employer request is here: it is
+            a fact about YOUR account. A summary and a door, never a second
+            pricing page — that is /pro. */}
+        <PlanCard />
 
         {/* Asking to BECOME an employer is a request about your own account,
             so it belongs on your own profile. Renders only for students. */}

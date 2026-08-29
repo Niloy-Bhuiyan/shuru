@@ -50,7 +50,13 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 export class AuthError extends Error {
   constructor(
     message: string,
-    readonly status: 401 | 403
+    /**
+     * 402 is here for the Pro gate. It is the only status that distinguishes
+     * "you are signed in, you are allowed to use this product, and this
+     * particular feature costs money" from a 403, which tells the client the
+     * answer will never change and there is nothing to offer the user.
+     */
+    readonly status: 401 | 402 | 403
   ) {
     super(message);
     this.name = "AuthError";

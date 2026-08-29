@@ -3,8 +3,9 @@
 /**
  * ADMIN MODERATION DASHBOARD
  *
- * Five queues: listings awaiting review, companies awaiting verification,
- * open listing reports, employer access requests, and ingestion source health.
+ * Six queues: listings awaiting review, companies awaiting verification,
+ * open listing reports, employer access requests, mobile-money transactions
+ * awaiting verification, and ingestion source health.
  *
  * The access queue is the only way anyone becomes an employer. Approving
  * calls decide_employer_access, a SECURITY INVOKER function, so the
@@ -23,6 +24,7 @@ import Link from "next/link";
 import { LoadingBlock } from "@/components/LoadingBlock";
 import { EmptyState } from "@/components/EmptyState";
 import { SourceHealthPanel } from "@/components/admin/SourceHealthPanel";
+import { PaymentsQueue } from "@/components/admin/PaymentsQueue";
 import { OperatorShell, StatTile } from "@/components/operator/OperatorShell";
 import type { OperatorNavItem } from "@/components/operator/OperatorSideNav";
 import {
@@ -52,7 +54,7 @@ import type { IconName } from "@/components/pixel/PixelIcon";
 import { useLang } from "@/lib/i18n";
 import type { Company, ListingReport, Opportunity } from "@/lib/types";
 
-type Tab = "queue" | "companies" | "reports" | "access" | "sources";
+type Tab = "queue" | "companies" | "reports" | "access" | "payments" | "sources";
 
 export default function AdminPage() {
   const { t } = useLang();
@@ -64,6 +66,13 @@ export default function AdminPage() {
   const [reports, setReports] = useState<ListingReport[]>([]);
   const [access, setAccess] = useState<EmployerAccessRequest[]>([]);
   const [invites, setInvites] = useState<RoleInvite[]>([]);
+  /*
+   * Owned by PaymentsQueue and lifted here, rather than fetched again in this
+   * file. The queue is the only thing that knows what is outstanding, and two
+   * independent counts of the same table drift the moment one of them is
+   * reloaded and the other is not.
+   */
+  const [paymentCount, setPaymentCount] = useState(0);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<InvitableRole>("employer");
   const [ready, setReady] = useState(false);
@@ -148,6 +157,7 @@ export default function AdminPage() {
     { id: "companies", label: t("admin.companies"), icon: "check", count: companies.length },
     { id: "reports", label: t("admin.reports"), icon: "warn", count: reports.length },
     { id: "access", label: t("op.access"), icon: "user", count: access.length },
+    { id: "payments", label: t("adminPay.tab"), icon: "check", count: paymentCount },
     { id: "sources", label: t("admin.sources"), icon: "signal", count: null },
   ];
 
@@ -155,7 +165,13 @@ export default function AdminPage() {
   // the rail badge, so "is there work" is answered in two places from one
   // number rather than two that can disagree.
   const workWaiting =
-    pending.length + companies.length + reports.length + access.length;
+    pending.length +
+    companies.length +
+    reports.length +
+    access.length +
+    // Counted with the rest because somebody has already sent money and is
+    // waiting on a human. If anything in this console is urgent, it is this.
+    paymentCount;
 
   // Admin destinations ONLY. The rail used to carry a link into the employer
   // workspace, which meant the maintenance console offered a hop into a
@@ -202,11 +218,15 @@ export default function AdminPage() {
     >
       {/* Overview. The tiles that represent WORK go amber when non-zero, so
           "is there anything to do" is answered before anything is read. */}
-      <section aria-label={t("op.overview")} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {/* Five tiles now. Three columns rather than five: the rail already
+          takes 210px, and five tiles across the remainder truncates every
+          label at the width an operator console is actually used at. */}
+      <section aria-label={t("op.overview")} className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <StatTile label={t("admin.queue")} value={pending.length} tone="action" hint={t("op.tileQueue")} />
         <StatTile label={t("admin.companies")} value={companies.length} tone="action" hint={t("op.tileCompanies")} />
         <StatTile label={t("admin.reports")} value={reports.length} tone="action" hint={t("op.tileReports")} />
         <StatTile label={t("op.access")} value={access.length} tone="action" hint={t("op.tileAccess")} />
+        <StatTile label={t("adminPay.tab")} value={paymentCount} tone="action" hint={t("op.tilePayments")} />
       </section>
 
       <div className="no-scrollbar mt-5 flex gap-1.5 overflow-x-auto border-b-3 border-ink/20 pb-3">
@@ -382,6 +402,14 @@ export default function AdminPage() {
           )}
         </section>
       )}
+
+      {/* ── mobile-money transaction review ──
+          Always mounted so its count is known before the tab is opened; the
+          component hides its own body when it is not the active tab would be
+          the alternative, and then the badge would only appear after a click. */}
+      <div className={tab === "payments" ? "" : "hidden"}>
+        <PaymentsQueue onCountChange={setPaymentCount} />
+      </div>
 
       {/* ── employer access requests + referrals ── */}
       {tab === "access" && (

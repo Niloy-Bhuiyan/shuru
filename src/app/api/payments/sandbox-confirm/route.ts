@@ -11,14 +11,18 @@
  * check, the same idempotency key a production provider would exercise. The
  * only fiction is that no money moved.
  *
- * It is employer-authenticated so a stranger cannot drive another company's
- * sandbox payment to completion. A real provider's webhook is authenticated by
- * signature instead; this endpoint is not that webhook, it is the thing that
- * *sends* it.
+ * Any signed-in payer may call it, because both audiences now use it: an
+ * employer promoting a listing and an individual buying Pro. What stops a
+ * stranger driving someone else's payment to completion is not the role, it is
+ * the lookup below — the payment is read through the CALLER'S session, and RLS
+ * on `payments` returns nothing for a session id belonging to anyone else.
+ *
+ * A real provider's webhook is authenticated by signature instead; this
+ * endpoint is not that webhook, it is the thing that *sends* it.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { authErrorResponse, requireRole } from "@/lib/auth/session";
+import { authErrorResponse, requireUser } from "@/lib/auth/session";
 import { supabaseServer } from "@/lib/supabase/server";
 import { SANDBOX_HEADERS, signPayload } from "@/lib/payments/sandbox";
 import { selectPaymentProvider } from "@/lib/payments";
@@ -29,7 +33,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    await requireRole("employer");
+    await requireUser();
   } catch (err) {
     const res = authErrorResponse(err);
     if (res) return res;

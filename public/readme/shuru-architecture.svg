@@ -1,199 +1,176 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1190" viewBox="0 0 1600 1190" role="img" aria-labelledby="title desc">
-  <title id="title">Shuru reference architecture</title>
-  <desc id="desc">Architecture diagram: public clients and three role workspaces; the Next.js 16 runtime with its request boundary, route handlers and deterministic domain services; a separate Python FastAPI retrieval service running a LangGraph state machine over pgvector; the Supabase project as the authorization boundary; and optional external integrations.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="940" viewBox="0 0 1400 940" role="img" aria-labelledby="ttl dsc">
+  <title id="ttl">Shuru architecture — from sign-in to payment</title>
+  <desc id="dsc">A four-lane flow. Lane one: sign-in through Supabase Auth into the signup trigger, which reads a role invite and assigns student, employer or admin. Lane two: the three separate workspaces those roles land in. Lane three: the Pro checkout and its two settlement paths — a sandbox hosted checkout confirmed by a signed webhook, and Bangladeshi mobile money verified by an administrator — both converging on one grant function that writes the subscriptions table. Lane four: the Pro-gated retrieval service, a Python FastAPI process running a LangGraph state machine over pgvector, indexed with a LangChain splitter. Underneath everything, Postgres row level security is the trust boundary.</desc>
 
   <style>
     text { font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
-    .h1 { fill: #e7eef8; font-size: 30px; font-weight: 800; letter-spacing: -0.3px; }
-    .eyebrow { fill: #91a4bd; font-size: 12px; font-weight: 700; letter-spacing: 2.2px; }
-    .band { fill: #91a4bd; font-size: 12px; font-weight: 800; letter-spacing: 2.4px; }
-    .card-t { fill: #e7eef8; font-size: 15px; font-weight: 700; }
-    .card-s { fill: #91a4bd; font-size: 12.5px; }
-    .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; fill: #91a4bd; }
-    .tag { font-size: 11px; font-weight: 800; letter-spacing: 1.2px; }
-    .node-t { fill: #e7eef8; font-size: 12.5px; font-weight: 700; }
-    .flow { stroke-width: 2; fill: none; }
-    .rule { fill: #7bdc9a; font-size: 12.5px; font-weight: 700; }
+    .eyebrow { fill: #7D91B0; font-size: 11.5px; font-weight: 700; letter-spacing: 2.2px; }
+    .h1      { fill: #E9EEF6; font-size: 30px;   font-weight: 700; letter-spacing: -0.5px; }
+    .sub     { fill: #8FA3BF; font-size: 14px; }
+    .lane    { fill: #64789A; font-size: 11px;   font-weight: 700; letter-spacing: 2.4px; }
+    .t       { fill: #E9EEF6; font-size: 14.5px; font-weight: 650; }
+    .s       { fill: #8FA3BF; font-size: 12.5px; }
+    .mono    { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+               font-size: 12px; fill: #9FB3CE; }
+    .pill    { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+               font-size: 11.5px; fill: #C7D5E8; }
+    .edge    { fill: none; stroke: #33455F; stroke-width: 1.5; }
+    .note    { fill: #64789A; font-size: 11.5px; font-style: italic; }
   </style>
 
   <defs>
-    <marker id="a-cyan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 z" fill="#45d4d0"/>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#33455F"/>
     </marker>
-    <marker id="a-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
-    </marker>
-    <marker id="a-violet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 z" fill="#b48ef7"/>
-    </marker>
-    <marker id="a-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 z" fill="#f7768e"/>
+    <marker id="ar-mint" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#34D399"/>
     </marker>
   </defs>
 
-  <rect width="1600" height="1190" fill="#09111f"/>
+  <rect width="1400" height="940" fill="#0B1220"/>
 
-  <!-- header -->
-  <text x="56" y="58" class="eyebrow">NEXT.JS 16 · SUPABASE · PYTHON / FASTAPI · LANGGRAPH · LANGCHAIN · PGVECTOR · VERCEL</text>
-  <text x="56" y="94" class="h1">Shuru reference architecture</text>
-  <text x="56" y="120" class="card-s">Two deployable units. Postgres Row Level Security is the authorization boundary — everything above it is convenience.</text>
+  <!-- ══ header ══ -->
+  <text x="60" y="54" class="eyebrow">NEXT.JS 16 · SUPABASE · POSTGRES RLS · PYTHON FASTAPI · LANGGRAPH · LANGCHAIN · PGVECTOR</text>
+  <text x="60" y="92" class="h1">From sign-in to payment</text>
+  <text x="60" y="118" class="sub">One path, four stages. Every arrow crosses a boundary that is enforced in the database, not only in the code that draws it.</text>
 
-  <g transform="translate(1080,40)">
-    <line x1="0" y1="10" x2="26" y2="10" stroke="#45d4d0" class="flow" marker-end="url(#a-cyan)"/>
-    <text x="34" y="14" class="mono">user request</text>
-    <line x1="0" y1="34" x2="26" y2="34" stroke="#7aa2f7" class="flow" marker-end="url(#a-blue)"/>
-    <text x="34" y="38" class="mono">RLS-scoped data</text>
-    <line x1="230" y1="10" x2="256" y2="10" stroke="#b48ef7" class="flow" marker-end="url(#a-violet)"/>
-    <text x="264" y="14" class="mono">retrieval</text>
-    <line x1="230" y1="34" x2="256" y2="34" stroke="#f7768e" class="flow" marker-end="url(#a-red)"/>
-    <text x="264" y="38" class="mono">abstain / privileged</text>
-  </g>
+  <!-- ══ LANE 1 — identity ══ -->
+  <text x="60" y="170" class="lane">01 · WHO YOU ARE</text>
 
-  <!-- band 1 -->
-  <text x="56" y="170" class="band">PUBLIC CLIENT</text>
-  <rect x="56" y="184" width="1488" height="128" rx="14" fill="#101c2e" stroke="#2b405d"/>
-  <g transform="translate(80,206)">
-    <rect width="330" height="86" rx="10" fill="#142238" stroke="#2b405d"/>
-    <text x="18" y="28" class="card-t">Student app</text>
-    <text x="18" y="49" class="card-s">Radar · Saved · Forge · Vault · You</text>
-    <text x="18" y="70" class="mono">src/app/(main)</text>
-  </g>
-  <g transform="translate(430,206)">
-    <rect width="330" height="86" rx="10" fill="#142238" stroke="#2b405d"/>
-    <text x="18" y="28" class="card-t">Operator workspace</text>
-    <text x="18" y="49" class="card-s">Employer pipeline · Admin moderation</text>
-    <text x="18" y="70" class="mono">src/app/(operator)</text>
-  </g>
-  <g transform="translate(780,206)">
-    <rect width="330" height="86" rx="10" fill="#142238" stroke="#2b405d"/>
-    <text x="18" y="28" class="card-t">Agent dock</text>
-    <text x="18" y="49" class="card-s">Corner chat on every signed-in screen</text>
-    <text x="18" y="70" class="mono">SSE · hides with no provider key</text>
-  </g>
-  <g transform="translate(1130,206)">
-    <rect width="390" height="86" rx="10" fill="#142238" stroke="#2b405d"/>
-    <text x="18" y="28" class="card-t">Trust assumption</text>
-    <text x="18" y="49" class="card-s">The client is never trusted. Hiding a link</text>
-    <text x="18" y="70" class="card-s">is an affordance, never a control.</text>
-  </g>
+  <rect x="60"  y="186" width="250" height="72" rx="10" fill="#101A2B" stroke="#24334D"/>
+  <text x="80"  y="216" class="t">Sign in / Register</text>
+  <text x="80"  y="238" class="s">Email + password, Google, GitHub</text>
 
-  <line x1="800" y1="312" x2="800" y2="352" stroke="#45d4d0" class="flow" marker-end="url(#a-cyan)"/>
+  <path d="M318,222 L342,222" class="edge" marker-end="url(#ar)"/>
 
-  <!-- band 2 -->
-  <text x="56" y="378" class="band">NEXT.JS 16 RUNTIME · VERCEL</text>
-  <rect x="56" y="392" width="1488" height="282" rx="14" fill="#101c2e" stroke="#2b405d"/>
+  <rect x="350" y="186" width="250" height="72" rx="10" fill="#101A2B" stroke="#24334D"/>
+  <text x="370" y="216" class="t">Supabase Auth</text>
+  <text x="370" y="238" class="s">Session cookie, email verified</text>
 
-  <g transform="translate(80,414)">
-    <rect width="440" height="108" rx="10" fill="#18293f" stroke="#45d4d0" stroke-opacity="0.5"/>
-    <text x="18" y="26" class="tag" fill="#45d4d0">REQUEST BOUNDARY</text>
-    <text x="18" y="50" class="card-t">src/middleware.ts</text>
-    <text x="18" y="71" class="card-s">Session refresh · role gate · CSP per request</text>
-    <text x="18" y="91" class="mono">student / employer / admin route sets</text>
-  </g>
-  <g transform="translate(540,414)">
-    <rect width="440" height="108" rx="10" fill="#142238" stroke="#2b405d"/>
-    <text x="18" y="26" class="tag" fill="#91a4bd">ROUTE HANDLERS</text>
-    <text x="18" y="50" class="card-t">src/app/api/*</text>
-    <text x="18" y="71" class="card-s">agent · ask · ingest · cron · payments</text>
-    <text x="18" y="91" class="mono">timing-safe shared-secret compare</text>
-  </g>
-  <g transform="translate(1000,414)">
-    <rect width="520" height="108" rx="10" fill="#142238" stroke="#2b405d"/>
-    <text x="18" y="26" class="tag" fill="#91a4bd">DATA ACCESS</text>
-    <text x="18" y="50" class="card-t">src/lib/data/*</text>
-    <text x="18" y="71" class="card-s">One module per domain, client-side, RLS-scoped</text>
-    <text x="18" y="91" class="mono">the service-role key never reaches the browser</text>
-  </g>
+  <path d="M608,222 L632,222" class="edge" marker-end="url(#ar)"/>
 
-  <g transform="translate(80,542)">
-    <rect width="900" height="112" rx="10" fill="#18293f" stroke="#7bdc9a" stroke-opacity="0.45"/>
-    <text x="18" y="26" class="tag" fill="#7bdc9a">DETERMINISTIC DOMAIN SERVICES — NO MODEL DECIDES ELIGIBILITY</text>
-    <text x="18" y="52" class="card-t">Matching · Eligibility · Reality Check · ATS scoring · ingest normalise + dedupe</text>
-    <text x="18" y="74" class="card-s">Pure, unit-tested functions. Below MIN_COVERAGE the engine returns null instead of a number.</text>
-    <text x="18" y="98" class="rule">SCORE OR ABSTAIN — ADR 0002</text>
-  </g>
-  <g transform="translate(1000,542)">
-    <rect width="520" height="112" rx="10" fill="#142238" stroke="#b48ef7" stroke-opacity="0.5"/>
-    <text x="18" y="26" class="tag" fill="#b48ef7">RETRIEVAL CLIENT</text>
-    <text x="18" y="50" class="card-t">src/lib/rag/client.ts · server-only</text>
-    <text x="18" y="71" class="card-s">User id comes from the session, never the body</text>
-    <text x="18" y="93" class="mono">service absent → /api/ask says unavailable</text>
-  </g>
+  <rect x="640" y="186" width="300" height="72" rx="10" fill="#101A2B" stroke="#24334D"/>
+  <text x="660" y="212" class="mono">handle_new_user()</text>
+  <text x="660" y="238" class="s">Claims a role invite, or defaults to student</text>
 
-  <path d="M1260 654 L1260 706" stroke="#b48ef7" class="flow" marker-end="url(#a-violet)"/>
-  <path d="M300 654 L300 962" stroke="#7aa2f7" class="flow" marker-end="url(#a-blue)"/>
+  <path d="M948,222 L972,222" class="edge" marker-end="url(#ar)"/>
 
-  <!-- band 3 -->
-  <text x="880" y="732" class="band">PYTHON RETRIEVAL SERVICE · services/rag · SEPARATE DEPLOYABLE</text>
-  <rect x="880" y="746" width="664" height="180" rx="14" fill="#101c2e" stroke="#b48ef7" stroke-opacity="0.45"/>
-  <text x="902" y="774" class="card-t">FastAPI · LangGraph StateGraph · LangChain splitter · fastembed ONNX</text>
+  <rect x="980" y="186" width="360" height="72" rx="10" fill="#101A2B" stroke="#FB923C" stroke-opacity="0.45"/>
+  <text x="1000" y="212" class="t">One role, decided once</text>
+  <text x="1000" y="236" class="pill">student · employer · admin</text>
 
-  <g transform="translate(902,788)">
-    <rect width="100" height="32" rx="8" fill="#18293f" stroke="#2b405d"/>
-    <text x="50" y="21" class="node-t" text-anchor="middle">retrieve</text>
-    <line x1="100" y1="16" x2="124" y2="16" stroke="#b48ef7" class="flow" marker-end="url(#a-violet)"/>
+  <!-- ══ LANE 2 — workspaces ══ -->
+  <text x="60" y="316" class="lane">02 · WHERE THAT ROLE LANDS YOU</text>
+  <text x="332" y="316" class="note">— three separate products. No screen offers a door into another one.</text>
 
-    <rect x="124" width="100" height="32" rx="8" fill="#18293f" stroke="#2b405d"/>
-    <text x="174" y="21" class="node-t" text-anchor="middle">grade</text>
-    <line x1="224" y1="16" x2="248" y2="16" stroke="#b48ef7" class="flow" marker-end="url(#a-violet)"/>
+  <rect x="60"  y="332" width="406" height="112" rx="10" fill="#101A2B" stroke="#24334D"/>
+  <text x="80"  y="360" class="t">Student app</text>
+  <text x="80"  y="382" class="mono">(main)</text>
+  <text x="80"  y="406" class="s">Radar, Reality Check, Resume Forge,</text>
+  <text x="80"  y="426" class="s">application vault — all free, all computed</text>
 
-    <rect x="248" width="100" height="32" rx="8" fill="#18293f" stroke="#2b405d"/>
-    <text x="298" y="21" class="node-t" text-anchor="middle">generate</text>
-    <line x1="348" y1="16" x2="372" y2="16" stroke="#b48ef7" class="flow" marker-end="url(#a-violet)"/>
+  <rect x="497" y="332" width="406" height="112" rx="10" fill="#101A2B" stroke="#24334D"/>
+  <text x="517" y="360" class="t">Employer console</text>
+  <text x="517" y="382" class="mono">(operator)/employer</text>
+  <text x="517" y="406" class="s">Post listings, review applicants,</text>
+  <text x="517" y="426" class="s">move the pipeline, promote a listing</text>
 
-    <rect x="372" width="146" height="32" rx="8" fill="#18293f" stroke="#f7768e" stroke-opacity="0.6"/>
-    <text x="445" y="21" class="node-t" text-anchor="middle">verify_grounding</text>
+  <rect x="934" y="332" width="406" height="112" rx="10" fill="#101A2B" stroke="#34D399" stroke-opacity="0.4"/>
+  <text x="954" y="360" class="t">Admin console</text>
+  <text x="954" y="382" class="mono">(operator)/admin</text>
+  <text x="954" y="406" class="s">Moderation, employer access, referrals,</text>
+  <text x="954" y="426" class="s">and transaction verification</text>
 
-    <path d="M174 32 L174 54 L286 54" stroke="#f7768e" class="flow" marker-end="url(#a-red)"/>
-    <path d="M445 32 L445 54 L354 54" stroke="#f7768e" class="flow" marker-end="url(#a-red)"/>
-    <text x="320" y="76" class="tag" fill="#f7768e" text-anchor="middle">ABSTAIN</text>
-  </g>
+  <!-- admin -> review, drawn down the right edge and back into lane 3.
+       The elbow sits BELOW its own label; routing it through the label is
+       what the first draft did, and the text became unreadable. -->
+  <path d="M1137,444 L1137,566 L933,566 L933,584" class="edge" stroke="#34D399" stroke-opacity="0.55" marker-end="url(#ar-mint)"/>
+  <text x="950" y="548" class="note" fill="#34D399" fill-opacity="0.85">an admin decides these</text>
 
-  <text x="902" y="896" class="card-s">Three abstain exits and one self-rejection: a draft that cites nothing, or cites a passage that was never</text>
-  <text x="902" y="913" class="card-s">retrieved, is discarded rather than returned. Threshold 0.46 — measured, not the shipped default of 0.75.</text>
+  <!-- ══ LANE 3 — money ══ -->
+  <text x="60" y="512" class="lane">03 · PAYING FOR PRO</text>
+  <text x="245" y="512" class="note">— price and duration are read server-side; the request body only says which plan and which method.</text>
 
-  <path d="M1212 926 L1212 962" stroke="#b48ef7" class="flow" marker-end="url(#a-violet)"/>
+  <rect x="60" y="528" width="180" height="150" rx="10" fill="#101A2B" stroke="#FB923C" stroke-opacity="0.45"/>
+  <text x="80" y="558" class="t">/pro</text>
+  <text x="80" y="582" class="s">Monthly or</text>
+  <text x="80" y="600" class="s">yearly, in BDT</text>
+  <text x="80" y="632" class="s">Unlocks the</text>
+  <text x="80" y="650" class="s">three AI features</text>
+  <text x="80" y="668" class="s">only</text>
 
-  <!-- band 4 -->
-  <text x="56" y="962" class="band">SUPABASE PROJECT · AUTHORIZATION BOUNDARY</text>
-  <rect x="56" y="976" width="1488" height="140" rx="14" fill="#101c2e" stroke="#f7768e" stroke-opacity="0.45"/>
+  <path d="M248,570 L272,570" class="edge" marker-end="url(#ar)"/>
+  <path d="M248,640 L272,640" class="edge" marker-end="url(#ar)"/>
 
-  <g transform="translate(80,996)">
-    <rect width="360" height="100" rx="10" fill="#142238" stroke="#2b405d"/>
-    <text x="18" y="26" class="card-t">Postgres · Row Level Security</text>
-    <text x="18" y="47" class="card-s">RLS on every table. Policies are the fine</text>
-    <text x="18" y="65" class="card-s">gate, grants the coarse one; both required.</text>
-    <text x="18" y="87" class="mono">test:rls asserts SQLSTATE 42501</text>
-  </g>
-  <g transform="translate(460,996)">
-    <rect width="360" height="100" rx="10" fill="#142238" stroke="#2b405d"/>
-    <text x="18" y="26" class="card-t">Guard triggers · role model</text>
-    <text x="18" y="47" class="card-s">No self-write path to user_roles. Employer</text>
-    <text x="18" y="65" class="card-s">access is request → approve; invites are</text>
-    <text x="18" y="87" class="card-s">email-keyed, so no escalation RPC exists.</text>
-  </g>
-  <g transform="translate(840,996)">
-    <rect width="330" height="100" rx="10" fill="#142238" stroke="#b48ef7" stroke-opacity="0.5"/>
-    <text x="18" y="26" class="card-t">pgvector · rag_chunks</text>
-    <text x="18" y="47" class="card-s">HNSW + cosine, same database —</text>
-    <text x="18" y="65" class="card-s">no new infrastructure. No write policy</text>
-    <text x="18" y="87" class="card-s">at all, so no user can inject text.</text>
-  </g>
-  <g transform="translate(1190,996)">
-    <rect width="330" height="100" rx="10" fill="#142238" stroke="#2b405d"/>
-    <text x="18" y="26" class="card-t">Auth · Storage</text>
-    <text x="18" y="47" class="card-s">Email + OAuth, SSR cookie sessions.</text>
-    <text x="18" y="65" class="card-s">handle_new_user sets the starting role</text>
-    <text x="18" y="87" class="card-s">and consumes any open invite.</text>
-  </g>
+  <!-- automatic path -->
+  <rect x="280" y="528" width="470" height="84" rx="10" fill="#101A2B" stroke="#24334D"/>
+  <text x="300" y="556" class="t">Card · Demo</text>
+  <text x="300" y="578" class="s">Hosted sandbox checkout, then an HMAC-signed</text>
+  <text x="300" y="598" class="s">webhook with an idempotency key. No card is collected.</text>
 
-  <!-- band 5 -->
-  <text x="56" y="1158" class="band">EXTERNAL — ALL OPTIONAL · A MISSING KEY HIDES THE FEATURE, IT NEVER FAKES OUTPUT</text>
-  <g class="mono">
-    <text x="700" y="1158">Anthropic / Gemini</text>
-    <text x="860" y="1158">Lever · Ashby · Arbeitnow · Adzuna</text>
-    <text x="1130" y="1158">Resend / Postmark</text>
-    <text x="1280" y="1158">Web Push</text>
-    <text x="1390" y="1158">Sandbox payments</text>
-  </g>
+  <!-- manual path -->
+  <rect x="280" y="626" width="470" height="84" rx="10" fill="#101A2B" stroke="#24334D"/>
+  <text x="300" y="654" class="t">bKash · Nagad · Rocket</text>
+  <text x="300" y="676" class="s">The payer sends from their own wallet app and submits</text>
+  <text x="300" y="696" class="s">the transaction ID. An admin verifies it. No PIN, ever.</text>
+
+  <!-- Both settlement paths merge onto ONE line before entering the grant.
+       Drawn this way rather than as two arrows meeting in mid-air, because
+       the single shared arrow is the claim the diagram is making: whichever
+       way the money arrived, the same function decides what it bought. -->
+  <path d="M758,668 L790,668 L790,634" class="edge"/>
+  <path d="M758,570 L790,570 L790,634 L800,634" class="edge" marker-end="url(#ar)"/>
+
+  <rect x="808" y="592" width="250" height="84" rx="10" fill="#101A2B" stroke="#34D399" stroke-opacity="0.4"/>
+  <text x="828" y="620" class="mono">grantEntitlement()</text>
+  <text x="828" y="644" class="s">One function, both paths.</text>
+  <text x="828" y="664" class="s">Reads the stored row only.</text>
+
+  <path d="M1066,634 L1096,634" class="edge" marker-end="url(#ar)"/>
+
+  <rect x="1104" y="592" width="236" height="84" rx="10" fill="#101A2B" stroke="#24334D"/>
+  <text x="1124" y="620" class="mono">subscriptions</text>
+  <text x="1124" y="644" class="s">Service role writes only —</text>
+  <text x="1124" y="664" class="s">no policy grants anyone else.</text>
+
+  <!-- ══ LANE 4 — retrieval ══ -->
+  <text x="60" y="742" class="lane">04 · THE RETRIEVAL SERVICE — A PRO FEATURE</text>
+
+  <rect x="60" y="758" width="1280" height="104" rx="10" fill="#0E1729" stroke="#818CF8" stroke-opacity="0.35"/>
+
+  <text x="80"  y="786" class="mono">POST /api/ask</text>
+  <path d="M188,782 L212,782" class="edge" marker-end="url(#ar)"/>
+  <text x="222" y="786" class="t">Python · FastAPI</text>
+  <text x="352" y="786" class="s">— its own deployable unit, its own test suite, its own failure mode</text>
+
+  <text x="80" y="814" class="s">LangGraph <tspan class="mono">StateGraph</tspan></text>
+
+  <rect x="222" y="800" width="112" height="24" rx="6" fill="#151F35" stroke="#2C3C57"/>
+  <text x="236" y="817" class="pill">embed</text>
+  <rect x="344" y="800" width="112" height="24" rx="6" fill="#151F35" stroke="#2C3C57"/>
+  <text x="358" y="817" class="pill">retrieve</text>
+  <rect x="466" y="800" width="112" height="24" rx="6" fill="#151F35" stroke="#2C3C57"/>
+  <text x="480" y="817" class="pill">grade</text>
+  <rect x="588" y="800" width="112" height="24" rx="6" fill="#151F35" stroke="#2C3C57"/>
+  <text x="602" y="817" class="pill">generate</text>
+  <rect x="710" y="800" width="168" height="24" rx="6" fill="#151F35" stroke="#818CF8" stroke-opacity="0.55"/>
+  <text x="724" y="817" class="pill" fill="#C3CBFA">verify_grounding</text>
+  <rect x="888" y="800" width="112" height="24" rx="6" fill="#151F35" stroke="#2C3C57"/>
+  <text x="902" y="817" class="pill">abstain</text>
+
+  <path d="M334,812 L342,812" class="edge"/>
+  <path d="M456,812 L464,812" class="edge"/>
+  <path d="M578,812 L586,812" class="edge"/>
+  <path d="M700,812 L708,812" class="edge"/>
+  <path d="M878,812 L886,812" class="edge"/>
+
+  <text x="1020" y="795" class="s">Three of six nodes can end the run</text>
+  <text x="1020" y="817" class="s">with no answer at all.</text>
+
+  <text x="80" y="848" class="s">Indexed with LangChain <tspan class="mono">RecursiveCharacterTextSplitter</tspan> into <tspan class="mono">pgvector</tspan> (HNSW, cosine) — the same Postgres, no new infrastructure.</text>
+
+  <!-- ══ the boundary under all of it ══ -->
+  <rect x="60" y="882" width="1280" height="40" rx="8" fill="#101A2B" stroke="#FB923C" stroke-opacity="0.35"/>
+  <text x="80" y="907" class="t" fill="#FDBA74">Postgres Row Level Security — the trust boundary</text>
+  <text x="500" y="907" class="s">Middleware redirects and role checks are convenience. A direct API call bypasses both; it does not bypass this.</text>
 </svg>

@@ -8,7 +8,12 @@
  *  - Accept: text/event-stream → Server-Sent Events that stream the answer
  *    token-by-token (magical chat). The client falls back to the JSON mode
  *    if streaming setup fails.
- * GET reports { enabled } so the UI can hide the entry point without a key.
+ * GET reports { enabled } so the UI can hide the entry point without a key,
+ * and { pro } so it can show a locked state instead of a dead button.
+ *
+ * The agent is a Pro feature: every turn spends money on a model call. The
+ * gate is `requirePro` below, before anything is parsed or dispatched — a 402
+ * carries the upgrade path, where a 403 would tell the client to give up.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -19,38 +24,40 @@ import {
   runAgentTurn,
   runAgentTurnStream,
 } from "@/lib/agent/loop";
-import { supabaseServer } from "@/lib/supabase/server";
+import { proAccess, proRequiredResponse, requirePro } from "@/lib/auth/pro";
+import { authErrorResponse } from "@/lib/auth/session";
 import type { ClientMutation, ToolContext } from "@/lib/agent/tools";
 import type { ResumeContent } from "@/lib/types";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  return NextResponse.json({ enabled: agentEnabled() });
+  // Availability is two separate facts and the UI needs both: whether the
+  // deployment has a model key at all, and whether THIS caller may use it.
+  // Collapsing them would make an unsubscribed user on a fully configured
+  // deployment look like a broken install.
+  let pro = false;
+  try {
+    pro = (await proAccess()).isPro;
+  } catch {
+    // Not signed in. Not an error for a capability probe — just not Pro.
+  }
+  return NextResponse.json({ enabled: agentEnabled(), pro });
 }
 
 type AgentBody = {
   message?: string;
   history?: unknown;
   lang?: "en" | "bn";
-  /** client-generated id, used for rate limiting before a session exists */
+  /**
+   * Legacy field. Rate limiting keys on the authenticated user now that the
+   * route is Pro-gated; older clients still send this and are not rejected
+   * for it.
+   */
   sessionId?: string;
   /** an in-chat attached resume (already parsed via /api/parse-resume) */
   attachedResume?: ResumeContent | null;
 };
-
-async function resolveUserKey(body: AgentBody): Promise<string> {
-  try {
-    const {
-      data: { user },
-    } = await (await supabaseServer()).auth.getUser();
-    if (user) return `sb:${user.id}`;
-  } catch {
-    /* fall through to the client-supplied key */
-  }
-  const sid = typeof body.sessionId === "string" ? body.sessionId.slice(0, 64) : "";
-  return sid ? `sid:${sid}` : "anon";
-}
 
 function buildCtx(body: AgentBody): ToolContext {
   return { attachedResume: body.attachedResume ?? null };
@@ -59,6 +66,21 @@ function buildCtx(body: AgentBody): ToolContext {
 export async function POST(req: NextRequest) {
   if (!agentEnabled()) {
     return NextResponse.json({ error: "not_configured" }, { status: 503 });
+  }
+
+  let userKey: string;
+  try {
+    const access = await requirePro("agent");
+    // The rate-limit key no longer needs a client-supplied session id: the
+    // gate above already established who this is, so there is no anonymous
+    // caller left to key on.
+    userKey = `sb:${access.user.id}`;
+  } catch (err) {
+    const paid = proRequiredResponse(err);
+    if (paid) return paid;
+    const res = authErrorResponse(err);
+    if (res) return res;
+    throw err;
   }
 
   let body: AgentBody;
@@ -72,7 +94,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "empty_message" }, { status: 400 });
   }
 
-  const userKey = await resolveUserKey(body);
   const limit = checkRateLimit(userKey);
   if (!limit.ok) {
     return NextResponse.json({ error: "rate_limited", remaining: 0 }, { status: 429 });

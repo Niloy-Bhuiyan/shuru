@@ -18,6 +18,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { authErrorResponse, requireUser } from "@/lib/auth/session";
+import { proAccess, proRequiredResponse, requirePro } from "@/lib/auth/pro";
 import {
   askRag,
   ragConfigured,
@@ -42,8 +43,17 @@ export async function GET() {
     throw err;
   }
 
+  // `pro` rides along so the Ask box can render a locked state rather than a
+  // button that returns 402 when pressed. Availability and entitlement are
+  // different facts; a UI that conflates them tells an unsubscribed user the
+  // feature is broken.
+  const pro = await proAccess()
+    .then((a) => a.isPro)
+    .catch(() => false);
+
   return NextResponse.json({
     available: ragConfigured(),
+    pro,
     // Named so an operator reading the probe knows exactly what to set. Safe
     // to expose to a signed-in user: these are variable names, not values.
     missing: ragMissingVars(),
@@ -51,11 +61,17 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  // Pro-gated: every question runs an embedding call and a generation call
+  // against the retrieval service. `requirePro` subsumes the sign-in check —
+  // it calls `requireUser` first — so a signed-out caller still gets a 401 and
+  // an unsubscribed one gets a 402 carrying the upgrade path.
   let userId: string;
   try {
-    const user = await requireUser();
-    userId = user.id;
+    const access = await requirePro("ask");
+    userId = access.user.id;
   } catch (err) {
+    const paid = proRequiredResponse(err);
+    if (paid) return paid;
     const res = authErrorResponse(err);
     if (res) return res;
     throw err;

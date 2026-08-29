@@ -26,6 +26,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServiceRole } from "@/lib/supabase/server";
 import { selectPaymentProvider, WebhookVerificationError } from "@/lib/payments";
+import { grantEntitlement, type FulfilablePayment } from "@/lib/payments/fulfil";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -60,8 +61,13 @@ export async function POST(req: NextRequest) {
     .update({ provider_event_id: event.eventId })
     .eq("provider_session_id", event.sessionId)
     .eq("status", "pending")
+    // A mobile-money payment is settled by an admin reading a merchant
+    // statement, never by this handler. Without this clause, anyone able to
+    // forge one signed event could settle a manual payment that no money was
+    // ever sent for.
+    .eq("settlement", "provider_webhook")
     .is("provider_event_id", null)
-    .select("id, opportunity_id, entitlement_days, company_id")
+    .select("id, purpose, opportunity_id, entitlement_days, company_id, user_id")
     .maybeSingle();
 
   if (claimError) {
@@ -93,23 +99,17 @@ export async function POST(req: NextRequest) {
   }
 
   // ── fulfilment ────────────────────────────────────────────────────────
-  // Duration comes from the stored row, never from the webhook payload.
-  const until = new Date(
-    Date.now() + claimed.entitlement_days * 24 * 60 * 60 * 1000
-  ).toISOString();
+  // Delegated so that this handler and the admin approval route grant
+  // identical access for identical purchases. Amount, duration and recipient
+  // are read from the stored row in there; nothing from the payload reaches
+  // it except which session settled.
+  const granted = await grantEntitlement(db, claimed as FulfilablePayment);
 
-  if (claimed.opportunity_id) {
-    const { error: grantError } = await db
-      .from("opportunities")
-      .update({ featured_until: until })
-      .eq("id", claimed.opportunity_id);
-
-    if (grantError) {
-      // Leave the payment pending so a retry can complete it. Marking it
-      // succeeded here would record a purchase that delivered nothing.
-      console.error("[payments] entitlement grant failed", grantError.message);
-      return NextResponse.json({ error: "grant_failed" }, { status: 500 });
-    }
+  if (!granted.ok) {
+    // Leave the payment pending so a retry can complete it. Marking it
+    // succeeded here would record a purchase that delivered nothing.
+    console.error("[payments] entitlement grant failed", granted.error);
+    return NextResponse.json({ error: "grant_failed" }, { status: 500 });
   }
 
   await db
@@ -119,6 +119,11 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     status: "succeeded",
-    featured_until: claimed.opportunity_id ? until : null,
+    granted:
+      granted.kind === "feature_listing"
+        ? { featured_until: granted.featuredUntil }
+        : granted.kind === "pro_subscription"
+          ? { pro_until: granted.periodEnd }
+          : null,
   });
 }
