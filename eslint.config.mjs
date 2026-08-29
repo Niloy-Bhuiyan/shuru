@@ -22,6 +22,11 @@ const config = [
     // git-ignored and not part of the app.
     ignores: [
       ".local-scripts/**",
+      // Claude Code parks git worktrees here. They carry their own `.next`
+      // build output, which the root `.next/**` pattern does not reach — it
+      // was contributing 674 errors from generated bundles and drowning the
+      // real ones.
+      ".claude/**",
       "node_modules/**",
       ".next/**",
       "out/**",

@@ -17,3 +17,9 @@ next-env.d.ts
 test-results/
 playwright-report/
 .playwright/
+
+# Codex CLI local config
+.codex/
+
+# Supabase CLI scratch
+supabase/.temp/
