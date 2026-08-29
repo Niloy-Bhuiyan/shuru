@@ -91,7 +91,14 @@ export type InternshipSource =
   | "arbeitnow"
   | "lever"
   | "ashby"
-  | "adzuna";
+  | "adzuna"
+  /**
+   * Found by searching the live web (migration 0019, ADR 0004). Its
+   * `apply_url` was fetched server-side and confirmed to be a page naming this
+   * company and this role before the row was written, and it still passed
+   * through admin moderation like any other pending listing.
+   */
+  | "ai";
 
 /**
  * 'saved' is the bookmark state that precedes the pipeline. The pipeline

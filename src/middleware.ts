@@ -28,6 +28,9 @@ const STUDENT_ROUTES = [
   // Billing. Signed-in only — there is nothing to buy without an account, and
   // the checkout return lands under it too.
   "/pro",
+  // AI web discovery. Signed-in because the search is built from the caller's
+  // own profile, and Pro-gated again in the route handler.
+  "/discover",
   "/verify-email",
   // Requires a session but NOT a profile — it is where a profile is created.
   // Must never be listed as public, or middleware would bounce the very users

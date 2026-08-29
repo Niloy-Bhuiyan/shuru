@@ -51,7 +51,12 @@ import {
 } from "@/lib/data/subscription";
 
 /** What Pro unlocks, and what it does not. Mirrors lib/subscription.ts. */
-const PRO_ITEMS = ["pro.featAgent", "pro.featAsk", "pro.featForge"] as const;
+const PRO_ITEMS = [
+  "pro.featAgent",
+  "pro.featAsk",
+  "pro.featForge",
+  "pro.featDiscover",
+] as const;
 const FREE_ITEMS = [
   "pro.freeRadar",
   "pro.freeReality",

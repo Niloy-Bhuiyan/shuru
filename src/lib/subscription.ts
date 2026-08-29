@@ -8,11 +8,12 @@
  *
  * ── The line the gating draws ──────────────────────────────────────────────
  *
- * Pro covers the three features that spend money on someone else's API every
- * time they are used: the agent, grounded listing Q&A, and the Forge's AI
- * rewriting. Nothing that Shuru computes itself is behind it — matching, the
- * Reality Check, eligibility, ATS scoring, résumé building and export, the
- * radar feed, saving, and the application pipeline all stay free and complete.
+ * Pro covers the four features that spend money on someone else's API every
+ * time they are used: the agent, grounded listing Q&A, the Forge's AI
+ * rewriting, and live-web discovery. Nothing that Shuru computes itself is
+ * behind it — matching, the Reality Check, eligibility, ATS scoring, résumé
+ * building and export, the radar feed, saving, and the application pipeline
+ * all stay free and complete.
  *
  * That split is not a marketing choice, it is the only one that survives this
  * product's own rule. Shuru's claim is that its core decisions are
@@ -89,6 +90,12 @@ export const PRO_FEATURES = [
   "ask",
   /** POST /api/forge-section — AI section rewriting and JD tailoring. */
   "forge_ai",
+  /**
+   * POST /api/discover — searches the live web for internships, then fetches
+   * every candidate URL to verify it. The most expensive feature here by a
+   * wide margin: one model call with search, plus up to eight page fetches.
+   */
+  "discover",
 ] as const;
 
 export type ProFeature = (typeof PRO_FEATURES)[number];

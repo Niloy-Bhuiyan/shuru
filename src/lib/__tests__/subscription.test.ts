@@ -157,7 +157,7 @@ describe("the plan catalogue", () => {
   it("gates only the features that call a model", () => {
     // A silent addition to this list takes something away from every free
     // user, so the list is asserted exactly rather than by length.
-    expect([...PRO_FEATURES]).toEqual(["agent", "ask", "forge_ai"]);
+    expect([...PRO_FEATURES]).toEqual(["agent", "ask", "forge_ai", "discover"]);
   });
 });
 

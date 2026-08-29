@@ -12,10 +12,12 @@ import { OpportunityCard, EnrichedOpportunity } from "@/components/OpportunityCa
 import type { Opportunity } from "@/lib/types";
 import { RadarIntro } from "@/components/RadarIntro";
 import { LoadingBlock } from "@/components/LoadingBlock";
+import Link from "next/link";
 import { EmptyState } from "@/components/EmptyState";
 import { PixelButton } from "@/components/pixel/PixelButton";
 import { PixelChip } from "@/components/pixel/PixelChip";
 import { PixelSearch } from "@/components/pixel/PixelSearch";
+import { PixelIcon } from "@/components/pixel/PixelIcon";
 import { useProfile } from "@/hooks/useProfile";
 import {
   countSeniorsByCompany,
@@ -160,7 +162,20 @@ export default function RadarPage() {
           below the fold on a 390px screen. Both are now permanent chrome —
           Forge is a nav destination, the agent is the corner dock — so the
           radar shows the radar.
+
+          The discovery link below is deliberately ONE LINE and not a card, for
+          exactly that reason. It belongs here rather than in the nav because
+          it is the answer to "this feed does not have what I need", which is a
+          thought people have while looking at the feed — and a bottom bar of
+          five is already at the limit.
         */}
+        <Link
+          href="/discover"
+          className="mt-2 inline-flex items-center gap-1.5 font-mono text-[11px] font-bold text-amberInk underline underline-offset-2"
+        >
+          <PixelIcon name="spark" size={12} />
+          {t("nav.discover")}
+        </Link>
 
         {/* filter chips */}
         <div className="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4">

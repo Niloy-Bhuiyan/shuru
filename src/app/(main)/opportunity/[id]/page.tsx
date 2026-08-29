@@ -198,6 +198,18 @@ export default function OpportunityDetailPage() {
         </div>
       </Link>
 
+      {/*
+        Provenance, disclosed rather than hidden — ADR 0004 requires it.
+        A student is entitled to know a listing was found by a model rather
+        than posted by the employer, and to know what was done to check it.
+        The source link directly below is how they confirm it themselves.
+      */}
+      {op.source === "ai" && (
+        <p className="mt-3 rounded-lg border border-ui-line bg-cream p-2.5 font-mono text-[11px] leading-relaxed text-ui-muted">
+          {t("detail.aiFound")}
+        </p>
+      )}
+
       {/* source */}
       {op.source_url && (
         <a

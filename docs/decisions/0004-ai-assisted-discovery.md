@@ -1,8 +1,60 @@
-# ADR 0004 — AI-assisted listing discovery uses the student's own API key, and every result is evidence-gated
+# ADR 0004 — AI-assisted listing discovery, and every result is evidence-gated
 
-- **Status:** Proposed — design only, nothing built
-- **Date:** 2026-08-28
-- **Affects:** would touch `src/lib/ingest/`, `src/lib/agent/`, `supabase/migrations/`, `/you`, `/admin`
+- **Status:** **Accepted and built (2026-08-29)** — with one decision reversed; see the amendment below
+- **Date:** 2026-08-28, amended 2026-08-29
+- **Affects:** `src/lib/discovery/`, `src/lib/agent/websearch.ts`, `src/app/api/discover/`, `src/app/(main)/discover/`, migration 0019
+
+## Amendment (2026-08-29) — the key is the OPERATOR'S, not the student's
+
+The delegation finding below is unchanged and was the reason this ADR exists:
+a Claude Pro/Max or ChatGPT Plus subscription **cannot** be spent by a
+third-party app. Anthropic banned it on 2026-02-20 and enforced it in billing
+on 2026-04-04. Nothing about that has moved.
+
+What changed is who supplies the API key. This ADR chose bring-your-own-key.
+The repository owner chose the deployment's own key instead, and that is what
+shipped. The trade is explicit:
+
+| | BYOK (originally decided) | Operator key (built) |
+| --- | --- | --- |
+| Who pays | The student | The operator |
+| Setup before first use | Buy an API key | None |
+| Can a visitor try it | No | Yes |
+| Encrypted third-party credentials at rest | Yes — a real new liability | **None** |
+| Natural brake on volume | The student's own bill | Pro gating + the shared agent rate limit |
+
+The liability argument in *Consequences* below — "Shuru holds encrypted
+third-party credentials for the first time" — is the strongest point in this
+ADR, and the operator-key version simply does not incur it. `user_api_keys`
+was never created. The volume brake that BYOK gave for free is replaced by two
+weaker but real ones: discovery is a Pro feature, and it shares the agent's
+per-user rate limit.
+
+**Everything in "The evidence gate" below is built exactly as written**, and
+that was always the load-bearing part. Nothing about who pays changes whether
+a listing is real.
+
+### What "built" means, concretely
+
+- `src/lib/agent/websearch.ts` — the provider's own server-side search, kept
+  separate from `askAgent` because grounding tools and function declarations do
+  not compose.
+- `src/lib/discovery/prompt.ts` — the system prompt, including the instruction
+  that returning zero entries is a valid answer. The student's free-text ask is
+  fenced so it cannot become an instruction.
+- `src/lib/discovery/parse.ts` — extracts JSON from a reply wrapped in
+  anything, and drops every row without a company, a role and an http(s) URL.
+- `src/lib/discovery/verify.ts` — **the gate.** Fetches each URL and confirms
+  the page names both the company and the role, matching visible text only.
+- `POST /api/discover` — Pro-gated, inserts survivors as `status: 'pending'`
+  with `source: 'ai'`, and returns the rejections rather than hiding them.
+- Migration 0019 — one value added to one CHECK constraint. An AI-discovered
+  listing is an ordinary pending listing with no privileges.
+
+### Still not decided
+
+On-demand vs scheduled: **on-demand shipped**, as this ADR suggested. There is
+no cron path for discovery.
 
 ## Context
 

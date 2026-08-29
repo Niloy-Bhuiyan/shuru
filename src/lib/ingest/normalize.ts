@@ -135,7 +135,15 @@ export const SOURCE_LABELS: Record<IngestSource, string> = {
 };
 
 /** Every source Shuru ingests from. 'shuru' postings are not ingested. */
-export type IngestSource = Exclude<InternshipSource, "shuru">;
+/**
+ * The sources this pipeline handles: external boards with a public API.
+ *
+ * Excludes 'shuru' (posted in-product by an employer) and 'ai' (found by the
+ * discovery pipeline in `src/lib/discovery/`, which has its own normalisation
+ * and its own verification step — a board adapter's job is to translate a
+ * known API shape, and there is no API behind a web search).
+ */
+export type IngestSource = Exclude<InternshipSource, "shuru" | "ai">;
 
 /**
  * Build a normalized listing from any adapter.
