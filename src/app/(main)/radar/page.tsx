@@ -184,7 +184,7 @@ export default function RadarPage() {
           <section aria-labelledby="promoted-heading" className="mt-4">
             <h2
               id="promoted-heading"
-              className="font-mono text-[10px] font-bold uppercase tracking-wide text-ink/70"
+              className="font-mono text-[10px] font-bold text-ink/70"
             >
               {t("pay.promoted")}
             </h2>

@@ -91,7 +91,7 @@ export function StepFinish({
   return (
     <div className="mt-4 space-y-4">
       {/* quiet save status */}
-      <p className="mx-auto w-fit border-2 border-ink bg-paper px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-ink">
+      <p className="mx-auto w-fit border-2 border-ink bg-paper px-2 py-1 font-mono text-[10px] font-bold text-ink">
         {saveState === "saving"
           ? t("forge.saving")
           : saveState === "saved"

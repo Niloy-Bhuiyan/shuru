@@ -48,7 +48,7 @@ function ReportCard({ r }: { r: InterviewReport }) {
       </div>
 
       <div className="mt-3">
-        <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-grey">
+        <p className="font-mono text-[10px] font-bold text-grey">
           {t("vault.rounds")}
         </p>
         <ol className="mt-1 space-y-1">
@@ -68,7 +68,7 @@ function ReportCard({ r }: { r: InterviewReport }) {
       </div>
 
       <div className="mt-3">
-        <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-grey">
+        <p className="font-mono text-[10px] font-bold text-grey">
           {t("vault.questions")}
         </p>
         <div className="mt-1 flex flex-wrap gap-1.5">

@@ -67,7 +67,7 @@ function Selectable({
  */
 function H({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mt-4 border-b border-[#1c1c1c] pb-0.5 text-[13px] font-bold uppercase tracking-wide">
+    <h2 className="mt-4 border-b border-[#1c1c1c] pb-0.5 text-[13px] font-bold">
       {children}
     </h2>
   );
@@ -88,7 +88,7 @@ export const ResumePreview = forwardRef<
   const sections: Record<string, React.ReactNode> = {
     contact: (
       <header key="contact" className="text-center">
-        <h1 className="text-[22px] font-bold tracking-wide">
+        <h1 className="text-[22px] font-bold">
           {c.contact.name || "Your Name"}
         </h1>
         <p className="mt-1 text-[11px]">

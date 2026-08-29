@@ -131,7 +131,7 @@ export default function RealityCheckPage() {
       <button
         type="button"
         onClick={() => router.back()}
-        className="mb-3 flex items-center gap-1 font-mono text-xs font-bold uppercase text-ink"
+        className="mb-3 flex items-center gap-1 font-mono text-xs font-bold text-ink"
       >
         <span className="inline-block rotate-180">
           <PixelIcon name="arrow-right" size={11} />
@@ -146,7 +146,7 @@ export default function RealityCheckPage() {
 
       {isSeededOpportunity(op.id) && (
         <div className="mt-3 flex items-start gap-2 border-3 border-ink bg-paper p-2.5 shadow-pixel-sm">
-          <span className="mt-0.5 border-2 border-ink bg-grey px-1 py-0.5 font-mono text-[8px] font-bold uppercase tracking-wide text-cream">
+          <span className="mt-0.5 border-2 border-ink bg-grey px-1 py-0.5 font-mono text-[8px] font-bold text-cream">
             {t("reality.sampleBadge")}
           </span>
           <p className="font-mono text-[11px] leading-snug text-ink">
@@ -209,7 +209,7 @@ export default function RealityCheckPage() {
         )}
       </div>
 
-      <p className="mt-6 border-t-2 border-ink/20 pt-3 text-center font-mono text-[11px] font-bold uppercase tracking-widest text-grey">
+      <p className="mt-6 border-t-2 border-ink/20 pt-3 text-center font-mono text-[11px] font-bold text-grey">
         {t("reality.footer")}
       </p>
     </main>

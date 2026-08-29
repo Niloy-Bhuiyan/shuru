@@ -5,7 +5,12 @@ import { cx } from "@/lib/cx";
 import { PixelIcon, IconName } from "./PixelIcon";
 
 /**
- * PixelChip — tappable filter/info chip. Selected = inverted (ink on cream).
+ * PixelChip — tappable filter/info chip. Selected inverts to solid ink.
+ *
+ * Was upper-case letter-spaced mono in a hard-bordered square that shifted
+ * two pixels on press. Now a pill with a real hover state; selection is still
+ * carried by inversion, which survives being read at a glance in a scrolling
+ * row far better than a border change would.
  */
 export function PixelChip({
   children,
@@ -27,11 +32,12 @@ export function PixelChip({
       type={onClick ? "button" : undefined}
       aria-pressed={onClick ? selected : undefined}
       className={cx(
-        "inline-flex shrink-0 items-center gap-1.5 border-2 border-ink px-2 py-1",
-        "font-mono text-[11px] font-bold uppercase tracking-wide",
-        selected ? "bg-ink text-cream shadow-pixel-sm" : "bg-paper text-ink",
-        onClick &&
-          "active:translate-x-[2px] active:translate-y-[2px] active:shadow-pixel-none",
+        "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5",
+        "font-sans text-[13px] font-medium transition-colors duration-150",
+        selected
+          ? "border-transparent bg-ink text-white"
+          : "border-ui-lineStrong bg-paper text-ui-muted",
+        onClick && !selected && "hover:border-ui-faint hover:text-ink",
         className
       )}
     >

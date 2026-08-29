@@ -4,9 +4,10 @@
 top to bottom before touching anything. It records verified state only: every
 "pass" / "done" below was observed, not assumed.
 
-**Last updated:** 2026-08-29 — session 2. **PRODUCTION IS LIVE. AUTH WORKS END TO
-END, INCLUDING PASSWORD RESET. THE EMPLOYER PRODUCT IS REACHABLE FOR THE FIRST
-TIME.**
+**Last updated:** 2026-08-29 — session 3. **PRODUCTION IS LIVE. AUTH WORKS END TO
+END, INCLUDING PASSWORD RESET. THE EMPLOYER PRODUCT IS REACHABLE. THE PIXEL
+DESIGN SYSTEM HAS BEEN REPLACED BY A CONVENTIONAL PRODUCT UI, AND `/` IS NOW A
+REAL LANDING PAGE INSTEAD OF A REDIRECT.**
 
 ---
 
@@ -240,13 +241,13 @@ nothing for `anon`, **no write policy at all**).
 | Gate | Baseline (start of session) | Now |
 |---|---|---|
 | `npm run typecheck` | pass | **pass** |
-| `npm run lint` | pass | **pass — 0 errors**, 19 warnings (see §12) |
-| `npm test` | pass — 210/210, 26 files | **pass — 271/271, 31 files** |
+| `npm run lint` | pass | **pass — 0 errors**, 22 warnings (18 in §12 + 3 unused symbols in §9 + 1 stale disable directive) |
+| `npm test` | pass — 210/210, 26 files | **pass — 290/290, 34 files** |
 | `npm run build` | not run | **pass**, exit 0, prints `ƒ Proxy (Middleware)` |
-| `npm run test:e2e` | not run | **pass — 114/114** (mobile 390px + desktop 1440px, production build) |
+| `npm run test:e2e` | not run | **pass — 128/128** (mobile 390px + desktop 1440px, production build) |
 | `npm audit` | 7 vulns (6 high, 1 moderate) | **0 vulnerabilities** |
 | `pytest` (services/rag) | did not exist | **pass — 63/63** |
-| WCAG AA contrast (public pages) | **12 failures** | **0 failures** |
+| WCAG AA contrast (public pages) | **12 failures** | **0 failures** — now includes `/`, which is where the last 13 came from (§8b) |
 | `npm run verify:rls` | did not exist | **10/10 config invariants + 6 behaviour tests PASS** (run via MCP against the live DB; the npm script itself is unrun — needs `SUPABASE_DB_URL`, §11) |
 | Supabase security advisors | 1 INFO, 6 WARN | 1 INFO, 6 WARN (5 are the intended policy helpers; 1 is the dashboard action in §11) |
 | Supabase performance advisors | 29 + 15 WARN, 10 + 8 INFO | **0 WARN**; only `unused_index` INFO remains |
@@ -562,15 +563,127 @@ All committed as `Niloy-Bhuiyan`, merged to `main`, deployed and verified live.
 
 7. **Content-Security-Policy.** See §12.
 
+## 8b. Session 3 (2026-08-29) — the UI/UX pass §8 asked for
+
+§9 previously said the visual pass "has not happened". It has. Five commits are
+on `main` and deployed; a sixth change is described at the end and is the only
+part still uncommitted at the time of writing.
+
+**Committed and pushed:**
+
+```
+4e59b0f fix what the authenticated screens actually looked like
+10c820e redesign the forge entrance so it looks like a front door
+e07f40e build the operator console as an actual admin panel
+b8f51a0 load the fonts, which had never actually loaded
+60546c0 take the operator entry points out of the student app entirely
+```
+
+`b8f51a0` is the one worth reading twice: the three `next/font` faces were
+declared and their CSS variables were never applied to `<html>`, so every
+screen had been rendering in the browser's default face for the entire project.
+Every judgement about type made before that commit was made against the wrong
+type.
+
+**The design system was replaced wholesale, and the token NAMES were kept.**
+`cream`, `paper`, `ink`, `amber`, `mint`, `grey`, `alert` were never colour
+names — they were role names (page, raised surface, text, primary action,
+positive, muted, danger) used across ~1,800 class references. Repointing the
+values converted every screen at once. Two consequences a reader will trip on:
+
+- **`paper` and `cream` swapped relationship.** The old palette had `paper`
+  LIGHTER than `cream` (a warm page, a lighter card). The conventional
+  arrangement is the reverse: `cream` is now the tinted page and `paper` is
+  white.
+- **Retired vocabulary survives as remapped classes, not as dead code.**
+  `.dither-*` (27 uses) are now flat low-opacity fills, `.pixel-corners` is a
+  no-op, `.font-pixel` (64 uses) is a weight and tracking treatment, and
+  `border-3` / `border-2` pick up a radius in `globals.css`. `shadow-pixel*`
+  (114 uses) are soft elevation shadows now. Nothing was renamed at 200+ call
+  sites to achieve this, deliberately.
+
+**`/` is a landing page.** It used to be a client component that read the
+profile and bounced to `/radar` or `/login`, so a first-time visitor met a
+password form before anything explained the product. Sending a signed-in user
+onward is middleware's job: `/` joined `PUBLIC_ROUTES`, which keeps the route
+static and costs no extra `getUser()`. No manufactured social proof on it — no
+student counts, no testimonials, no logos — and the hero preview shows the
+abstaining state next to the confident one.
+
+**Brand assets are generated, not hand-exported.**
+`scripts/generate-brand-assets.mjs` derives the icons and the OG card from the
+same geometry as `src/components/PixelSun.tsx` and the same
+`tailwind.config.ts` colours, so they cannot drift from the mark. It is
+dependency-free and antialiases by 4×4 subpixel sampling.
+
+### Verification done this session, and what it caught
+
+All five gates were run against the working tree. Results: `tsc --noEmit`
+clean, **290 unit tests pass**, **128 Playwright tests pass**, `next build`
+exits 0, `eslint .` reports **0 errors and 22 warnings**.
+
+Four defects were found and fixed, three of them by widening a gate rather
+than by reading the code:
+
+1. **`themeColor` and the web manifest still carried `#F4E9D8`** — the cream
+   of the retired palette, which no surface uses any more. The PWA splash and
+   the mobile status bar would have sat in a visibly different colour from the
+   page. Both are `#F8FAFC` now, matching `html { background }`.
+2. **The landing page had no `<main>` landmark.** Four sections belonging to
+   no region, and nothing for a skip link to target.
+3. **`ui.faint` was slate-400 and had never been contrast-checked.** It
+   measured 2.56:1 on `ui.bg` against a 4.5:1 floor, and the landing page put
+   13 text nodes on it. Darkened to `#5F6E85`, which clears AA on all three
+   neutral surfaces (5.18 / 4.95 / 4.73), so no combination of them fails.
+4. **`eslint .` was reporting 674 errors that did not exist.** They all came
+   from `.claude/worktrees/*/.next` — generated bundles in a Claude Code
+   worktree, which the root `.next/**` ignore pattern does not reach.
+   `.claude/**` is ignored now. **The 674 was noise; the real tree was always
+   at zero errors.** Anyone reading a raw lint count from before this fix was
+   reading a lie.
+
+**Why 2 and 3 were found at all:** `/` had been added to neither
+`e2e/a11y.spec.ts` nor `e2e/responsive.spec.ts`. It is the largest signed-out
+surface, the only one with prose, a nav and a footer, and the only route that
+opts out of the app frame — so it is simultaneously the most exposed to a
+palette change and the least constrained against overflow. It is in both lists
+now, and adding it is what failed. A gate that does not cover the newest page
+is not covering the risk.
+
+### Still uncommitted at handoff
+
+The working tree carries the design-system replacement itself (~57 modified
+files) plus `src/components/landing/`, `scripts/generate-brand-assets.mjs`,
+`public/manifest.webmanifest` and the generated icons. All gates above were run
+against exactly this tree.
+
+---
+
 ## 9. Exact next step
 
-**The UI/UX pass, which has not happened.** Everything above is structural.
-The authenticated screens have never been visually reviewed — browser
-screenshots were unavailable all session (the pane was not displayed) and no
-automated sign-in path exists that does not involve handling the owner's
-password. `.local-scripts/login-once.mjs` is the way in: the owner signs in
-once in a headed browser, it saves `state.json`, and `.local-scripts/shoot.mjs`
-then screenshots every screen at both viewports. Both are gitignored.
+**Deploy the Python retrieval service** (§8 P2-3b). It is implemented, tested
+and indexed, and it is not hosted, so `/api/ask` reports itself unavailable in
+production — the one subsystem that is finished and switched off. Everything
+else outstanding in §8 is verification or documentation debt.
+
+Two smaller things, in the order they are worth doing:
+
+- **Authenticated visual QA has still never happened.** §8b redesigned the
+  signed-in screens, but every gate that ran against them is unit-level or
+  signed-out. `.local-scripts/visual-qa.mjs` exists and needs a session: the
+  owner signs in once in a headed browser to save `state.json`, after which it
+  screenshots every screen at both viewports. Nothing automated can reach
+  those screens without that one manual step, which is also why §8 P2-4
+  (authenticated E2E journeys) is still open.
+- **Three unused-symbol warnings predate this session** and are not part of
+  the documented 18-warning backlog in §12: `router` in
+  `src/app/(auth)/login/page.tsx` and `src/app/(auth)/reset-password/page.tsx`
+  (both pages navigate with a full document load instead — see the comment at
+  `login/page.tsx:115`), and an unused `StatTile` import in
+  `src/app/(operator)/employer/page.tsx`. The employer dashboard imports the
+  tile the admin console uses and never renders it, which is probably a
+  missing stat row rather than a stray import — decide which before deleting
+  the line.
 
 ---
 
@@ -711,8 +824,11 @@ machine. All three were checked, not assumed.
 
 - **`middleware.ts` must live at `src/middleware.ts`**, not the repo root, or
   Next silently never loads it and every protected route serves
-  unauthenticated. `npm run build` printing `ƒ Middleware` is the only cheap
-  signal — read it.
+  unauthenticated. The `npm run build` output is the only cheap signal — read
+  it. **On 16.3.3 that line now reads `ƒ Proxy (Middleware)`, not
+  `ƒ Middleware`**, and the build also warns that the `middleware` convention
+  is deprecated in favour of `proxy`. Anything grepping for the old string
+  will report the guard missing when it is present.
 - **RLS policies without table grants** produce `42501 permission denied` on
   every request. Policies are the fine gate, grants the coarse one; both are
   required.

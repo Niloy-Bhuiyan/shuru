@@ -56,7 +56,7 @@ export function ApplicationTimeline({ applicationId }: { applicationId: string }
 
   return (
     <section className="mt-4 border-3 border-ink bg-paper p-3 shadow-pixel">
-      <h2 className="font-mono text-xs font-bold uppercase tracking-wide text-ink">
+      <h2 className="font-mono text-xs font-bold text-ink">
         {t("timeline.title")}
       </h2>
 
@@ -78,7 +78,7 @@ export function ApplicationTimeline({ applicationId }: { applicationId: string }
                     ? t("timeline.created")
                     : `${t(STATUS_KEY[e.from_status])} → ${t(STATUS_KEY[e.to_status])}`}
                 </p>
-                <p className="font-mono text-[10px] uppercase tracking-wide text-grey">
+                <p className="font-mono text-[10px] text-grey">
                   {new Date(e.created_at).toLocaleDateString()} · {t(actorKey(e.actor_role))}
                 </p>
                 {e.note && (

@@ -1,6 +1,14 @@
 /**
- * Hand-drawn pixel icons on a 12×12 grid. NEVER emoji.
- * All icons inherit currentColor so they recolor with text.
+ * The app's icon set. All icons inherit currentColor so they recolour with
+ * text. NEVER emoji.
+ *
+ * These were hand-plotted rectangles on a 12×12 grid — literal pixel art,
+ * with `shapeRendering="crispEdges"` to keep the steps hard. They are stroked
+ * paths on a 24-unit grid now, which is what lets them stay legible at the
+ * 22-30px nav sizes where the bitmap versions were most obviously blocky.
+ *
+ * The `IconName` union and the props are unchanged; 23 names are imported
+ * across the app and every call site keeps working.
  */
 
 import React from "react";
@@ -30,95 +38,80 @@ export type IconName =
   | "arrow-up"
   | "arrow-down";
 
-type R = [x: number, y: number, w: number, h: number];
-
-const ICONS: Record<IconName, R[]> = {
+/*
+ * Path data on a 24×24 grid, drawn to be stroked rather than filled — a
+ * single consistent stroke weight is what makes a set read as one family.
+ * `sun` is the one exception: its disc is filled, to match the brand mark.
+ */
+const ICONS: Record<IconName, { d: string; fill?: string }[]> = {
   sun: [
-    [5, 0, 2, 2], [5, 10, 2, 2], [0, 5, 2, 2], [10, 5, 2, 2],
-    [1, 1, 2, 2], [9, 1, 2, 2], [1, 9, 2, 2], [9, 9, 2, 2],
-    [4, 3, 4, 1], [3, 4, 6, 4], [4, 8, 4, 1],
+    { d: "M12 3v2M5.6 5.6l1.4 1.4M3 12h2M19 12h2M17 7l1.4-1.4" },
+    { d: "M7 15a5 5 0 0 1 10 0Z", fill: "currentColor" },
+    { d: "M3 18h18" },
   ],
   radar: [
-    [0, 0, 4, 1], [0, 0, 1, 4], [8, 0, 4, 1], [11, 0, 1, 4],
-    [0, 11, 4, 1], [0, 8, 1, 4], [8, 11, 4, 1], [11, 8, 1, 4],
-    [5, 5, 2, 2], [7, 3, 2, 1], [9, 5, 1, 2],
+    { d: "M4 4h4M4 4v4M20 4h-4M20 4v4M4 20h4M4 20v-4M20 20h-4M20 20v-4" },
+    { d: "M12 12h.01" },
+    { d: "M12 12l4-2.5" },
   ],
-  bookmark: [
-    [2, 0, 8, 1], [2, 0, 1, 12], [9, 0, 1, 12],
-    [2, 11, 3, 1], [7, 11, 3, 1], [5, 9, 2, 2],
-  ],
+  bookmark: [{ d: "M6 3h12v18l-6-4.5L6 21Z" }],
   vault: [
-    [0, 1, 12, 1], [0, 1, 1, 10], [11, 1, 1, 10], [0, 10, 12, 1],
-    [3, 4, 6, 1], [3, 4, 1, 4], [8, 4, 1, 4], [3, 7, 6, 1],
-    [5, 5, 2, 2],
+    { d: "M4 4h16v16H4Z" },
+    { d: "M12 12h.01" },
+    { d: "M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" },
   ],
   user: [
-    [4, 1, 4, 4], [3, 2, 1, 2], [8, 2, 1, 2],
-    [2, 7, 8, 4], [1, 9, 1, 2], [10, 9, 1, 2],
+    { d: "M12 4a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" },
+    { d: "M4.5 20a7.5 7.5 0 0 1 15 0" },
   ],
-  check: [
-    [1, 6, 2, 2], [3, 8, 2, 2], [5, 6, 2, 2], [7, 4, 2, 2], [9, 2, 2, 2],
-  ],
+  check: [{ d: "M4 12.5 9.5 18 20 6.5" }],
   warn: [
-    [5, 1, 2, 6], [5, 9, 2, 2],
+    { d: "M12 3.5 22 20H2Z" },
+    { d: "M12 10v4M12 17h.01" },
   ],
   search: [
-    [2, 1, 5, 1], [1, 2, 1, 5], [7, 2, 1, 5], [2, 7, 5, 1],
-    [7, 7, 2, 2], [9, 9, 2, 2],
+    { d: "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Z" },
+    { d: "M16.5 16.5 21 21" },
   ],
   clock: [
-    [3, 0, 6, 1], [1, 1, 2, 2], [9, 1, 2, 2], [0, 3, 1, 6],
-    [11, 3, 1, 6], [1, 9, 2, 2], [9, 9, 2, 2], [3, 11, 6, 1],
-    [5, 3, 2, 4], [7, 6, 2, 1],
+    { d: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z" },
+    { d: "M12 7v5.2l3.4 2" },
   ],
-  x: [
-    [1, 1, 2, 2], [9, 1, 2, 2], [3, 3, 2, 2], [7, 3, 2, 2],
-    [5, 5, 2, 2], [3, 7, 2, 2], [7, 7, 2, 2], [1, 9, 2, 2], [9, 9, 2, 2],
-  ],
-  "arrow-right": [
-    [1, 5, 7, 2], [7, 3, 2, 2], [9, 5, 2, 2], [7, 7, 2, 2],
-  ],
-  signal: [
-    [1, 8, 2, 3], [5, 5, 2, 6], [9, 2, 2, 9],
-  ],
+  x: [{ d: "M5 5l14 14M19 5 5 19" }],
+  "arrow-right": [{ d: "M4 12h15M13 6l6 6-6 6" }],
+  signal: [{ d: "M4 20v-4M10 20v-8M16 20v-12M22 20V4" }],
   hammer: [
-    [4, 0, 6, 3], [6, 3, 2, 2], [3, 1, 1, 2], [10, 1, 1, 2],
-    [5, 5, 2, 2], [4, 7, 2, 2], [3, 9, 2, 2], [2, 11, 2, 1],
+    { d: "M14 3 21 10l-3 3-7-7Z" },
+    { d: "M11.5 8.5 3 17v4h4l8.5-8.5" },
   ],
-  chevron: [
-    [1, 4, 2, 2], [3, 6, 2, 2], [5, 8, 2, 2], [7, 6, 2, 2], [9, 4, 2, 2],
-  ],
+  chevron: [{ d: "M9 5l7 7-7 7" }],
   eye: [
-    [3, 3, 6, 1], [2, 4, 1, 1], [9, 4, 1, 1], [1, 5, 1, 2], [10, 5, 1, 2],
-    [2, 7, 1, 1], [9, 7, 1, 1], [3, 8, 6, 1], [5, 5, 2, 2],
+    { d: "M2 12s3.8-6.5 10-6.5S22 12 22 12s-3.8 6.5-10 6.5S2 12 2 12Z" },
+    { d: "M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" },
   ],
   upload: [
-    [5, 0, 2, 2], [3, 2, 2, 2], [7, 2, 2, 2], [5, 2, 2, 6],
-    [1, 9, 1, 2], [10, 9, 1, 2], [1, 10, 10, 1],
+    { d: "M12 16V4M7 9l5-5 5 5" },
+    { d: "M4 20h16" },
   ],
   download: [
-    [5, 0, 2, 6], [3, 4, 2, 2], [7, 4, 2, 2], [5, 6, 2, 2],
-    [1, 9, 1, 2], [10, 9, 1, 2], [1, 10, 10, 1],
+    { d: "M12 4v12M7 11l5 5 5-5" },
+    { d: "M4 20h16" },
   ],
   undo: [
-    [1, 4, 2, 2], [3, 2, 2, 2], [3, 6, 2, 2], [5, 4, 4, 2], [9, 5, 2, 4],
+    { d: "M4 9h11a5 5 0 0 1 0 10h-6" },
+    { d: "M8 5 4 9l4 4" },
   ],
   redo: [
-    [9, 4, 2, 2], [7, 2, 2, 2], [7, 6, 2, 2], [3, 4, 4, 2], [1, 5, 2, 4],
+    { d: "M20 9H9a5 5 0 0 0 0 10h6" },
+    { d: "M16 5l4 4-4 4" },
   ],
   edit: [
-    [9, 1, 2, 2], [7, 3, 2, 2], [5, 5, 2, 2], [3, 7, 2, 2],
-    [1, 9, 2, 2], [1, 11, 3, 1],
+    { d: "M4 20h4L19 9l-4-4L4 16Z" },
+    { d: "M14 6l4 4" },
   ],
-  spark: [
-    [5, 0, 2, 3], [5, 9, 2, 3], [0, 5, 3, 2], [9, 5, 3, 2], [4, 4, 4, 4],
-  ],
-  "arrow-up": [
-    [5, 1, 2, 2], [3, 3, 2, 2], [7, 3, 2, 2], [5, 3, 2, 8],
-  ],
-  "arrow-down": [
-    [5, 1, 2, 8], [3, 7, 2, 2], [7, 7, 2, 2], [5, 9, 2, 2],
-  ],
+  spark: [{ d: "M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2Z" }],
+  "arrow-up": [{ d: "M12 20V5M6 11l6-6 6 6" }],
+  "arrow-down": [{ d: "M12 4v15M6 13l6 6 6-6" }],
 };
 
 export function PixelIcon({
@@ -134,17 +127,26 @@ export function PixelIcon({
 }) {
   return (
     <svg
-      viewBox="0 0 12 12"
+      viewBox="0 0 24 24"
       width={size}
       height={size}
-      shapeRendering="crispEdges"
+      fill="none"
+      stroke="currentColor"
+      /*
+       * Scaled stroke: these render anywhere from 9px to 30px, and a fixed
+       * width that reads correctly in a 22px nav icon turns a 9px badge glyph
+       * into a solid blob. 2 units at 24px, easing heavier as they shrink.
+       */
+      strokeWidth={size <= 12 ? 2.4 : size <= 16 ? 2.1 : 1.9}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
       aria-hidden={title ? undefined : true}
       role={title ? "img" : undefined}
     >
       {title ? <title>{title}</title> : null}
-      {ICONS[name].map(([x, y, w, h], i) => (
-        <rect key={i} x={x} y={y} width={w} height={h} fill="currentColor" />
+      {ICONS[name].map((p, i) => (
+        <path key={i} d={p.d} fill={p.fill ?? "none"} />
       ))}
     </svg>
   );

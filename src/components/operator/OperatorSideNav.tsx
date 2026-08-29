@@ -49,8 +49,8 @@ export function OperatorSideNav({
       className="sticky top-0 flex h-dvh w-[64px] shrink-0 flex-col border-r-3 border-ink bg-ink sm:w-[210px]"
     >
       <div className="border-b-3 border-cream/15 px-3 py-3 sm:px-4">
-        <span className="font-pixel text-sm leading-none text-amber">SHURU</span>
-        <p className="mt-1.5 hidden font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-cream/50 sm:block">
+        <span className="font-pixel text-[15px] leading-none text-amber">Shuru</span>
+        <p className="mt-1.5 hidden font-mono text-[10px] font-bold tracking-[0.18em] text-cream/50 sm:block">
           {role === "admin" ? t("admin.title") : t("emp.title")} · {t("op.workspace")}
         </p>
       </div>
@@ -66,7 +66,7 @@ export function OperatorSideNav({
                 aria-current={active ? "page" : undefined}
                 title={t(item.key)}
                 className={cx(
-                  "flex items-center gap-2.5 border-2 px-2 py-2 font-mono text-[11px] font-bold uppercase tracking-wide sm:px-2.5",
+                  "flex items-center gap-2.5 border-2 px-2 py-2 font-mono text-[11px] font-bold sm:px-2.5",
                   active
                     ? "border-amber bg-amber text-ink"
                     : "border-transparent text-cream/75 hover:border-cream/30 hover:text-cream"
@@ -98,7 +98,7 @@ export function OperatorSideNav({
         <Link
           href="/radar"
           title={t("op.exit")}
-          className="flex items-center gap-2 border-2 border-cream/40 px-2 py-2 font-mono text-[10px] font-bold uppercase tracking-wide text-cream hover:border-cream sm:px-2.5"
+          className="flex items-center gap-2 border-2 border-cream/40 px-2 py-2 font-mono text-[10px] font-bold text-cream hover:border-cream sm:px-2.5"
         >
           <PixelIcon name="radar" size={13} />
           <span className="hidden sm:inline">{t("op.exit")}</span>

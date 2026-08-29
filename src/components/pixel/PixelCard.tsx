@@ -2,8 +2,13 @@ import React from "react";
 import { cx } from "@/lib/cx";
 
 /**
- * PixelCard — the base surface. Chunky 3px ink border, hard 4px offset
- * shadow, notched pixel corners. Optional dithered accent band on the left.
+ * PixelCard — the base surface.
+ *
+ * Was a 3px ink border with a hard 4px offset shadow and notched corners; now
+ * a white panel on the tinted page with a hairline rule and a short shadow.
+ * Props unchanged, including the optional accent stripe — that stripe is one
+ * of the few places the status colours appear at full strength, so it kept
+ * its job and only lost the checkerboard.
  */
 export function PixelCard({
   children,
@@ -20,32 +25,31 @@ export function PixelCard({
 }) {
   const accentClass =
     accent === "amber"
-      ? "dither-amber"
+      ? "bg-amber"
       : accent === "mint"
-        ? "dither-mint"
+        ? "bg-mint"
         : accent === "grey"
-          ? "dither-grey"
+          ? "bg-grey"
           : accent === "alert"
-            ? "dither-alert"
+            ? "bg-alert"
             : null;
 
   return (
     <Tag
       onClick={onClick}
       className={cx(
-        "relative block w-full border-3 border-ink bg-paper text-left shadow-pixel",
-        onClick &&
-          "transition-none active:translate-x-[2px] active:translate-y-[2px] active:shadow-pixel-none",
+        "relative block w-full overflow-hidden rounded-xl border border-ui-line bg-paper text-left shadow-pixel",
+        onClick && "transition-shadow duration-150 hover:shadow-pixel-lg",
         className
       )}
     >
       {accentClass && (
         <span
           aria-hidden
-          className={cx("absolute inset-y-0 left-0 w-[6px]", accentClass)}
+          className={cx("absolute inset-y-0 left-0 w-[3px]", accentClass)}
         />
       )}
-      <div className={cx("p-3", accentClass && "pl-4")}>{children}</div>
+      <div className={cx("p-4", accentClass && "pl-5")}>{children}</div>
     </Tag>
   );
 }

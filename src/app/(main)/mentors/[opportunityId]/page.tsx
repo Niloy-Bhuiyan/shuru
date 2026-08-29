@@ -86,7 +86,7 @@ export default function MentorsPage() {
       <button
         type="button"
         onClick={() => router.back()}
-        className="mb-3 flex items-center gap-1 font-mono text-xs font-bold uppercase text-ink"
+        className="mb-3 flex items-center gap-1 font-mono text-xs font-bold text-ink"
       >
         <span className="inline-block rotate-180">
           <PixelIcon name="arrow-right" size={11} />

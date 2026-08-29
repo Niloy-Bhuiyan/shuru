@@ -31,22 +31,31 @@ type SelectProps = Common & {
 };
 
 /**
- * PixelInput — labeled field with a 3px ink border. Error state flips the
- * border + shadow to alert red and prints the message underneath in mono.
+ * PixelInput — labelled field.
+ *
+ * The label was upper-case letter-spaced mono at 11px, which is a decorative
+ * treatment that costs legibility on the one element users must read to know
+ * what to type. It is now sentence case at a readable size.
+ *
+ * The error state kept a hardcoded `shadow-[3px_3px_0_0_#E5533D]` — an offset
+ * in a colour that had already been retired from the palette. It is a ring
+ * now, and it takes its colour from the token.
  */
 export function PixelInput(props: InputProps | SelectProps) {
   const { label, name, error, hint, required, className } = props;
   const fieldClass = cx(
-    "w-full border-3 bg-paper px-3 py-2 font-mono text-sm text-ink",
-    "placeholder:text-grey focus:outline-none focus:shadow-pixel-sm",
-    error ? "border-alert shadow-[3px_3px_0_0_#E5533D]" : "border-ink"
+    "w-full rounded-lg border bg-paper px-3 py-2.5 font-sans text-[14px] text-ink",
+    "placeholder:text-ui-faint focus:outline-none focus:ring-2",
+    error
+      ? "border-alert focus:border-alert focus:ring-alert/20"
+      : "border-ui-lineStrong focus:border-amber focus:ring-amber/20"
   );
 
   return (
     <div className={cx("w-full", className)}>
       <label
         htmlFor={name}
-        className="mb-1 block font-mono text-[11px] font-bold uppercase tracking-widest text-ink"
+        className="mb-1.5 block font-sans text-[13px] font-medium text-ink"
       >
         {label}
         {required && <span className="text-alert"> *</span>}
@@ -59,7 +68,7 @@ export function PixelInput(props: InputProps | SelectProps) {
           required={required}
           value={props.value}
           onChange={(e) => props.onChange(e.target.value)}
-          className={cx(fieldClass, "appearance-none")}
+          className={fieldClass}
         >
           {props.options.map((o) => (
             <option key={o.value} value={o.value}>
@@ -84,11 +93,11 @@ export function PixelInput(props: InputProps | SelectProps) {
       )}
 
       {error ? (
-        <p className="mt-1 flex items-center gap-1 font-mono text-[11px] font-bold text-alert">
-          ! {error}
+        <p className="mt-1.5 font-sans text-[13px] font-medium text-alert">
+          {error}
         </p>
       ) : hint ? (
-        <p className="mt-1 font-mono text-[11px] text-grey">{hint}</p>
+        <p className="mt-1.5 font-sans text-[13px] text-ui-muted">{hint}</p>
       ) : null}
     </div>
   );

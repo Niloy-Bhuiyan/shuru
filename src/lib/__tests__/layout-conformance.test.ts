@@ -41,6 +41,14 @@ const DESKTOP_SHELL = [
   // Fixed chrome: the launcher clears the mobile bottom nav, then drops to a
   // plain corner offset from lg where that nav no longer exists.
   "src/components/agent/AgentDock.tsx",
+  /*
+   * The public landing page. Opted in deliberately, and it is the one file
+   * here that is not app chrome: `/` is the surface people reach from a shared
+   * link or an employer's laptop, so unlike the signed-in app it cannot assume
+   * a phone. The breakpoints only widen type and turn the three "how it works"
+   * cards into a row — no second layout is being maintained.
+   */
+  "src/components/landing/LandingPage.tsx",
 ];
 
 const normalise = (p: string) => p.replace(/\\/g, "/");

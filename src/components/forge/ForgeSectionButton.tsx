@@ -67,7 +67,7 @@ export function ForgeSectionButton({
       <div className="mt-2 space-y-2">
         {options.map((opt, i) => (
           <div key={i} className="border-3 border-ink bg-cream p-2 shadow-pixel-sm">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-grey">
+            <p className="font-mono text-[10px] font-bold text-grey">
               {t("forge.option")} {i + 1}
             </p>
             <p className={`mt-1 whitespace-pre-line text-xs leading-relaxed text-ink ${lang === "bn" ? "font-bangla" : "font-mono"}`}>

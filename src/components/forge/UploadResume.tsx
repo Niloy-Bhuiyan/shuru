@@ -93,7 +93,7 @@ export function UploadResume({
           {busy ? t("forge.parsing") : t("forge.upload")}
         </p>
         <p className="mt-1.5 font-mono text-xs text-ink/70">{t("forge.uploadHint")}</p>
-        <p className="mt-2 inline-block border-2 border-ink bg-amber px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-ink">
+        <p className="mt-2 inline-block border-2 border-ink bg-amber px-2 py-0.5 font-mono text-[10px] font-bold text-ink">
           {t("forge.fastest")}
         </p>
         {error && (

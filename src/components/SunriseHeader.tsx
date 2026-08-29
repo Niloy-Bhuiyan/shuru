@@ -27,7 +27,7 @@ export function SunriseHeader() {
       <div className="flex items-center justify-between px-4 py-2.5">
         <Link href="/radar" className="flex items-center gap-2">
           <PixelSun width={26} withHorizon={false} />
-          <span className="font-pixel text-sm leading-none text-ink">SHURU</span>
+          <span className="font-pixel text-[15px] leading-none text-ink">Shuru</span>
           <span className="font-bangla text-sm font-bold leading-none text-amberInk">
             শুরু
           </span>
@@ -47,7 +47,7 @@ export function SunriseHeader() {
               onClick={() => setLang(l)}
               aria-pressed={lang === l}
               className={cx(
-                "px-2 py-1 text-[11px] font-bold uppercase",
+                "px-2 py-1 text-[11px] font-bold",
                 "active:translate-x-[1px] active:translate-y-[1px]",
                 l === "bn" ? "font-bangla" : "font-mono",
                 lang === l ? "bg-ink text-cream" : "bg-paper text-ink"

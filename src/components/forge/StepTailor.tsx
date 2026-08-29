@@ -66,7 +66,7 @@ export function StepTailor({
 
       {result && (
         <div className="border-3 border-ink bg-ink p-3 shadow-pixel">
-          <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-cream/70">
+          <p className="font-mono text-[10px] font-bold text-cream/70">
             {t("forge.jdMatch")}
           </p>
           <p className="mt-1 font-pixel text-2xl text-cream">
@@ -78,7 +78,7 @@ export function StepTailor({
           </p>
           {result.missing.length > 0 && (
             <>
-              <p className="mt-3 font-mono text-[10px] font-bold uppercase tracking-widest text-amber">
+              <p className="mt-3 font-mono text-[10px] font-bold text-amber">
                 {t("forge.jdMissing")}
               </p>
               <div className="mt-1.5 flex flex-wrap gap-1.5">

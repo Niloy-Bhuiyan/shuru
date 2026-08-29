@@ -93,7 +93,7 @@ export function EntryToolbar({
           type="button"
           onClick={onImprove}
           disabled={improving}
-          className="flex items-center gap-1 border-2 border-ink bg-amber px-1.5 py-1 font-mono text-[10px] font-bold uppercase text-ink disabled:opacity-50 active:translate-x-[1px] active:translate-y-[1px]"
+          className="flex items-center gap-1 border-2 border-ink bg-amber px-1.5 py-1 font-mono text-[10px] font-bold text-ink disabled:opacity-50 active:translate-x-[1px] active:translate-y-[1px]"
         >
           <PixelIcon name="spark" size={11} />
           {improving ? t("forge.forging") : t("forge.improve")}

@@ -60,6 +60,16 @@ describe("middleware route classification", () => {
     }
   });
 
+  it("treats the landing page as public and bounces signed-in users off it", () => {
+    // "/" carries the marketing page. Signed out it must render; signed in it
+    // must forward to the app, which is what listing it as public buys.
+    // Leaving it off the list is not a visible failure — it just silently
+    // shows an authenticated user the pitch for a product they already use.
+    expect(PUBLIC_ROUTES).toContain("/");
+    expect(SIGNED_IN_OK_ROUTES).not.toContain("/");
+    expect(STUDENT_ROUTES).not.toContain("/");
+  });
+
   it("exempts nothing that requires a session", () => {
     // An exemption only makes sense for a route that is reachable signed out.
     for (const r of SIGNED_IN_OK_ROUTES) {

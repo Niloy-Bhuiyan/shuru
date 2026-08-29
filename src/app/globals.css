@@ -3,79 +3,174 @@
 @tailwind utilities;
 
 /* ════════════════════════════════════════════════════════════════
-   SHURU — pixel "cozy retro instrument" foundation
-   Rules enforced here:
-   - No blur, no smooth gradients. Depth = dithering + hard offsets.
-   - border-radius: 0 everywhere.
+   SHURU — product UI foundation
+   Replaces the former pixel system. The three rules that used to live
+   here — border-radius: 0 !important on *, font-smoothing: none, and a
+   dark gutter on <html> — are gone; they were what made a conventional
+   interface impossible.
    ════════════════════════════════════════════════════════════════ */
 
 :root {
-  --cream: #f4e9d8;
-  --paper: #fbf4e6;
-  --ink: #1b2a3a;
-  --amber: #ff7a3c;
-  --mint: #3fbfa0;
-  --grey: #8a8578;
-  --alert: #e5533d;
-}
-
-* {
-  border-radius: 0 !important;
+  /* Mirrors tailwind.config.ts. Kept in sync by hand — these exist for the
+     handful of rules below that cannot go through a utility class. */
+  --cream: #f8fafc;
+  --paper: #ffffff;
+  --ink: #0f172a;
+  --line: #e2e8f0;
+  --amber: #ea580c;
+  --mint: #059669;
+  --grey: #64748b;
+  --alert: #dc2626;
 }
 
 html {
-  background: var(--ink); /* gutter around the 430px app frame on desktop */
+  background: var(--cream);
 }
 
 body {
   background: var(--cream);
   color: var(--ink);
-  -webkit-font-smoothing: none;
-  font-smooth: never;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /*
+   * Inter ships alternates that are off by default. `cv11` swaps in the
+   * single-storey a and the straight-tailed l, which is what stops a
+   * lowercase l reading as a 1; `ss01` tidies the punctuation. `calt` keeps
+   * contextual alternates on. Small, but this is the difference between Inter
+   * as shipped and Inter as used by people who set type.
+   */
+  font-feature-settings: "cv11" 1, "ss01" 1, "calt" 1;
+  text-rendering: optimizeLegibility;
 }
 
-/* Crisp keyboard focus — accessibility floor */
+/*
+ * Figures in tables, gauges, counters and money must not dance as they
+ * change. Inter's proportional digits are the wrong choice anywhere a number
+ * updates in place or sits in a column.
+ */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "cv11" 1;
+}
+
+/*
+ * A very faint monochrome grain, laid over large flat fills.
+ *
+ * Big areas of one flat colour are what make a page look printed by a
+ * template. A couple of percent of noise gives a surface something to catch
+ * the eye on, and at this opacity it registers as texture rather than as
+ * dirt. Fractal noise rather than a repeating tile, so there is no visible
+ * seam at any size.
+ */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+}
+
+/*
+ * BORDERS.
+ *
+ * `border-ink` appears in ~217 places, where it meant "the hard frame line".
+ * At 1px, slate-900 is far too heavy to be a hairline — it reads as a mistake
+ * next to soft shadows. Rather than rewrite every call site, the utility is
+ * softened here to the neutral rule colour. `ink` itself stays dark because
+ * it is also the body text colour.
+ *
+ * Where a border genuinely needs emphasis, use `border-ui-lineStrong`.
+ */
+.border-ink {
+  border-color: var(--line);
+}
+
+/*
+ * RADIUS.
+ *
+ * Nothing in the app carries `rounded-*`, because the old system banned it
+ * globally. `border-3` (106 uses) and `border-2` (95) reliably mark the
+ * surfaces that were meant to read as panels and controls, so they pick up a
+ * radius here instead of being edited one by one.
+ */
+.border-3,
+.border-2 {
+  border-radius: 10px;
+}
+
+/*
+ * HEADINGS.
+ *
+ * `font-pixel` (64 uses) marked every heading, and all its weight came from
+ * the bitmap face itself. Now that it resolves to Inter it needs real
+ * typographic treatment, or those headings render as plain body text.
+ */
+.font-pixel {
+  font-weight: 600;
+  letter-spacing: -0.011em;
+}
+
+/* Keyboard focus — accessibility floor */
 :focus-visible {
-  outline: 3px solid var(--amber);
+  outline: 2px solid var(--amber);
   outline-offset: 2px;
+  border-radius: 6px;
 }
 
 ::selection {
-  background: var(--amber);
+  background: #fed7aa;
   color: var(--ink);
 }
 
-/* ── Pixel-notched corners (cuts a 4px step off each corner) ── */
-.pixel-corners {
-  clip-path: polygon(
-    0 4px, 4px 4px, 4px 0,
-    calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px,
-    100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px),
-    calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px),
-    0 calc(100% - 4px)
-  );
+/*
+ * Full-bleed public pages (the landing page) opt out of the app's centred
+ * content frame. The app frame is chrome for the signed-in product; a
+ * marketing page runs to the edges and manages its own containers.
+ */
+:root:has(.ui-pro) [data-app-frame] {
+  max-width: none;
+  background: var(--paper);
+  border-color: transparent;
 }
 
-/* ── Dithering: 4×4 checkerboard tiles. This is our ONLY "gradient". ── */
+:root:has(.ui-pro) {
+  background: var(--paper);
+}
+
+/* Formerly clipped a 4px step off each corner. A notch is pixel-system
+   vocabulary; the class is retained as a no-op so its one call site keeps
+   working. */
+.pixel-corners {
+  clip-path: none;
+}
+
+/*
+ * ── Tints (formerly dithering) ──
+ *
+ * These were 4×4 checkerboard tiles standing in for gradients, which the old
+ * system banned. They are used 27 times: decorative bands, loading skeletons
+ * and status washes. Each is now the same colour as a flat, low-opacity fill,
+ * so every call site keeps its meaning and simply stops being a chequerboard.
+ *
+ * The grey and alert tiles had also drifted — they still carried #8A8578 and
+ * #E5533D, the values replaced during the earlier contrast pass, so those two
+ * were quietly a different colour from their Tailwind counterparts.
+ */
 .dither-ink {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='2' height='2' fill='%231B2A3A'/><rect x='2' y='2' width='2' height='2' fill='%231B2A3A'/></svg>");
-  background-size: 4px 4px;
+  background-color: rgba(15, 23, 42, 0.08);
 }
 .dither-amber {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='2' height='2' fill='%23FF7A3C'/><rect x='2' y='2' width='2' height='2' fill='%23FF7A3C'/></svg>");
-  background-size: 4px 4px;
+  background-color: rgba(234, 88, 12, 0.12);
 }
 .dither-mint {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='2' height='2' fill='%233FBFA0'/><rect x='2' y='2' width='2' height='2' fill='%233FBFA0'/></svg>");
-  background-size: 4px 4px;
+  background-color: rgba(5, 150, 105, 0.12);
 }
 .dither-grey {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='2' height='2' fill='%238A8578'/><rect x='2' y='2' width='2' height='2' fill='%238A8578'/></svg>");
-  background-size: 4px 4px;
+  background-color: rgba(100, 116, 139, 0.12);
 }
 .dither-alert {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='2' height='2' fill='%23E5533D'/><rect x='2' y='2' width='2' height='2' fill='%23E5533D'/></svg>");
-  background-size: 4px 4px;
+  background-color: rgba(220, 38, 38, 0.1);
 }
 
 /* ── Signature motif: the low-frame-rate pixel sunrise ──
@@ -90,10 +185,10 @@ body {
   100%    { opacity: 1; }
 }
 .sun-rise {
-  animation: sun-rise 2.8s steps(7, end) both;
+  animation: sun-rise 2.8s ease-out both;
 }
 .sun-rays {
-  animation: rays-in 3.6s steps(3, end) both;
+  animation: rays-in 3.6s ease-out both;
 }
 /* Idle bob after rising — 2 frames, very slow, barely-there */
 @keyframes sun-idle {
@@ -101,8 +196,8 @@ body {
   50%, 100% { transform: translateY(-2px); }
 }
 .sun-idle {
-  animation: sun-rise 2.8s steps(7, end) both,
-    sun-idle 4s steps(1, end) 3s infinite;
+  animation: sun-rise 2.8s ease-out both,
+    sun-idle 4s ease-out 3s infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -128,7 +223,7 @@ body {
 
 /* ════════════════════════════════════════════════════════════════
    AMBIENT + INTERACTIVE PIXEL MOTION (Phase 3)
-   Every animation below is steps()-timed (chunky, low-FPS) and is fully
+   Every animation below is short, eased, and fully
    disabled under prefers-reduced-motion at the bottom of this block.
    ════════════════════════════════════════════════════════════════ */
 
@@ -141,7 +236,7 @@ body {
 }
 .seg-fill {
   transform-origin: bottom;
-  animation: seg-fill 140ms steps(2, end) both;
+  animation: seg-fill 140ms ease-out both;
 }
 
 /* 3 — Radar feed cards drop in one after another (stepped fade + slide). */
@@ -150,7 +245,7 @@ body {
   100% { opacity: 1; transform: translateY(0); }
 }
 .card-in {
-  animation: card-in 220ms steps(3, end) both;
+  animation: card-in 220ms ease-out both;
 }
 
 /* 4 — Deadline pulse: a slow 2-frame heartbeat, ONLY on the red < 3-days
@@ -160,17 +255,18 @@ body {
   51%, 100% { opacity: 0.72; }
 }
 .deadline-pulse {
-  animation: deadline-pulse 2s steps(2, end) infinite;
+  animation: deadline-pulse 2s ease-in-out infinite;
 }
 
-/* 5 — Loading skeleton: the dither tile MARCHES sideways in 4 hard steps,
-   a chunky pixel shimmer with no gradient. Pair with a .dither-* class. */
+/* 5 — Loading skeleton. This used to march a checkerboard tile sideways by
+   animating background-position; with the tints now flat fills there is no
+   tile to move, so it breathes instead. Still pairs with a .dither-* class. */
 @keyframes pixel-shimmer {
-  from { background-position: 0 0; }
-  to   { background-position: 16px 0; }
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
 }
 .pixel-shimmer {
-  animation: pixel-shimmer 640ms steps(4, end) infinite;
+  animation: pixel-shimmer 1.5s ease-in-out infinite;
 }
 
 /* 6 — Sunrise idle: the dawn sky bands breathe on a slow 2-frame loop so the
@@ -180,7 +276,7 @@ body {
   51%, 100% { opacity: var(--sky-lo, 0.25); }
 }
 .sky-shimmer {
-  animation: sky-shimmer 3.2s steps(2, end) infinite;
+  animation: sky-shimmer 3.2s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -206,7 +302,7 @@ body {
   100% { opacity: 1; transform: translateY(0); }
 }
 .forge-enter {
-  animation: forge-enter 160ms steps(2, end) both;
+  animation: forge-enter 160ms ease-out both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -214,62 +310,61 @@ body {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   RESUME FORGE — the "new world" palette.
-   Same design family (fonts, hard borders, dithering, pixel corners),
-   deeper world: slate ground, molten amber, cool violet.
-   Scoped remap of the token classes the shared pixel components use,
-   so PixelCard/PixelButton/PixelInput/etc. cross the portal untouched.
+   RESUME FORGE — the dark working surface.
+   Still a distinct environment, restated in slate so it reads as a
+   focused editor rather than a second product. Scoped remap of the
+   token classes the shared components use, so they cross the portal
+   untouched.
    ════════════════════════════════════════════════════════════════ */
-.world-forge { background: #1e2233; }
+.world-forge { background: #0f172a; }
 
-.world-forge .bg-cream { background-color: #1e2233; }
-.world-forge .bg-paper { background-color: #2a3047; }
-.world-forge .bg-ink   { background-color: #12162a; }
-.world-forge .text-ink { color: #edeaf2; }
+.world-forge .bg-cream { background-color: #0f172a; }
+.world-forge .bg-paper { background-color: #1e293b; }
+.world-forge .bg-ink   { background-color: #020617; }
+.world-forge .text-ink { color: #e2e8f0; }
 /* opacity-modified ink variants are distinct classes — remap them too,
    or they render as dark ink on the slate/panel surfaces (unreadable) */
-.world-forge .text-ink\/70 { color: rgb(237 234 242 / 0.7); }
-.world-forge .text-ink\/80 { color: rgb(237 234 242 / 0.8); }
-.world-forge .text-ink\/90 { color: rgb(237 234 242 / 0.9); }
-.world-forge .border-ink { border-color: #0c0f1a; }
+.world-forge .text-ink\/70 { color: rgb(226 232 240 / 0.7); }
+.world-forge .text-ink\/80 { color: rgb(226 232 240 / 0.8); }
+.world-forge .text-ink\/90 { color: rgb(226 232 240 / 0.9); }
+/* Borders invert: the global rule softens border-ink to a light rule, which
+   is invisible on slate. On dark it has to go the other way and lighten
+   relative to the surface. */
+.world-forge .border-ink { border-color: #334155; }
 
-/* molten amber replaces sunrise amber inside the forge */
-.world-forge .bg-amber { background-color: #ff9e45; }
-.world-forge .text-amber { color: #ff9e45; }
-.world-forge .border-amber { border-color: #ff9e45; }
+/* the accent lifts on dark — #EA580C only reaches 3.1:1 on slate-900 */
+.world-forge .bg-amber { background-color: #fb923c; }
+.world-forge .text-amber { color: #fb923c; }
+.world-forge .border-amber { border-color: #fb923c; }
 
 /* keep dark text on solid accent fills (buttons/badges/panels) */
 .world-forge .bg-amber.text-ink,
-.world-forge .bg-mint.text-ink { color: #1e2233; }
+.world-forge .bg-mint.text-ink { color: #0f172a; }
 .world-forge .bg-amber .text-ink,
-.world-forge .bg-mint .text-ink { color: #1e2233; }
+.world-forge .bg-mint .text-ink { color: #0f172a; }
 .world-forge .bg-amber .text-ink\/70,
-.world-forge .bg-mint .text-ink\/70 { color: rgb(30 34 51 / 0.7); }
+.world-forge .bg-mint .text-ink\/70 { color: rgb(15 23 42 / 0.7); }
 .world-forge .bg-amber .text-ink\/80,
-.world-forge .bg-mint .text-ink\/80 { color: rgb(30 34 51 / 0.8); }
+.world-forge .bg-mint .text-ink\/80 { color: rgb(15 23 42 / 0.8); }
 .world-forge .bg-amber .text-ink\/90,
-.world-forge .bg-mint .text-ink\/90 { color: rgb(30 34 51 / 0.9); }
+.world-forge .bg-mint .text-ink\/90 { color: rgb(15 23 42 / 0.9); }
 
-/* hard offset shadows go near-black in the forge */
-.world-forge .shadow-pixel { box-shadow: 4px 4px 0 0 #0c0f1a; }
-.world-forge .shadow-pixel-sm { box-shadow: 2px 2px 0 0 #0c0f1a; }
-.world-forge .shadow-pixel-lg { box-shadow: 6px 6px 0 0 #0c0f1a; }
-.world-forge .shadow-pixel-amber { box-shadow: 4px 4px 0 0 #ff9e45; }
+/* elevation on dark: deeper and softer, since a light shadow is invisible */
+.world-forge .shadow-pixel { box-shadow: 0 1px 3px rgba(2,6,23,0.5); }
+.world-forge .shadow-pixel-sm { box-shadow: 0 1px 2px rgba(2,6,23,0.4); }
+.world-forge .shadow-pixel-lg { box-shadow: 0 6px 16px rgba(2,6,23,0.55); }
+.world-forge .shadow-pixel-amber { box-shadow: 0 0 0 3px rgba(251,146,60,0.25); }
 
-/* dithering shifts to the molten hue */
-.world-forge .dither-amber {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='2' height='2' fill='%23FF9E45'/><rect x='2' y='2' width='2' height='2' fill='%23FF9E45'/></svg>");
-}
-.world-forge .dither-ink {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='2' height='2' fill='%230C0F1A'/><rect x='2' y='2' width='2' height='2' fill='%230C0F1A'/></svg>");
-}
+/* tints shift to the accent hue */
+.world-forge .dither-amber { background-color: rgba(251, 146, 60, 0.16); }
+.world-forge .dither-ink { background-color: rgba(2, 6, 23, 0.45); }
 
-/* warm grey reads muddy on slate — lift it to a cool light grey */
-.world-forge .text-grey { color: #a9a4b8; }
-.world-forge .placeholder\:text-grey::placeholder { color: rgb(169 164 184 / 0.9); }
+/* the muted tone lifts to stay legible on slate */
+.world-forge .text-grey { color: #94a3b8; }
+.world-forge .placeholder\:text-grey::placeholder { color: rgb(148 163 184 / 0.9); }
 
-.world-forge :focus-visible { outline-color: #ff9e45; }
-.world-forge ::selection { background: #7c6ff0; color: #edeaf2; }
+.world-forge :focus-visible { outline-color: #fb923c; }
+.world-forge ::selection { background: #818cf8; color: #e2e8f0; }
 
 /* the document PREVIEW stays a real, light resume page — explicitly
    exempt it from the world remap by resetting inside .resume-doc */
@@ -283,73 +378,63 @@ body {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   THE AGENT — its own pixel world + the CRT power-on reveal (Phase 5).
-   A phosphor "green terminal" world: distinct from cream (home) and from
-   Forge's slate/violet. Same design family; care taken for readable
-   contrast (no dark-on-dark). Scoped token remap like .world-forge so the
-   shared pixel components cross in untouched.
+   THE AGENT — its own darker surface.
+   Was a phosphor "green terminal" world. The terminal metaphor is the
+   single most costumed thing in the product, so it is now the same slate
+   as the Forge with a cooler accent: still clearly a distinct place,
+   without pretending to be a 1980s CRT.
    ════════════════════════════════════════════════════════════════ */
-.world-agent { background: #0e1a15; }
+.world-agent { background: #0f172a; }
 
-.world-agent .bg-cream { background-color: #0e1a15; }
-.world-agent .bg-paper { background-color: #16261f; }
-.world-agent .bg-ink   { background-color: #071410; }
-.world-agent .text-ink { color: #e4f5ea; }
-.world-agent .text-ink\/70 { color: rgb(228 245 234 / 0.7); }
-.world-agent .text-ink\/80 { color: rgb(228 245 234 / 0.8); }
-.world-agent .text-ink\/90 { color: rgb(228 245 234 / 0.9); }
-.world-agent .text-cream { color: #eafaf0; }
-.world-agent .border-ink { border-color: #04100b; }
+.world-agent .bg-cream { background-color: #0f172a; }
+.world-agent .bg-paper { background-color: #1e293b; }
+.world-agent .bg-ink   { background-color: #020617; }
+.world-agent .text-ink { color: #e2e8f0; }
+.world-agent .text-ink\/70 { color: rgb(226 232 240 / 0.7); }
+.world-agent .text-ink\/80 { color: rgb(226 232 240 / 0.8); }
+.world-agent .text-ink\/90 { color: rgb(226 232 240 / 0.9); }
+.world-agent .text-cream { color: #f1f5f9; }
+.world-agent .border-ink { border-color: #334155; }
 
-/* phosphor amber is the agent's primary accent */
-.world-agent .bg-amber { background-color: #ffb454; }
-.world-agent .text-amber { color: #ffb454; }
-.world-agent .border-amber { border-color: #ffb454; }
+/* a cool accent separates the agent from the Forge's warm one */
+.world-agent .bg-amber { background-color: #818cf8; }
+.world-agent .text-amber { color: #a5b4fc; }
+.world-agent .border-amber { border-color: #818cf8; }
 
 /* dark text stays on solid accent fills (chips/badges/buttons) */
 .world-agent .bg-amber.text-ink,
-.world-agent .bg-mint.text-ink { color: #071410; }
+.world-agent .bg-mint.text-ink { color: #0f172a; }
 .world-agent .bg-amber .text-ink,
-.world-agent .bg-mint .text-ink { color: #071410; }
+.world-agent .bg-mint .text-ink { color: #0f172a; }
 
-/* hard offset shadows go near-black green in the agent world */
-.world-agent .shadow-pixel { box-shadow: 4px 4px 0 0 #04100b; }
-.world-agent .shadow-pixel-sm { box-shadow: 2px 2px 0 0 #04100b; }
-.world-agent .shadow-pixel-lg { box-shadow: 6px 6px 0 0 #04100b; }
-.world-agent .shadow-pixel-amber { box-shadow: 4px 4px 0 0 #ffb454; }
+/* elevation on dark */
+.world-agent .shadow-pixel { box-shadow: 0 1px 3px rgba(2,6,23,0.5); }
+.world-agent .shadow-pixel-sm { box-shadow: 0 1px 2px rgba(2,6,23,0.4); }
+.world-agent .shadow-pixel-lg { box-shadow: 0 6px 16px rgba(2,6,23,0.55); }
+.world-agent .shadow-pixel-amber { box-shadow: 0 0 0 3px rgba(129,140,248,0.28); }
 
-/* dithering shifts to phosphor hues */
-.world-agent .dither-amber {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='2' height='2' fill='%23FFB454'/><rect x='2' y='2' width='2' height='2' fill='%23FFB454'/></svg>");
-}
-.world-agent .dither-mint {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='2' height='2' fill='%234FD6AC'/><rect x='2' y='2' width='2' height='2' fill='%234FD6AC'/></svg>");
-}
-.world-agent .dither-grey {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='2' height='2' fill='%235C7A6C'/><rect x='2' y='2' width='2' height='2' fill='%235C7A6C'/></svg>");
-}
+/* tints shift to the agent's hues */
+.world-agent .dither-amber { background-color: rgba(129, 140, 248, 0.18); }
+.world-agent .dither-mint { background-color: rgba(52, 211, 153, 0.16); }
+.world-agent .dither-grey { background-color: rgba(148, 163, 184, 0.14); }
 
-/* warm grey reads muddy on green — lift to a cool light grey */
-.world-agent .text-grey { color: #9db3a8; }
-.world-agent .placeholder\:text-grey::placeholder { color: rgb(157 179 168 / 0.9); }
+.world-agent .text-grey { color: #94a3b8; }
+.world-agent .placeholder\:text-grey::placeholder { color: rgb(148 163 184 / 0.9); }
 
-.world-agent :focus-visible { outline-color: #ffb454; }
-.world-agent ::selection { background: #4fd6ac; color: #071410; }
+.world-agent :focus-visible { outline-color: #818cf8; }
+.world-agent ::selection { background: #818cf8; color: #f1f5f9; }
 
-/* ── CRT power-on: a bright line snaps open to full height, flickers,
-      then fades to reveal the screen. steps() = chunky. ── */
+/* ── Panel reveal. This was a CRT power-on: a scanline snapping open,
+      flickering twice, then fading. The flicker is gone — it is the kind of
+      effect that reads as a rendering fault on a product screen — leaving a
+      quick scale-and-fade. ── */
 @keyframes crt-on {
-  0%   { transform: scaleX(0.15) scaleY(0.02); opacity: 1; }
-  18%  { transform: scaleX(1) scaleY(0.02);    opacity: 1; }
-  55%  { transform: scaleX(1) scaleY(1);       opacity: 1; }
-  66%  { opacity: 0.55; }
-  74%  { opacity: 1; }
-  86%  { opacity: 0.7; }
-  100% { transform: scaleX(1) scaleY(1);       opacity: 0; }
+  0%   { transform: scaleY(0.9); opacity: 0; }
+  100% { transform: scaleY(1);   opacity: 1; }
 }
 .crt-on {
   transform-origin: center;
-  animation: crt-on 900ms steps(9, end) both;
+  animation: crt-on 260ms ease-out both;
 }
 
 /* ── avatar materializes from a dithered ghost into a solid orb ── */
@@ -359,21 +444,21 @@ body {
   70%  { opacity: 0.7; }
   100% { opacity: 1; }
 }
-.avatar-materialize { animation: avatar-materialize 700ms steps(4, end) both; }
+.avatar-materialize { animation: avatar-materialize 700ms ease-out both; }
 
 /* ── chat slides up after the reveal ── */
 @keyframes agent-enter {
   0%   { opacity: 0; transform: translateY(10px); }
   100% { opacity: 1; transform: translateY(0); }
 }
-.agent-enter { animation: agent-enter 320ms steps(3, end) both; }
+.agent-enter { animation: agent-enter 320ms ease-out both; }
 
 /* ── living avatar idle: a slow 2-frame bob + an occasional hard blink ── */
 @keyframes avatar-bob {
   0%, 49%   { transform: translateY(0); }
   50%, 100% { transform: translateY(-2px); }
 }
-.avatar-bob { animation: avatar-bob 2.4s steps(1, end) infinite; }
+.avatar-bob { animation: avatar-bob 2.4s ease-out infinite; }
 
 @keyframes avatar-blink {
   0%, 92%, 100% { transform: scaleY(1); }
@@ -382,7 +467,7 @@ body {
 .avatar-blink {
   transform-box: fill-box;
   transform-origin: center;
-  animation: avatar-blink 4.2s steps(1, end) infinite;
+  animation: avatar-blink 4.2s ease-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

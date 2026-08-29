@@ -13,7 +13,9 @@ import { expect, test } from "@playwright/test";
  * layout's class contract plus the route-guard specs in auth.spec.ts.
  */
 
-const PUBLIC_ROUTES = ["/login", "/register", "/forgot-password"];
+// "/" runs full-bleed and is the one route that opts out of the app frame, so
+// it is also the one whose overflow is not already constrained by that frame.
+const PUBLIC_ROUTES = ["/", "/login", "/register", "/forgot-password"];
 
 test.describe("no horizontal overflow", () => {
   for (const route of PUBLIC_ROUTES) {

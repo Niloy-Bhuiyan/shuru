@@ -106,7 +106,7 @@ export function AskListing({ opportunityId }: { opportunityId: string }) {
     <section aria-labelledby="ask-heading" className="mt-5">
       <h2
         id="ask-heading"
-        className="font-mono text-xs font-bold uppercase tracking-wide text-ink"
+        className="font-mono text-xs font-bold text-ink"
       >
         {t("ask.title")}
       </h2>
@@ -167,7 +167,7 @@ export function AskListing({ opportunityId }: { opportunityId: string }) {
           */}
           {result.citations.length > 0 && (
             <div className="mt-2">
-              <h3 className="font-mono text-[10px] font-bold uppercase tracking-wide text-ink/70">
+              <h3 className="font-mono text-[10px] font-bold text-ink/70">
                 {t("ask.sources")}
               </h3>
               <ol className="mt-1 space-y-1.5">

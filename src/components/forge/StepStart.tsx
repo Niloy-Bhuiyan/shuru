@@ -78,7 +78,7 @@ export function StepStart({
       <section aria-labelledby="forge-ahead" className="mt-8 border-t-3 border-ink/30 pt-5">
         <h3
           id="forge-ahead"
-          className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-ink/70"
+          className="font-mono text-[10px] font-bold tracking-[0.2em] text-ink/70"
         >
           {t("forge.aheadTitle")}
         </h3>

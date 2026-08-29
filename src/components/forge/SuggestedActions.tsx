@@ -87,7 +87,7 @@ export function SuggestedActions({
             onClick={() => setTab(x.id)}
             aria-pressed={tab === x.id}
             className={cx(
-              "flex items-center gap-1.5 border-2 border-ink px-2 py-1 font-mono text-[11px] font-bold uppercase",
+              "flex items-center gap-1.5 border-2 border-ink px-2 py-1 font-mono text-[11px] font-bold",
               tab === x.id ? "bg-amber text-ink shadow-pixel-sm" : "bg-paper text-ink"
             )}
           >
@@ -129,7 +129,7 @@ export function SuggestedActions({
                   <button
                     type="button"
                     onClick={() => onFix(CHECK_TARGET[c.id])}
-                    className="flex items-center gap-1 border-2 border-ink bg-amber px-2 py-1 font-mono text-[10px] font-bold uppercase text-ink active:translate-x-[1px] active:translate-y-[1px]"
+                    className="flex items-center gap-1 border-2 border-ink bg-amber px-2 py-1 font-mono text-[10px] font-bold text-ink active:translate-x-[1px] active:translate-y-[1px]"
                   >
                     {t("forge.fix")} <PixelIcon name="arrow-right" size={9} />
                   </button>
@@ -155,7 +155,7 @@ export function SuggestedActions({
                 <button
                   type="button"
                   onClick={() => onRestore(c.id)}
-                  className="shrink-0 border-2 border-ink bg-paper px-2 py-1 font-mono text-[10px] font-bold uppercase text-ink"
+                  className="shrink-0 border-2 border-ink bg-paper px-2 py-1 font-mono text-[10px] font-bold text-ink"
                 >
                   {t("forge.restore")}
                 </button>
@@ -164,7 +164,7 @@ export function SuggestedActions({
 
             {tab === "pending" && openReason === c.id && (
               <div className="mt-2 border-2 border-ink/40 bg-cream p-2">
-                <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-grey">
+                <p className="font-mono text-[10px] font-bold text-grey">
                   {t("forge.reason")}
                 </p>
                 <p className="mt-1 font-mono text-[11px] leading-relaxed text-ink">

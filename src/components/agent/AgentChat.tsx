@@ -345,7 +345,7 @@ export function AgentChat({
           b.kind === "system" ? (
             <p
               key={i}
-              className="mx-auto w-fit border-2 border-ink bg-mint px-2 py-1 font-mono text-[10px] font-bold uppercase text-ink"
+              className="mx-auto w-fit border-2 border-ink bg-mint px-2 py-1 font-mono text-[10px] font-bold text-ink"
             >
               {b.text}
             </p>
@@ -358,7 +358,7 @@ export function AgentChat({
               )}
             >
               {b.kind === "user" && b.attachment && (
-                <span className="mb-1 flex w-fit items-center gap-1 border-2 border-cream/40 bg-ink px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase text-cream">
+                <span className="mb-1 flex w-fit items-center gap-1 border-2 border-cream/40 bg-ink px-1.5 py-0.5 font-mono text-[9px] font-bold text-cream">
                   <PixelIcon name="upload" size={9} /> {b.attachment}
                 </span>
               )}
@@ -397,7 +397,7 @@ export function AgentChat({
         {busy && !draft && (
           <div className="mr-auto flex w-fit items-center gap-2 border-3 border-ink bg-paper p-3 shadow-pixel-sm">
             <AgentAvatar size={22} thinking />
-            <span className="pixel-blink font-mono text-[10px] font-bold uppercase tracking-widest text-grey">
+            <span className="pixel-blink font-mono text-[10px] font-bold text-grey">
               {t("agent.thinking")}
             </span>
           </div>
@@ -520,7 +520,7 @@ export function AgentChat({
         </div>
 
         {remaining !== null && (
-          <p className="mt-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-grey">
+          <p className="mt-1.5 font-mono text-[10px] font-bold text-grey">
             {remaining} {t("agent.left")}
           </p>
         )}

@@ -41,8 +41,8 @@ export function OperatorHeader() {
     <header className="sticky top-0 z-40 border-b-3 border-ink bg-ink">
       <div className="flex items-center justify-between gap-2 px-4 py-2.5">
         <div className="flex min-w-0 items-center gap-2">
-          <span className="font-pixel text-sm leading-none text-amber">SHURU</span>
-          <span className="border-2 border-amber px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-amber">
+          <span className="font-pixel text-[15px] leading-none text-amber">Shuru</span>
+          <span className="border-2 border-amber px-1.5 py-0.5 font-mono text-[10px] font-bold text-amber">
             {t("op.workspace")}
           </span>
         </div>
@@ -50,7 +50,7 @@ export function OperatorHeader() {
         <div className="flex items-center gap-2">
           <Link
             href="/radar"
-            className="flex items-center gap-1.5 border-2 border-cream bg-ink px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-cream active:translate-x-[1px] active:translate-y-[1px]"
+            className="flex items-center gap-1.5 border-2 border-cream bg-ink px-2 py-1 font-mono text-[10px] font-bold text-cream active:translate-x-[1px] active:translate-y-[1px]"
           >
             <PixelIcon name="radar" size={11} />
             {/* Label drops below `sm` — the wordmark, workspace badge and
@@ -69,7 +69,7 @@ export function OperatorHeader() {
                 onClick={() => setLang(l)}
                 aria-pressed={lang === l}
                 className={cx(
-                  "px-2 py-1 text-[11px] font-bold uppercase",
+                  "px-2 py-1 text-[11px] font-bold",
                   "active:translate-x-[1px] active:translate-y-[1px]",
                   l === "bn" ? "font-bangla" : "font-mono",
                   lang === l ? "bg-amber text-ink" : "bg-ink text-cream"
@@ -98,7 +98,7 @@ export function OperatorHeader() {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cx(
-                  "border-2 px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wide",
+                  "border-2 px-2.5 py-1 font-mono text-[11px] font-bold",
                   active
                     ? "border-amber bg-amber text-ink"
                     : "border-cream/40 bg-ink text-cream"

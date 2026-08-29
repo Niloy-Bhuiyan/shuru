@@ -16,6 +16,10 @@ import { expect, test, type Page } from "@playwright/test";
  */
 
 const PUBLIC_PAGES = [
+  // The landing page. It is the largest signed-out surface and the only one
+  // with prose, a nav and a footer, so it has by far the most text nodes for
+  // a palette change to break — and it is what a first-time visitor sees.
+  "/",
   "/login",
   "/register",
   "/forgot-password",

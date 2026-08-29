@@ -101,7 +101,7 @@ function SandboxCheckout() {
         role="status"
         className="mb-4 border-3 border-ink bg-amber p-3 shadow-pixel-sm"
       >
-        <p className="font-pixel text-[11px] uppercase text-ink">
+        <p className="font-pixel text-[11px] text-ink">
           ⚠ {t("pay.sandboxTag")}
         </p>
         <p className="mt-1 font-mono text-[11px] leading-relaxed text-ink">
@@ -109,7 +109,7 @@ function SandboxCheckout() {
         </p>
       </div>
 
-      <h1 className="font-pixel text-xs uppercase text-ink">
+      <h1 className="font-pixel text-xs text-ink">
         {t("pay.checkoutTitle")}
       </h1>
       <p className="mt-2 font-mono text-[11px] leading-relaxed text-ink/80">

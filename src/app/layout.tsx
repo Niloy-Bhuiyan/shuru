@@ -1,5 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Silkscreen, JetBrains_Mono, Hind_Siliguri } from "next/font/google";
+import {
+  Silkscreen,
+  JetBrains_Mono,
+  Hind_Siliguri,
+  Inter,
+  Instrument_Serif,
+} from "next/font/google";
 
 import { LangProvider } from "@/lib/i18n";
 import "./globals.css";
@@ -42,16 +48,96 @@ const bangla = Hind_Siliguri({
   variable: "--font-bangla",
 });
 
+/*
+ * The conventional-UI face, used by surfaces that opt out of the pixel system
+ * via `.ui-pro` (see globals.css). Silkscreen is a display face that only
+ * works in short, large bursts; anything with real paragraphs needs a text
+ * face, and the mono was carrying that load by default.
+ */
+const sans = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-sans",
+});
+
+/*
+ * Display face, used ONLY for the largest headlines on the public site.
+ *
+ * Inter set large is competent and completely anonymous — it is the default
+ * of every SaaS landing page, which is exactly why a page built from it reads
+ * as a template. A serif at display size costs one font request and is the
+ * single cheapest way to make the page look authored.
+ *
+ * Restricted to English display text on purpose: it has no Bengali coverage,
+ * and it is far too high-contrast to set body copy in.
+ */
+const display = Instrument_Serif({
+  weight: "400",
+  style: ["normal", "italic"],
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-display",
+});
+
+const DESCRIPTION =
+  "Find internships in Bangladesh and see your honest, calibrated chances of getting shortlisted.";
+
+/*
+ * `metadataBase` is what turns the relative asset paths below — and the
+ * `opengraph-image.png` sitting next to this file — into the absolute URLs
+ * that link unfurlers require. Without it Next emits relative og:image paths,
+ * which every social crawler drops on the floor, and the card renders blank.
+ *
+ * The localhost fallback only ever applies in development; NEXT_PUBLIC_SITE_URL
+ * is set on Production.
+ */
 export const metadata: Metadata = {
-  title: "Shuru — শুরু",
-  description:
-    "Find internships in Bangladesh and see your honest, calibrated chances of getting shortlisted.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  title: {
+    default: "Shuru — শুরু",
+    // Sub-pages set a bare title; this keeps the brand on the end of it.
+    template: "%s · Shuru",
+  },
+  description: DESCRIPTION,
+  applicationName: "Shuru",
+  manifest: "/manifest.webmanifest",
+  openGraph: {
+    type: "website",
+    siteName: "Shuru",
+    title: "Shuru — শুরু",
+    description: DESCRIPTION,
+    // Bengali first: this is a Bangladesh product, and `en` is the alternate.
+    locale: "bn_BD",
+    alternateLocale: ["en_US"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Shuru — শুরু",
+    description: DESCRIPTION,
+  },
+  /*
+   * iOS only delivers Web Push to sites the user has added to the Home Screen,
+   * and it will only offer that for an installable site. The app already ships
+   * a push service worker (public/sw.js), so without this block that feature
+   * is unreachable on iPhone — which is most of the audience.
+   */
+  appleWebApp: {
+    capable: true,
+    title: "Shuru",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#F4E9D8",
+  /*
+   * The browser/PWA chrome colour. It has to match `html { background }` in
+   * globals.css or the notch and status bar sit in a visibly different colour
+   * from the page beneath them. This was still #F4E9D8 — the cream of the
+   * retired pixel palette — which no surface in the app uses any more.
+   */
+  themeColor: "#F8FAFC",
 };
 
 export default function RootLayout({
@@ -60,7 +146,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${pixel.variable} ${mono.variable} ${bangla.variable}`}>
+    <html
+      lang="en"
+      className={`${pixel.variable} ${mono.variable} ${bangla.variable} ${sans.variable} ${display.variable}`}
+    >
       <body className="font-mono">
         <LangProvider>
           {/*

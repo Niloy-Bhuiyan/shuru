@@ -150,7 +150,7 @@ export default function AdminNewListingPage() {
         />
 
         <div>
-          <span className="font-mono text-[11px] font-bold uppercase tracking-wide text-ink">
+          <span className="font-mono text-[11px] font-bold text-ink">
             {t("emp.workMode")}
           </span>
           <div className="mt-1 flex gap-1.5">
@@ -160,7 +160,7 @@ export default function AdminNewListingPage() {
                 type="button"
                 onClick={() => setWorkMode(m)}
                 aria-pressed={workMode === m}
-                className={`flex-1 border-3 border-ink px-2 py-1.5 font-mono text-[11px] font-bold uppercase ${
+                className={`flex-1 border-3 border-ink px-2 py-1.5 font-mono text-[11px] font-bold ${
                   workMode === m ? "bg-ink text-cream" : "bg-paper text-ink"
                 }`}
               >

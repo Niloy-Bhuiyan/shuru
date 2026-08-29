@@ -55,7 +55,7 @@ export function SourceHealthPanel() {
 
   return (
     <section className="mb-6 mt-4 space-y-2">
-      <h2 className="font-mono text-xs font-bold uppercase tracking-wide text-ink">
+      <h2 className="font-mono text-xs font-bold text-ink">
         {t("admin.health")}
       </h2>
 
@@ -70,10 +70,10 @@ export function SourceHealthPanel() {
             <header
               className={`flex items-center justify-between border-b-3 border-ink px-2.5 py-1.5 ${TONE[h.status]}`}
             >
-              <span className="font-mono text-[11px] font-bold uppercase tracking-wide">
+              <span className="font-mono text-[11px] font-bold">
                 {h.source}
               </span>
-              <span className="font-mono text-[9px] font-bold uppercase">
+              <span className="font-mono text-[9px] font-bold">
                 {h.status.replace(/_/g, " ")}
               </span>
             </header>
@@ -81,7 +81,7 @@ export function SourceHealthPanel() {
               <p className="font-mono text-[11px] leading-relaxed text-ink">
                 {h.detail}
               </p>
-              <p className="mt-1 font-mono text-[10px] uppercase tracking-wide text-grey">
+              <p className="mt-1 font-mono text-[10px] text-grey">
                 {t("admin.lastRun")}:{" "}
                 {h.lastRunAt ? new Date(h.lastRunAt).toLocaleString() : "—"}
               </p>

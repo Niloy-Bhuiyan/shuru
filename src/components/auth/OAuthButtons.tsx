@@ -16,8 +16,8 @@ import { useLang } from "@/lib/i18n";
 import { cx } from "@/lib/cx";
 
 const LABELS: Record<OAuthProvider, string> = {
-  google: "GOOGLE",
-  github: "GITHUB",
+  google: "Google",
+  github: "GitHub",
 };
 
 export function OAuthButtons({ next = "/radar" }: { next?: string }) {
@@ -62,7 +62,7 @@ export function OAuthButtons({ next = "/radar" }: { next?: string }) {
             disabled={busy !== null}
             className={cx(
               "w-full border-3 border-ink bg-paper px-4 py-3 text-center",
-              "font-mono text-xs font-bold uppercase tracking-widest text-ink",
+              "font-mono text-xs font-bold text-ink",
               "shadow-pixel-sm active:translate-x-[2px] active:translate-y-[2px]",
               "active:shadow-pixel-none disabled:opacity-60"
             )}
@@ -80,7 +80,7 @@ export function OAuthButtons({ next = "/radar" }: { next?: string }) {
 
       <div className="flex items-center gap-2" aria-hidden>
         <span className="h-[3px] flex-1 bg-ink/20" />
-        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-grey">
+        <span className="font-mono text-[10px] font-bold text-grey">
           {t("auth.orEmail")}
         </span>
         <span className="h-[3px] flex-1 bg-ink/20" />

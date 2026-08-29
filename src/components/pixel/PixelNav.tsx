@@ -45,7 +45,7 @@ export function PixelNav() {
               onClick={item.href === "/forge" ? armForgeTransition : undefined}
               aria-current={active ? "page" : undefined}
               className={cx(
-                "flex flex-col items-center gap-1 py-2 pt-1.5 font-mono text-[10px] font-bold uppercase tracking-wide",
+                "flex flex-col items-center gap-1 py-2 pt-1.5 font-mono text-[10px] font-bold",
                 active ? "text-amber" : "text-cream/60"
               )}
             >

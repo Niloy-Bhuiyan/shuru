@@ -52,7 +52,7 @@ export function MatchBreakdown({
   return (
     <section className="mt-4 border-3 border-ink bg-paper p-3 shadow-pixel">
       <div className="flex items-baseline justify-between">
-        <h2 className="font-mono text-xs font-bold uppercase tracking-wide text-ink">
+        <h2 className="font-mono text-xs font-bold text-ink">
           {t("match.title")}
         </h2>
         <span className="font-pixel text-sm text-ink">
@@ -62,7 +62,7 @@ export function MatchBreakdown({
 
       {result.score === null ? (
         <div className="mt-2 border-2 border-ink bg-cream p-2">
-          <p className="font-mono text-[11px] font-bold uppercase text-ink">
+          <p className="font-mono text-[11px] font-bold text-ink">
             {t("match.abstain")}
           </p>
           <p className="mt-1 font-mono text-[10px] leading-relaxed text-grey">
@@ -72,7 +72,7 @@ export function MatchBreakdown({
       ) : (
         <>
           {blocked && (
-            <p className="mt-2 border-2 border-ink bg-alert p-1.5 font-mono text-[10px] font-bold uppercase text-cream">
+            <p className="mt-2 border-2 border-ink bg-alert p-1.5 font-mono text-[10px] font-bold text-cream">
               {t("match.blocked")}
             </p>
           )}

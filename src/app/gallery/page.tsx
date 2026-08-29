@@ -29,7 +29,7 @@ export default function GalleryPage() {
 
       <main className="space-y-6 px-4 pb-16 pt-5">
         <section className="space-y-2">
-          <h2 className="font-pixel text-[10px] text-ink">RADAR CARD</h2>
+          <h2 className="text-[12px] font-semibold text-ui-faint">Radar card</h2>
           <PixelCard accent="amber">
             <div className="flex items-start justify-between gap-2">
               <div>
@@ -37,31 +37,31 @@ export default function GalleryPage() {
                 <p className="font-mono text-xs text-ink/70">Grameenphone · Dhaka</p>
               </div>
               <PixelBadge tone="qualify" icon="check">
-                QUALIFY
+                Qualify
               </PixelBadge>
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <PixelBadge tone="urgent" icon="clock">
-                6 DAYS LEFT
+                6 days left
               </PixelBadge>
               <PixelBadge tone="alert" icon="clock">
-                2 DAYS LEFT
+                2 days left
               </PixelBadge>
-              <PixelChip icon="user">3 SENIORS FROM YOUR UNI</PixelChip>
+              <PixelChip icon="user">3 seniors from your uni</PixelChip>
             </div>
             <div className="mt-2 flex items-center justify-between border-t-2 border-ink/20 pt-2">
               <span className="font-mono text-xs font-bold text-ink">
-                ~18% SHORTLIST
+                ~18% shortlist
               </span>
               <span className="flex items-center gap-1 font-mono text-xs font-bold text-grey">
-                <PixelIcon name="signal" size={11} /> LOW SIGNAL
+                <PixelIcon name="signal" size={11} /> Low signal
               </span>
             </div>
           </PixelCard>
         </section>
 
         <section className="space-y-2">
-          <h2 className="font-pixel text-[10px] text-ink">BUTTONS</h2>
+          <h2 className="text-[12px] font-semibold text-ui-faint">Buttons</h2>
           <div className="flex flex-wrap gap-3">
             <PixelButton>Apply</PixelButton>
             <PixelButton variant="secondary">Save</PixelButton>
@@ -72,13 +72,13 @@ export default function GalleryPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="font-pixel text-[10px] text-ink">FILTER CHIPS</h2>
+          <h2 className="text-[12px] font-semibold text-ui-faint">Filter chips</h2>
           <div className="no-scrollbar flex gap-2 overflow-x-auto">
             {[
-              ["deadline", "DEADLINE SOON"],
-              ["paid", "PAID ONLY"],
+              ["deadline", "Deadline soon"],
+              ["paid", "Paid only"],
               ["dept", "CSE"],
-              ["all", "SHOW INELIGIBLE"],
+              ["all", "Show ineligible"],
             ].map(([id, label]) => (
               <PixelChip key={id} selected={chip === id} onClick={() => setChip(id)}>
                 {label}
@@ -88,7 +88,7 @@ export default function GalleryPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="font-pixel text-[10px] text-ink">ELIGIBILITY DECODER</h2>
+          <h2 className="text-[12px] font-semibold text-ui-faint">Eligibility decoder</h2>
           <div className="space-y-2">
             <PixelCheckTile state="met" label="CGPA ≥ 3.20" detail="Yours: 3.95 — clears it" />
             <PixelCheckTile
@@ -105,23 +105,23 @@ export default function GalleryPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="font-pixel text-[10px] text-ink">REALITY CHECK GAUGE</h2>
+          <h2 className="text-[12px] font-semibold text-ui-faint">Reality check gauge</h2>
           <PixelGauge
             percent={18}
             tone="amber"
-            label="SHORTLIST ODDS"
-            sublabel="CONFIDENCE: HIGH · 26 similar applicants"
+            label="Shortlist odds"
+            sublabel="Confidence: high · 26 similar applicants"
           />
           <PixelGauge
             percent={null}
             tone="grey"
-            label="SHORTLIST ODDS"
-            sublabel="SIGNAL: INSUFFICIENT — abstaining"
+            label="Shortlist odds"
+            sublabel="Signal: insufficient — abstaining"
           />
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-pixel text-[10px] text-ink">INPUTS</h2>
+          <h2 className="text-[12px] font-semibold text-ui-faint">Inputs</h2>
           <PixelInput
             label="Email"
             name="email"

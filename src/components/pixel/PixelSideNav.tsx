@@ -53,7 +53,7 @@ export function PixelSideNav() {
                 onClick={item.href === "/forge" ? armForgeTransition : undefined}
                 aria-current={active ? "page" : undefined}
                 className={cx(
-                  "flex items-center gap-2.5 border-3 px-2.5 py-2 font-mono text-[11px] font-bold uppercase tracking-wide",
+                  "flex items-center gap-2.5 border-3 px-2.5 py-2 font-mono text-[11px] font-bold",
                   active
                     ? "border-ink bg-ink text-amber shadow-pixel-sm"
                     : "border-transparent text-ink hover:border-ink hover:bg-cream"

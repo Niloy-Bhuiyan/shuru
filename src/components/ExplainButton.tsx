@@ -59,7 +59,7 @@ export function ExplainButton({
     <div className="mt-3">
       {text ? (
         <div className="border-3 border-ink bg-paper p-3 shadow-pixel-sm">
-          <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-grey">
+          <p className="font-mono text-[10px] font-bold text-grey">
             {t("reality.explain")}
           </p>
           <p className={`mt-1 text-sm leading-relaxed text-ink ${lang === "bn" ? "font-bangla" : "font-mono"}`}>

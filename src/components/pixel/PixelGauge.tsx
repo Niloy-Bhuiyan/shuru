@@ -49,7 +49,7 @@ export function PixelGauge({
   return (
     <div className={cx("border-3 border-ink bg-ink p-4 shadow-pixel", className)}>
       {label && (
-        <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-widest text-cream/70">
+        <p className="mb-2 font-mono text-[10px] font-bold text-cream/70">
           {label}
         </p>
       )}

@@ -37,8 +37,17 @@ const ADMIN_ROUTES = ["/admin"];
 /**
  * Routes reachable while signed out, from which an ALREADY signed-in user is
  * bounced to /radar — there is nothing for them on a login form.
+ *
+ * "/" is the public landing page. It belongs here rather than doing its own
+ * session check in the page: this middleware has already called getUser() for
+ * every request that reaches it, so guarding "/" here costs nothing, while a
+ * server component doing it again would repeat the round trip and put
+ * `next/headers` into a route that is otherwise static.
+ *
+ * `matches()` appends a slash before testing prefixes, so "/" here means the
+ * root exactly — "//" prefixes nothing real — and never the whole site.
  */
-const PUBLIC_ROUTES = ["/login", "/register", "/forgot-password"];
+const PUBLIC_ROUTES = ["/", "/login", "/register", "/forgot-password"];
 
 /**
  * Reachable signed out AND signed in.

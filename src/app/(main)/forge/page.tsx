@@ -305,7 +305,7 @@ export default function ForgePage() {
             </p>
             {improve.options.map((opt, i) => (
               <div key={i} className="border-2 border-ink bg-cream p-2">
-                <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-grey">
+                <p className="font-mono text-[10px] font-bold text-grey">
                   {t("forge.option")} {i + 1}
                 </p>
                 <p

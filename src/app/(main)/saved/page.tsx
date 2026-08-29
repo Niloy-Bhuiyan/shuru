@@ -108,7 +108,7 @@ export default function TrackerPage() {
           <EmptyState icon="bookmark" title={t("tracker.empty")}>
             <Link
               href="/radar"
-              className="inline-block border-3 border-ink bg-amber px-3 py-1.5 font-mono text-xs font-bold uppercase text-ink shadow-pixel-sm"
+              className="inline-block border-3 border-ink bg-amber px-3 py-1.5 font-mono text-xs font-bold text-ink shadow-pixel-sm"
             >
               → {t("nav.radar")}
             </Link>
@@ -124,7 +124,7 @@ export default function TrackerPage() {
                 className="w-[260px] shrink-0 snap-start border-3 border-ink bg-cream shadow-pixel"
               >
                 <header className={`flex items-center justify-between border-b-3 border-ink px-3 py-2 ${col.tone}`}>
-                  <h2 className="font-mono text-xs font-bold uppercase tracking-wide text-ink">
+                  <h2 className="font-mono text-xs font-bold text-ink">
                     {t(col.key)}
                   </h2>
                   <span className="border-2 border-ink bg-paper px-1.5 font-mono text-[11px] font-bold text-ink">
@@ -175,14 +175,14 @@ export default function TrackerPage() {
                             <button
                               type="button"
                               onClick={() => branch(row, "accepted")}
-                              className="flex-1 border-2 border-ink bg-mint px-1 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-ink active:translate-x-[1px] active:translate-y-[1px]"
+                              className="flex-1 border-2 border-ink bg-mint px-1 py-1 font-mono text-[10px] font-bold text-ink active:translate-x-[1px] active:translate-y-[1px]"
                             >
                               {t("tracker.markAccepted")}
                             </button>
                             <button
                               type="button"
                               onClick={() => branch(row, "rejected")}
-                              className="flex-1 border-2 border-ink bg-grey px-1 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-cream active:translate-x-[1px] active:translate-y-[1px]"
+                              className="flex-1 border-2 border-ink bg-grey px-1 py-1 font-mono text-[10px] font-bold text-cream active:translate-x-[1px] active:translate-y-[1px]"
                             >
                               {t("tracker.markRejected")}
                             </button>

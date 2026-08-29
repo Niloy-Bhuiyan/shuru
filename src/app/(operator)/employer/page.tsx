@@ -228,7 +228,7 @@ export default function EmployerPage() {
     >
 
       {/* verification is admin-owned: reported, never editable here */}
-      <p className="mt-2 inline-block border-2 border-ink bg-paper px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-ink">
+      <p className="mt-2 inline-block border-2 border-ink bg-paper px-2 py-1 font-mono text-[10px] font-bold text-ink">
         {t("emp.verification")}: {t(VERIFY_KEY[company.verification_status])}
       </p>
 
@@ -279,12 +279,12 @@ export default function EmployerPage() {
       {/* ── listings ── */}
       <section className="mt-5">
         <div className="flex items-center justify-between">
-          <h2 className="font-mono text-xs font-bold uppercase tracking-wide text-ink">
+          <h2 className="font-mono text-xs font-bold text-ink">
             {t("emp.listings")} ({listings.length})
           </h2>
           <Link
             href="/employer/listings/new"
-            className="border-2 border-ink bg-amber px-2 py-1 font-mono text-[11px] font-bold uppercase text-ink shadow-pixel-sm"
+            className="border-2 border-ink bg-amber px-2 py-1 font-mono text-[11px] font-bold text-ink shadow-pixel-sm"
           >
             + {t("emp.newListing")}
           </Link>
@@ -309,7 +309,7 @@ export default function EmployerPage() {
                     </p>
                   </div>
                   <span
-                    className={`shrink-0 border-2 border-ink px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase ${LISTING_STATUS_TONE[l.status ?? "pending"]}`}
+                    className={`shrink-0 border-2 border-ink px-1.5 py-0.5 font-mono text-[9px] font-bold ${LISTING_STATUS_TONE[l.status ?? "pending"]}`}
                   >
                     {t(LISTING_STATUS_KEY[l.status ?? "pending"])}
                   </span>
@@ -328,7 +328,7 @@ export default function EmployerPage() {
                 */}
                 {l.status === "approved" &&
                   (isPromoted(l) ? (
-                    <p className="mt-1.5 inline-block border-2 border-ink bg-amber px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase text-ink">
+                    <p className="mt-1.5 inline-block border-2 border-ink bg-amber px-1.5 py-0.5 font-mono text-[10px] font-bold text-ink">
                       {t("pay.promoted")} · {t("pay.promotedUntil")}{" "}
                       {new Date(l.featured_until!).toLocaleDateString()}
                     </p>
@@ -337,7 +337,7 @@ export default function EmployerPage() {
                       type="button"
                       onClick={() => startPromotion(l.id)}
                       disabled={promoting === l.id}
-                      className="mt-1.5 border-2 border-ink bg-paper px-1.5 py-1 font-mono text-[10px] font-bold uppercase text-ink shadow-pixel-sm disabled:opacity-50"
+                      className="mt-1.5 border-2 border-ink bg-paper px-1.5 py-1 font-mono text-[10px] font-bold text-ink shadow-pixel-sm disabled:opacity-50"
                     >
                       {t("pay.promote")} · {t("pay.sandboxTag")}
                     </button>
@@ -350,7 +350,7 @@ export default function EmployerPage() {
 
       {/* ── applicant pipeline ── */}
       <section className="mb-6 mt-5">
-        <h2 className="font-mono text-xs font-bold uppercase tracking-wide text-ink">
+        <h2 className="font-mono text-xs font-bold text-ink">
           {t("emp.applicants")} ({applicants.length})
         </h2>
 
@@ -358,7 +358,7 @@ export default function EmployerPage() {
           {EMPLOYER_SET_STATUSES.map((s) => (
             <span
               key={s}
-              className="border-2 border-ink bg-paper px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase text-ink"
+              className="border-2 border-ink bg-paper px-1.5 py-0.5 font-mono text-[10px] font-bold text-ink"
             >
               {s}: {pipeline[s]}
             </span>
@@ -403,7 +403,7 @@ export default function EmployerPage() {
                           setBusy(false);
                         }
                       }}
-                      className="border-2 border-ink bg-paper px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase text-ink active:translate-x-[1px] active:translate-y-[1px] disabled:bg-ink disabled:text-cream disabled:opacity-100"
+                      className="border-2 border-ink bg-paper px-1.5 py-0.5 font-mono text-[10px] font-bold text-ink active:translate-x-[1px] active:translate-y-[1px] disabled:bg-ink disabled:text-cream disabled:opacity-100"
                     >
                       {s}
                     </button>

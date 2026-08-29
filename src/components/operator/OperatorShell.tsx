@@ -66,7 +66,7 @@ export function OperatorShell({
                   onClick={() => setLang(l)}
                   aria-pressed={lang === l}
                   className={cx(
-                    "px-2 py-1 text-[11px] font-bold uppercase",
+                    "px-2 py-1 text-[11px] font-bold",
                     l === "bn" ? "font-bangla" : "font-mono",
                     lang === l ? "bg-ink text-cream" : "bg-paper text-ink"
                   )}
@@ -112,7 +112,7 @@ export function StatTile({
     >
       <p
         className={cx(
-          "font-mono text-[10px] font-bold uppercase tracking-[0.15em]",
+          "font-mono text-[10px] font-bold tracking-[0.15em]",
           needsAction ? "text-ink/80" : "text-ink/60"
         )}
       >

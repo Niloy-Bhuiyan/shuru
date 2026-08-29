@@ -194,7 +194,7 @@ export default function AdminPage() {
       actions={
         <Link
           href="/admin/listings/new"
-          className="border-2 border-ink bg-amber px-2.5 py-1.5 font-mono text-[11px] font-bold uppercase text-ink shadow-pixel-sm active:translate-x-[1px] active:translate-y-[1px]"
+          className="border-2 border-ink bg-amber px-2.5 py-1.5 font-mono text-[11px] font-bold text-ink shadow-pixel-sm active:translate-x-[1px] active:translate-y-[1px]"
         >
           + {t("admin.addListing")}
         </Link>
@@ -216,7 +216,7 @@ export default function AdminPage() {
             type="button"
             onClick={() => setTab(x.id)}
             aria-pressed={tab === x.id}
-            className={`shrink-0 border-3 border-ink px-2 py-1 font-mono text-[10px] font-bold uppercase ${
+            className={`shrink-0 border-3 border-ink px-2 py-1 font-mono text-[10px] font-bold ${
               tab === x.id ? "bg-ink text-cream" : "bg-paper text-ink"
             }`}
           >
@@ -264,7 +264,7 @@ export default function AdminPage() {
                     type="button"
                     disabled={busy}
                     onClick={() => guarded(() => moderateListing(l.id, "approved"))}
-                    className="flex-1 border-2 border-ink bg-mint px-2 py-1 font-mono text-[10px] font-bold uppercase text-ink disabled:opacity-50"
+                    className="flex-1 border-2 border-ink bg-mint px-2 py-1 font-mono text-[10px] font-bold text-ink disabled:opacity-50"
                   >
                     {t("admin.approve")}
                   </button>
@@ -276,7 +276,7 @@ export default function AdminPage() {
                         moderateListing(l.id, "rejected", reason[l.id] || undefined)
                       )
                     }
-                    className="flex-1 border-2 border-ink bg-alert px-2 py-1 font-mono text-[10px] font-bold uppercase text-cream disabled:opacity-50"
+                    className="flex-1 border-2 border-ink bg-alert px-2 py-1 font-mono text-[10px] font-bold text-cream disabled:opacity-50"
                   >
                     {t("admin.reject")}
                   </button>
@@ -316,7 +316,7 @@ export default function AdminPage() {
                     type="button"
                     disabled={busy}
                     onClick={() => guarded(() => verifyCompany(c.id, "approved"))}
-                    className="flex-1 border-2 border-ink bg-mint px-2 py-1 font-mono text-[10px] font-bold uppercase text-ink disabled:opacity-50"
+                    className="flex-1 border-2 border-ink bg-mint px-2 py-1 font-mono text-[10px] font-bold text-ink disabled:opacity-50"
                   >
                     {t("admin.verify")}
                   </button>
@@ -324,7 +324,7 @@ export default function AdminPage() {
                     type="button"
                     disabled={busy}
                     onClick={() => guarded(() => verifyCompany(c.id, "rejected"))}
-                    className="flex-1 border-2 border-ink bg-alert px-2 py-1 font-mono text-[10px] font-bold uppercase text-cream disabled:opacity-50"
+                    className="flex-1 border-2 border-ink bg-alert px-2 py-1 font-mono text-[10px] font-bold text-cream disabled:opacity-50"
                   >
                     {t("admin.reject")}
                   </button>
@@ -346,7 +346,7 @@ export default function AdminPage() {
                 key={r.id}
                 className="border-3 border-ink bg-cream p-2.5 shadow-pixel-sm"
               >
-                <p className="font-mono text-xs font-bold uppercase text-ink">
+                <p className="font-mono text-xs font-bold text-ink">
                   {r.reason}
                 </p>
                 {r.details && (
@@ -364,7 +364,7 @@ export default function AdminPage() {
                     type="button"
                     disabled={busy}
                     onClick={() => guarded(() => resolveReport(r.id, "actioned"))}
-                    className="flex-1 border-2 border-ink bg-mint px-2 py-1 font-mono text-[10px] font-bold uppercase text-ink disabled:opacity-50"
+                    className="flex-1 border-2 border-ink bg-mint px-2 py-1 font-mono text-[10px] font-bold text-ink disabled:opacity-50"
                   >
                     {t("admin.action")}
                   </button>
@@ -372,7 +372,7 @@ export default function AdminPage() {
                     type="button"
                     disabled={busy}
                     onClick={() => guarded(() => resolveReport(r.id, "dismissed"))}
-                    className="flex-1 border-2 border-ink bg-grey px-2 py-1 font-mono text-[10px] font-bold uppercase text-cream disabled:opacity-50"
+                    className="flex-1 border-2 border-ink bg-grey px-2 py-1 font-mono text-[10px] font-bold text-cream disabled:opacity-50"
                   >
                     {t("admin.dismiss")}
                   </button>
@@ -390,7 +390,7 @@ export default function AdminPage() {
               migration 0017 for why that choice removes the need for a
               privilege-escalation RPC entirely. */}
           <div className="border-3 border-ink bg-paper p-3 shadow-pixel-sm">
-            <p className="font-pixel text-[10px] uppercase text-ink">
+            <p className="font-pixel text-[10px] text-ink">
               {t("op.inviteTitle")}
             </p>
             <p className="mt-1 font-mono text-[10px] leading-relaxed text-grey">
@@ -412,7 +412,7 @@ export default function AdminPage() {
                     type="button"
                     onClick={() => setInviteRole(r)}
                     aria-pressed={inviteRole === r}
-                    className={`flex-1 border-2 border-ink px-2 py-1 font-mono text-[10px] font-bold uppercase ${
+                    className={`flex-1 border-2 border-ink px-2 py-1 font-mono text-[10px] font-bold ${
                       inviteRole === r ? "bg-ink text-cream" : "bg-paper text-ink"
                     }`}
                   >
@@ -424,7 +424,7 @@ export default function AdminPage() {
                 type="button"
                 disabled={busy || !inviteEmail.includes("@")}
                 onClick={sendInvite}
-                className="border-2 border-ink bg-amber px-2 py-1 font-mono text-[10px] font-bold uppercase text-ink disabled:opacity-50"
+                className="border-2 border-ink bg-amber px-2 py-1 font-mono text-[10px] font-bold text-ink disabled:opacity-50"
               >
                 {t("op.inviteSend")}
               </button>
@@ -444,7 +444,7 @@ export default function AdminPage() {
                       type="button"
                       disabled={busy}
                       onClick={() => guarded(() => revokeInvite(i.id))}
-                      className="shrink-0 border-2 border-ink bg-paper px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase text-ink disabled:opacity-50"
+                      className="shrink-0 border-2 border-ink bg-paper px-1.5 py-0.5 font-mono text-[9px] font-bold text-ink disabled:opacity-50"
                     >
                       {t("op.inviteRevoke")}
                     </button>
@@ -501,7 +501,7 @@ export default function AdminPage() {
                     type="button"
                     disabled={busy}
                     onClick={() => decide(r.id, true)}
-                    className="flex-1 border-2 border-ink bg-mint px-2 py-1 font-mono text-[10px] font-bold uppercase text-ink disabled:opacity-50"
+                    className="flex-1 border-2 border-ink bg-mint px-2 py-1 font-mono text-[10px] font-bold text-ink disabled:opacity-50"
                   >
                     {t("op.accessApprove")}
                   </button>
@@ -509,7 +509,7 @@ export default function AdminPage() {
                     type="button"
                     disabled={busy}
                     onClick={() => decide(r.id, false)}
-                    className="flex-1 border-2 border-ink bg-alert px-2 py-1 font-mono text-[10px] font-bold uppercase text-cream disabled:opacity-50"
+                    className="flex-1 border-2 border-ink bg-alert px-2 py-1 font-mono text-[10px] font-bold text-cream disabled:opacity-50"
                   >
                     {t("op.accessReject")}
                   </button>

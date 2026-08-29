@@ -100,7 +100,7 @@ export function StepScore({
           type="button"
           onClick={() => setShowAll((s) => !s)}
           aria-expanded={showAll}
-          className="flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-grey"
+          className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-grey"
         >
           <span className={showAll ? "inline-block rotate-180" : "inline-block"}>
             <PixelIcon name="chevron" size={10} />

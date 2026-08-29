@@ -80,7 +80,7 @@ export function EmployerAccessCard() {
   }
 
   const heading = (
-    <p className="flex items-center gap-2 font-pixel text-[10px] uppercase text-ink">
+    <p className="flex items-center gap-2 font-pixel text-[10px] text-ink">
       <PixelIcon name="hammer" size={12} className="text-amberInk" />
       {t("emp.reqTitle")}
     </p>
@@ -90,7 +90,7 @@ export function EmployerAccessCard() {
     return (
       <section className="border-3 border-ink bg-paper p-3 shadow-pixel-sm">
         {heading}
-        <p className="mt-2 w-fit border-2 border-ink bg-amber px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-ink">
+        <p className="mt-2 w-fit border-2 border-ink bg-amber px-2 py-0.5 font-mono text-[10px] font-bold text-ink">
           {t("emp.reqPending")}
         </p>
         <p className="mt-2 font-mono text-[11px] leading-relaxed text-ink/80">
@@ -104,7 +104,7 @@ export function EmployerAccessCard() {
     return (
       <section className="border-3 border-ink bg-paper p-3 shadow-pixel-sm">
         {heading}
-        <p className="mt-2 w-fit border-2 border-ink bg-alert px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-cream">
+        <p className="mt-2 w-fit border-2 border-ink bg-alert px-2 py-0.5 font-mono text-[10px] font-bold text-cream">
           {t("emp.reqRejected")}
         </p>
         {request.review_notes && (

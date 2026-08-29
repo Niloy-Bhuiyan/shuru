@@ -40,7 +40,7 @@ export function PixelCheckTile({
       <div className="min-w-0">
         <p
           className={cx(
-            "font-mono text-xs font-bold uppercase tracking-wide",
+            "font-mono text-xs font-bold",
             state === "missing" ? "text-ink" : "text-ink"
           )}
         >

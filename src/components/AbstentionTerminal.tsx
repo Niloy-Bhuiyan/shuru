@@ -53,7 +53,7 @@ export function AbstentionTerminal({
     <div>
       {/* the terminal */}
       <div className="border-3 border-ink bg-ink p-4 shadow-pixel">
-        <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-cream/50">
+        <p className="font-mono text-[10px] font-bold text-cream/50">
           shuru://reality-check
         </p>
         <p className="mt-3 font-pixel text-xs leading-relaxed text-grey">
@@ -93,7 +93,7 @@ export function AbstentionTerminal({
         <h2 className="mb-2 font-pixel text-[10px] text-ink">{t("abstain.known")}</h2>
         <div className="space-y-2">
           <div className="border-3 border-ink bg-paper p-3">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-grey">
+            <p className="font-mono text-[10px] font-bold text-grey">
               {t("abstain.reqs")}
             </p>
             <p className="mt-1 font-mono text-xs font-bold text-ink">
@@ -131,7 +131,7 @@ export function AbstentionTerminal({
         type="button"
         onClick={toggleWatch}
         aria-pressed={watching}
-        className={`mt-4 w-full border-3 border-ink p-3 font-mono text-xs font-bold uppercase tracking-wide shadow-pixel active:translate-x-[2px] active:translate-y-[2px] active:shadow-pixel-none ${
+        className={`mt-4 w-full border-3 border-ink p-3 font-mono text-xs font-bold shadow-pixel active:translate-x-[2px] active:translate-y-[2px] active:shadow-pixel-none ${
           watching ? "bg-mint text-ink" : "bg-paper text-ink"
         }`}
       >

@@ -114,7 +114,7 @@ export default function OpportunityDetailPage() {
       <button
         type="button"
         onClick={() => router.back()}
-        className="mb-3 flex items-center gap-1 font-mono text-xs font-bold uppercase text-ink"
+        className="mb-3 flex items-center gap-1 font-mono text-xs font-bold text-ink"
       >
         <span className="inline-block rotate-180"><PixelIcon name="arrow-right" size={11} /></span>
         {t("common.back")}
@@ -151,7 +151,7 @@ export default function OpportunityDetailPage() {
           [t("detail.cycle"), op.cycle_label],
         ].map(([k, v]) => (
           <div key={k} className="border-2 border-ink bg-paper p-2">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-grey">{k}</p>
+            <p className="font-mono text-[10px] font-bold text-grey">{k}</p>
             <p className="mt-0.5 font-mono text-xs font-bold text-ink">{v}</p>
           </div>
         ))}
@@ -192,7 +192,7 @@ export default function OpportunityDetailPage() {
       <Link href={`/vault?company=${encodeURIComponent(op.company)}`} className="mt-3 block">
         <div className="border-3 border-ink bg-paper p-3 shadow-pixel-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-pixel-none">
           <div className="flex items-center justify-between">
-            <p className="font-mono text-xs font-bold uppercase text-ink">{t("detail.vaultCta")}</p>
+            <p className="font-mono text-xs font-bold text-ink">{t("detail.vaultCta")}</p>
             <PixelIcon name="vault" size={16} className="text-ink" />
           </div>
         </div>

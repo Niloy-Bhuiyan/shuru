@@ -67,7 +67,7 @@ export function OpportunityCard({ item }: { item: EnrichedOpportunity }) {
           visible on screens (Saved) that have no promoted section around it.
         */}
         {isPromoted(op) && (
-          <span className="border-2 border-ink bg-amber px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase text-ink">
+          <span className="border-2 border-ink bg-amber px-1.5 py-0.5 font-mono text-[9px] font-bold text-ink">
             {t("pay.promoted")}
           </span>
         )}
@@ -78,7 +78,7 @@ export function OpportunityCard({ item }: { item: EnrichedOpportunity }) {
           <span className="flex items-center gap-1.5 font-mono text-xs font-bold text-ink">
             ~{rc.percent}% {t("odds.shortlist")}
             {illustrative && (
-              <span className="border border-ink/40 px-1 font-mono text-[8px] font-bold uppercase tracking-wide text-grey">
+              <span className="border border-ink/40 px-1 font-mono text-[8px] font-bold text-grey">
                 {t("reality.sampleBadge")}
               </span>
             )}

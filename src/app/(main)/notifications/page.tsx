@@ -191,7 +191,7 @@ export default function NotificationsPage() {
           <button
             type="button"
             onClick={onMarkAll}
-            className="border-2 border-ink bg-paper px-2 py-1 font-mono text-[11px] font-bold uppercase text-ink active:translate-x-[1px] active:translate-y-[1px]"
+            className="border-2 border-ink bg-paper px-2 py-1 font-mono text-[11px] font-bold text-ink active:translate-x-[1px] active:translate-y-[1px]"
           >
             {t("notif.markAll")}
           </button>
@@ -212,7 +212,7 @@ export default function NotificationsPage() {
           <button
             type="button"
             onClick={load}
-            className="mt-2 border-2 border-ink bg-cream px-2 py-1 font-mono text-[11px] font-bold uppercase text-ink"
+            className="mt-2 border-2 border-ink bg-cream px-2 py-1 font-mono text-[11px] font-bold text-ink"
           >
             {t("notif.retry")}
           </button>
@@ -268,7 +268,7 @@ export default function NotificationsPage() {
                   )}
 
                   <div className="mt-2 flex items-center justify-between border-t-2 border-ink/20 pt-1.5">
-                    <span className="font-mono text-[10px] uppercase tracking-wide text-grey">
+                    <span className="font-mono text-[10px] text-grey">
                       {/* Delivery is per channel; null means it did NOT run. */}
                       {n.emailed_at ? t("notif.email") : t("notif.channelPending")}
                     </span>
@@ -290,7 +290,7 @@ export default function NotificationsPage() {
 
       {/* ── preferences ── */}
       <section className="mb-6 mt-6 border-3 border-ink bg-paper p-3 shadow-pixel">
-        <h2 className="font-mono text-xs font-bold uppercase tracking-wide text-ink">
+        <h2 className="font-mono text-xs font-bold text-ink">
           {t("notif.settings")}
         </h2>
 
@@ -340,7 +340,7 @@ export default function NotificationsPage() {
         <div className="mt-4">
           <label
             htmlFor="min-score"
-            className="font-mono text-[11px] font-bold uppercase tracking-wide text-ink"
+            className="font-mono text-[11px] font-bold text-ink"
           >
             {t("notif.minScore")}:{" "}
             {prefs?.min_match_score ?? DEFAULT_NOTIFICATION_PREFERENCES.min_match_score}
@@ -366,7 +366,7 @@ export default function NotificationsPage() {
         <div className="mt-4">
           <label
             htmlFor="max-per-day"
-            className="font-mono text-[11px] font-bold uppercase tracking-wide text-ink"
+            className="font-mono text-[11px] font-bold text-ink"
           >
             {t("notif.maxPerDay")}
           </label>
@@ -388,7 +388,7 @@ export default function NotificationsPage() {
           type="button"
           onClick={onSavePrefs}
           disabled={!prefs || saving === "saving"}
-          className="mt-4 w-full border-3 border-ink bg-amber px-3 py-2 font-mono text-xs font-bold uppercase tracking-wide text-ink shadow-pixel-sm active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-50"
+          className="mt-4 w-full border-3 border-ink bg-amber px-3 py-2 font-mono text-xs font-bold text-ink shadow-pixel-sm active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-50"
         >
           {saving === "saving"
             ? t("notif.saving")
