@@ -126,13 +126,13 @@ function LoginForm() {
       {callbackMessage && (
         <p
           role="alert"
-          className="border-3 border-alert bg-paper p-2 font-mono text-xs font-bold leading-relaxed text-alert"
+          className="rounded-lg border border-alert bg-alert/5 p-3 font-sans text-[13px] leading-relaxed text-alert"
         >
           {callbackMessage}
         </p>
       )}
 
-      <OAuthButtons next={params.get("next") ?? "/radar"} />
+      <OAuthButtons next={params.get("next")} />
 
       <PixelInput
         label={t("auth.email")}
@@ -156,12 +156,12 @@ function LoginForm() {
         {busy ? "…" : t("auth.login")}
       </PixelButton>
 
-      <p className="text-center font-mono text-xs text-ink">
+      <p className="text-center font-sans text-[14px] text-ui-muted">
         <Link href="/forgot-password" className="inline-block py-1.5 font-bold text-amberInk underline">
           {t("auth.forgot")}
         </Link>
       </p>
-      <p className="text-center font-mono text-xs text-ink">
+      <p className="text-center font-sans text-[14px] text-ui-muted">
         {t("auth.noAccount")}{" "}
         <Link href="/register" className="font-bold text-amberInk underline">
           {t("auth.register")}
@@ -190,8 +190,8 @@ export default function LoginPage() {
         <div className="mb-5 flex items-end gap-3">
           <PixelSun width={44} />
           <div>
-            <h1 className="font-pixel text-sm text-ink">{t("auth.login")}</h1>
-            <p className="mt-1 font-mono text-xs text-grey">{t("tagline")}</p>
+            <h1 className="font-sans text-[22px] font-semibold tracking-[-0.01em] text-ink">{t("auth.login")}</h1>
+            <p className="mt-1 font-sans text-[13px] text-ui-muted">{t("tagline")}</p>
           </div>
         </div>
 

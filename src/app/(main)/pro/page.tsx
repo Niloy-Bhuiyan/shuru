@@ -25,6 +25,27 @@
  * The purchase itself is deliberately thin here: the body sent to the server
  * is `{ period, method }` plus a receipt number. Price, duration and identity
  * are all decided server-side — see /api/subscription/checkout.
+ *
+ * ── Why this reads like a checkout now ────────────────────────────────────
+ *
+ * The mechanics were right and the presentation was not, in three specific
+ * ways that a payer notices and a developer does not:
+ *
+ *  - The period control was a segmented toggle with the price in a separate
+ *    card below it, so choosing a plan meant flipping a switch and then
+ *    looking somewhere else to find out what it did. Two selectable plan
+ *    cards put the choice and its consequence in the same object.
+ *  - Methods were named in text. "Card" is a form factor, not a brand, and a
+ *    payer scanning a checkout is looking for their own scheme's mark. The
+ *    tiles carry the real marks now.
+ *  - There was no order summary. Every checkout has one, because the last
+ *    thing before an irreversible-looking button should be a restatement of
+ *    what is about to happen — here, including the line saying it isn't.
+ *
+ * Both pickers are real radio inputs rather than buttons with `aria-pressed`.
+ * They are mutually exclusive choices, which is what a radio group IS, and it
+ * buys arrow-key navigation and the correct screen-reader announcement
+ * ("2 of 4") for free rather than through hand-rolled key handling.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -34,7 +55,9 @@ import { PixelButton } from "@/components/pixel/PixelButton";
 import { PixelCard } from "@/components/pixel/PixelCard";
 import { PixelInput } from "@/components/pixel/PixelInput";
 import { PixelIcon } from "@/components/pixel/PixelIcon";
+import { PixelBadge } from "@/components/pixel/PixelBadge";
 import { LoadingBlock } from "@/components/LoadingBlock";
+import { MethodMark, markIsWordmark } from "@/components/brand/MethodMark";
 import { usePro } from "@/hooks/usePro";
 import { useLang, type StringKey } from "@/lib/i18n";
 import { cx } from "@/lib/cx";
@@ -159,8 +182,10 @@ export default function ProPage() {
     return (
       <main className="px-4 py-6">
         <PixelCard accent="alert" className="p-4">
-          <h1 className="font-pixel text-sm text-ink">{t("pro.loadErrTitle")}</h1>
-          <p className="mt-2 font-mono text-[12px] leading-relaxed text-ui-muted">
+          <h1 className="font-sans text-[18px] font-semibold text-ink">
+            {t("pro.loadErrTitle")}
+          </h1>
+          <p className="mt-2 font-sans text-[14px] leading-relaxed text-ui-muted">
             {t("pro.loadErrBody")}
           </p>
           <PixelButton className="mt-3" onClick={() => void load()}>
@@ -174,7 +199,7 @@ export default function ProPage() {
   const plan = catalogue!.plans[period];
 
   return (
-    <main className="px-4 py-6">
+    <main className="mx-auto w-full max-w-3xl px-4 py-6">
       {/* ── who you currently are, before any pitch ───────────────────── */}
       <StatusBanner
         isPro={isPro}
@@ -185,100 +210,121 @@ export default function ProPage() {
         t={t}
       />
 
-      <h1 className="mt-5 font-pixel text-lg leading-tight text-ink">
+      <h1 className="mt-5 font-sans text-[28px] font-semibold leading-tight tracking-[-0.02em] text-ink">
         {t("pro.title")}
       </h1>
-      <p className="mt-2 max-w-prose font-mono text-[12px] leading-relaxed text-ui-muted">
+      <p className="mt-2 max-w-prose font-sans text-[15px] leading-relaxed text-ui-muted">
         {t("pro.subtitle")}
       </p>
 
       {/* ── what it costs ────────────────────────────────────────────── */}
-      <section aria-labelledby="pro-price" className="mt-5">
-        <h2 id="pro-price" className="sr-only">
-          {t("pro.priceHeading")}
+      <section aria-labelledby="pro-price" className="mt-7">
+        <h2
+          id="pro-price"
+          className="font-sans text-[16px] font-semibold tracking-[-0.01em] text-ink"
+        >
+          {t("pro.planHeading")}
         </h2>
 
         <div
-          role="group"
-          aria-label={t("pro.priceHeading")}
-          className="inline-flex overflow-hidden rounded-lg border border-ui-lineStrong"
+          role="radiogroup"
+          aria-labelledby="pro-price"
+          className="mt-3 grid gap-2.5 sm:grid-cols-2"
         >
-          {(["monthly", "yearly"] as const).map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => setPeriod(p)}
-              aria-pressed={period === p}
-              className={cx(
-                // 44px minimum target height — this is the first control on
-                // the page and it is used on a phone.
-                "min-h-[44px] px-4 font-mono text-[12px] font-bold transition-colors",
-                period === p
-                  ? "bg-ink text-cream"
-                  : "bg-paper text-ink hover:bg-cream"
-              )}
-            >
-              {t(p === "monthly" ? "pro.monthly" : "pro.yearly")}
-            </button>
-          ))}
-        </div>
+          {(["monthly", "yearly"] as const).map((p) => {
+            const active = period === p;
+            const info = catalogue!.plans[p];
+            return (
+              <label
+                key={p}
+                className={cx(
+                  "relative cursor-pointer rounded-xl border p-4 transition-colors",
+                  active
+                    ? "border-ink bg-paper ring-1 ring-ink"
+                    : "border-ui-line bg-paper hover:border-ui-lineStrong hover:bg-cream",
+                  // The focus ring has to live on the label, because the input
+                  // it belongs to is visually hidden.
+                  "focus-within:outline-none focus-within:ring-2 focus-within:ring-amber"
+                )}
+              >
+                <input
+                  type="radio"
+                  name="billing-period"
+                  value={p}
+                  checked={active}
+                  onChange={() => setPeriod(p)}
+                  className="sr-only"
+                />
 
-        <PixelCard className="mt-3 p-4">
-          <p className="font-pixel text-2xl leading-none text-ink tabular">
-            {formatMoney(plan.price)}
-          </p>
-          <p className="mt-1.5 font-mono text-[12px] text-ui-muted">
-            {t(period === "monthly" ? "pro.per30" : "pro.per365")}
-          </p>
-          {period === "yearly" && (
-            <p className="mt-2 font-mono text-[11px] text-mint">
-              {t("pro.yearlySaving")}
-            </p>
-          )}
-        </PixelCard>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-sans text-[14px] font-medium text-ink">
+                    {t(p === "monthly" ? "pro.monthly" : "pro.yearly")}
+                  </span>
+                  {p === "yearly" && (
+                    <PixelBadge tone="qualify">{t("pro.bestValue")}</PixelBadge>
+                  )}
+                </div>
+
+                <p className="mt-2 font-sans text-[30px] font-semibold leading-none tracking-[-0.02em] text-ink tabular">
+                  {formatMoney(info.price)}
+                </p>
+                <p className="mt-1.5 font-sans text-[13px] text-ui-muted">
+                  {t(p === "monthly" ? "pro.per30" : "pro.per365")}
+                </p>
+                {p === "yearly" && (
+                  <p className="mt-2 font-sans text-[13px] leading-snug text-mint">
+                    {t("pro.yearlySaving")}
+                  </p>
+                )}
+              </label>
+            );
+          })}
+        </div>
       </section>
 
       {/* ── what you get, and what you already have ──────────────────── */}
-      <section aria-labelledby="pro-includes" className="mt-6">
+      <section aria-labelledby="pro-includes" className="mt-7">
         <h2
           id="pro-includes"
-          className="font-pixel text-sm text-ink"
+          className="font-sans text-[16px] font-semibold tracking-[-0.01em] text-ink"
         >
           {t("pro.includesHeading")}
         </h2>
 
-        <ul className="mt-3 space-y-2">
-          {PRO_ITEMS.map((k) => (
-            <li key={k} className="flex gap-2.5">
-              <span className="mt-0.5 shrink-0 text-amberInk" aria-hidden="true">
-                <PixelIcon name="check" size={14} />
-              </span>
-              <span className="font-mono text-[12px] leading-relaxed text-ink">
-                {t(k)}
-              </span>
-            </li>
-          ))}
-        </ul>
-
-        {/*
-          The free column, given equal weight rather than a footnote. A reader
-          should be able to leave this page having decided NOT to pay and still
-          know exactly what they keep.
-        */}
-        <div className="mt-4 rounded-lg border border-ui-line bg-cream p-3.5">
-          <p className="font-mono text-[11px] font-bold tracking-[0.14em] text-ui-muted">
-            {t("pro.freeHeading")}
-          </p>
-          <ul className="mt-2 space-y-1.5">
-            {FREE_ITEMS.map((k) => (
-              <li
-                key={k}
-                className="font-mono text-[12px] leading-relaxed text-ui-muted"
-              >
-                {t(k)}
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <ul className="space-y-2.5 rounded-xl border border-ui-line bg-paper p-4">
+            {PRO_ITEMS.map((k) => (
+              <li key={k} className="flex gap-2.5">
+                <span className="mt-[3px] shrink-0 text-amberInk" aria-hidden="true">
+                  <PixelIcon name="check" size={14} />
+                </span>
+                <span className="font-sans text-[14px] leading-relaxed text-ink">
+                  {t(k)}
+                </span>
               </li>
             ))}
           </ul>
+
+          {/*
+            The free column, given equal weight rather than a footnote. A
+            reader should be able to leave this page having decided NOT to pay
+            and still know exactly what they keep.
+          */}
+          <div className="rounded-xl border border-ui-line bg-cream p-4">
+            <p className="font-sans text-[13px] font-semibold text-ui-muted">
+              {t("pro.freeHeading")}
+            </p>
+            <ul className="mt-2.5 space-y-2">
+              {FREE_ITEMS.map((k) => (
+                <li
+                  key={k}
+                  className="font-sans text-[14px] leading-relaxed text-ui-muted"
+                >
+                  {t(k)}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </section>
 
@@ -298,98 +344,117 @@ export default function ProPage() {
         The heading keys off whether they actually HOLD a subscription, not off
         entitlement — "renew" is nonsense to someone who has never bought one.
       */}
-      <section aria-labelledby="pro-pay" className="mt-6">
-          <h2 id="pro-pay" className="font-pixel text-sm text-ink">
-            {subscription ? t("pro.renewHeading") : t("pro.payHeading")}
-          </h2>
+      <section aria-labelledby="pro-pay" className="mt-8">
+        <h2
+          id="pro-pay"
+          className="font-sans text-[16px] font-semibold tracking-[-0.01em] text-ink"
+        >
+          {subscription ? t("pro.renewHeading") : t("pro.payHeading")}
+        </h2>
 
-          {/* Ahead of the methods, not after them. A reader deciding how to
-              pay has stopped reading by the time they reach a footnote. */}
-          <div
-            role="status"
-            className="mt-3 rounded-lg border border-amber bg-amber/5 p-3.5"
-          >
-            <p className="font-pixel text-[13px] text-ink">
+        {/* Ahead of the methods, not after them. A reader deciding how to
+            pay has stopped reading by the time they reach a footnote. */}
+        <div
+          role="status"
+          className="mt-3 flex gap-3 rounded-xl border border-amber bg-amber/5 p-4"
+        >
+          <span className="mt-[3px] shrink-0 text-amberInk" aria-hidden="true">
+            <PixelIcon name="warn" size={15} />
+          </span>
+          <div className="min-w-0">
+            <p className="font-sans text-[14px] font-semibold text-ink">
               {t("pro.demoBanner")}
             </p>
-            <p className="mt-1.5 font-mono text-[12px] leading-relaxed text-ui-muted">
+            <p className="mt-1 font-sans text-[14px] leading-relaxed text-ui-muted">
               {t("pro.demoBannerBody")}
             </p>
           </div>
+        </div>
 
-          <MethodPicker
-            methods={catalogue!.methods}
-            selected={method}
-            onSelect={(id) => {
-              setMethod(id);
-              setSubmitted(false);
-              setFieldError(null);
-              setFormError(null);
-            }}
-            t={t}
-          />
+        <MethodPicker
+          methods={catalogue!.methods}
+          selected={method}
+          onSelect={(id) => {
+            setMethod(id);
+            setSubmitted(false);
+            setFieldError(null);
+            setFormError(null);
+          }}
+          t={t}
+        />
 
-          {selected && (
-            <div className="mt-4">
-              {isManual ? (
-                <ManualPayForm
-                  method={selected}
-                  amount={formatMoney(plan.price)}
-                  reference={reference}
-                  msisdn={msisdn}
-                  onReference={setReference}
-                  onMsisdn={setMsisdn}
-                  fieldError={fieldError}
-                  t={t}
-                />
-              ) : (
-                <SandboxNotice t={t} />
-              )}
+        {selected && (
+          <div className="mt-5">
+            {isManual ? (
+              <ManualPayForm
+                method={selected}
+                amount={formatMoney(plan.price)}
+                reference={reference}
+                msisdn={msisdn}
+                onReference={setReference}
+                onMsisdn={setMsisdn}
+                fieldError={fieldError}
+                t={t}
+              />
+            ) : (
+              <SandboxNotice t={t} />
+            )}
 
-              {formError && (
-                <p
-                  role="alert"
-                  className="mt-3 rounded-lg border border-alert bg-alert/5 p-3 font-mono text-[12px] leading-relaxed text-alert"
-                >
-                  {formError}
+            <OrderSummary
+              planLabel={t(period === "monthly" ? "pro.monthly" : "pro.yearly")}
+              methodLabel={selected.label}
+              total={formatMoney(plan.price)}
+              t={t}
+            />
+
+            {formError && (
+              <p
+                role="alert"
+                className="mt-3 rounded-lg border border-alert bg-alert/5 p-3 font-sans text-[14px] leading-relaxed text-alert"
+              >
+                {formError}
+              </p>
+            )}
+
+            {submitted ? (
+              <div
+                role="status"
+                aria-live="polite"
+                className="mt-3 rounded-xl border border-mint bg-mint/5 p-4"
+              >
+                <p className="font-sans text-[14px] font-semibold text-ink">
+                  {t("pro.submittedTitle")}
                 </p>
-              )}
-
-              {submitted ? (
-                <div
-                  role="status"
-                  aria-live="polite"
-                  className="mt-3 rounded-lg border border-mint bg-mint/5 p-3.5"
-                >
-                  <p className="font-pixel text-[13px] text-ink">
-                    {t("pro.submittedTitle")}
-                  </p>
-                  <p className="mt-1.5 font-mono text-[12px] leading-relaxed text-ui-muted">
-                    {t("pro.submittedBody")}
-                  </p>
-                </div>
-              ) : (
-                <PixelButton
-                  full
-                  className="mt-4"
-                  disabled={busy}
-                  onClick={() => void submit()}
-                >
-                  {busy
-                    ? t("pro.working")
-                    : isManual
-                      ? t("pro.submitReference")
-                      : t("pro.continueCheckout")}
-                </PixelButton>
-              )}
-            </div>
-          )}
+                <p className="mt-1 font-sans text-[14px] leading-relaxed text-ui-muted">
+                  {t("pro.submittedBody")}
+                </p>
+              </div>
+            ) : (
+              <PixelButton
+                full
+                size="lg"
+                className="mt-4"
+                disabled={busy}
+                onClick={() => void submit()}
+              >
+                {busy
+                  ? t("pro.working")
+                  : isManual
+                    ? t("pro.submitReference")
+                    : t("pro.continueCheckout")}
+              </PixelButton>
+            )}
+          </div>
+        )}
       </section>
 
       {/* ── the receipts ─────────────────────────────────────────────── */}
       {payments.length > 0 && (
-        <section aria-labelledby="pro-history" className="mt-8">
-          <h2 id="pro-history" className="font-pixel text-sm text-ink">
+        <section aria-labelledby="pro-history" className="mt-9">
+          <h2
+            id="pro-history"
+            className="font-sans text-[16px] font-semibold tracking-[-0.01em] text-ink"
+          >
             {t("pro.historyHeading")}
           </h2>
           <ul className="mt-3 space-y-2">
@@ -400,7 +465,7 @@ export default function ProPage() {
         </section>
       )}
 
-      <p className="mt-8 font-mono text-[11px] leading-relaxed text-ui-faint">
+      <p className="mt-9 font-sans text-[13px] leading-relaxed text-ui-faint">
         {t("pro.footerNote")}{" "}
         <Link href="/you" className="underline">
           {t("nav.you")}
@@ -439,11 +504,8 @@ function StatusBanner({
 }) {
   if (viaAdmin) {
     return (
-      <div
-        role="status"
-        className="rounded-lg border border-ui-lineStrong bg-cream p-3.5"
-      >
-        <p className="font-mono text-[12px] leading-relaxed text-ink">
+      <div role="status" className="rounded-xl border border-ui-lineStrong bg-cream p-4">
+        <p className="font-sans text-[14px] leading-relaxed text-ink">
           {t("pro.adminAccess")}
         </p>
       </div>
@@ -453,14 +515,13 @@ function StatusBanner({
   if (!isPro) return null;
 
   return (
-    <div
-      role="status"
-      className="rounded-lg border border-mint bg-mint/5 p-3.5"
-    >
-      <p className="font-pixel text-[13px] text-ink">{t("pro.activeTitle")}</p>
-      <p className="mt-1.5 font-mono text-[12px] leading-relaxed text-ui-muted">
+    <div role="status" className="rounded-xl border border-mint bg-mint/5 p-4">
+      <p className="font-sans text-[14px] font-semibold text-ink">
+        {t("pro.activeTitle")}
+      </p>
+      <p className="mt-1 font-sans text-[14px] leading-relaxed text-ui-muted">
         {canceled ? t("pro.activeUntilCanceled") : t("pro.activeUntil")}{" "}
-        <span className="font-bold text-ink tabular">
+        <span className="font-semibold text-ink tabular">
           {until ? formatDate(until, lang) : "—"}
         </span>
       </p>
@@ -483,63 +544,144 @@ function MethodPicker({
   // read past four international options to find bKash, and someone abroad
   // should not be left wondering whether any of this works for them.
   const groups: { key: string; label: string; ids: MethodInfo[] }[] = [
-    {
-      key: "bd",
-      label: t("pro.groupBd"),
-      ids: methods.filter((m) => m.region === "bd"),
-    },
+    { key: "bd", label: t("pro.groupBd"), ids: methods.filter((m) => m.region === "bd") },
     {
       key: "intl",
       label: t("pro.groupIntl"),
       ids: methods.filter((m) => m.region === "international"),
     },
-    {
-      key: "any",
-      label: t("pro.groupDemo"),
-      ids: methods.filter((m) => m.region === "any"),
-    },
+    { key: "any", label: t("pro.groupDemo"), ids: methods.filter((m) => m.region === "any") },
   ].filter((g) => g.ids.length > 0);
 
   return (
-    <div className="mt-3 space-y-4">
-      {groups.map((g) => (
-        <fieldset key={g.key}>
-          <legend className="mb-2 font-mono text-[11px] font-bold tracking-[0.14em] text-ui-muted">
-            {g.label}
-          </legend>
-          <div className="grid grid-cols-2 gap-2">
-            {g.ids.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => onSelect(m.id)}
-                aria-pressed={selected === m.id}
-                className={cx(
-                  "min-h-[52px] rounded-lg border px-3 py-2.5 text-left transition-colors",
-                  selected === m.id
-                    ? "border-amber bg-amber/5 shadow-pixel-sm"
-                    : "border-ui-lineStrong bg-paper hover:bg-cream",
-                  !m.available && "opacity-60"
-                )}
-              >
-                <span className="block font-mono text-[13px] font-bold text-ink">
-                  {m.label}
-                </span>
-                {/* Names the MECHANISM, and says "demo" on every single tile.
-                    One banner at the top of the section is not enough on a
-                    screen where the reader is deciding whether to part with
-                    money — the reassurance has to be where the choice is. */}
-                <span className="mt-0.5 block font-mono text-[10px] leading-tight text-ui-muted">
-                  {m.settlement === "manual_review"
-                    ? t("pro.tagVerified")
-                    : t("pro.tagSandbox")}
-                </span>
-              </button>
-            ))}
-          </div>
-        </fieldset>
-      ))}
+    <div className="mt-5">
+      <h3 className="font-sans text-[14px] font-medium text-ink">
+        {t("pro.methodHeading")}
+      </h3>
+
+      <div className="mt-3 space-y-4">
+        {groups.map((g) => (
+          <fieldset key={g.key}>
+            <legend className="mb-2 font-sans text-[13px] font-medium text-ui-muted">
+              {g.label}
+            </legend>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {g.ids.map((m) => {
+                const active = selected === m.id;
+                const wordmark = markIsWordmark(m.id);
+                return (
+                  <label
+                    key={m.id}
+                    className={cx(
+                      "flex min-h-[68px] cursor-pointer flex-col justify-center gap-1.5 rounded-xl border px-3.5 py-3 transition-colors",
+                      active
+                        ? "border-ink bg-paper ring-1 ring-ink"
+                        : "border-ui-line bg-paper hover:border-ui-lineStrong hover:bg-cream",
+                      !m.available && "opacity-60",
+                      "focus-within:outline-none focus-within:ring-2 focus-within:ring-amber"
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="payment-method"
+                      value={m.id}
+                      checked={active}
+                      onChange={() => onSelect(m.id)}
+                      className="sr-only"
+                    />
+
+                    <span className="flex min-h-[22px] items-center gap-2">
+                      <MethodMark id={m.id} height={22} />
+                      {/* A wordmark already says the name; printing it again
+                          beside the logo is the label twice. The marks are
+                          aria-hidden, so the accessible name comes from the
+                          visually hidden span that always renders. */}
+                      {!wordmark && (
+                        <span className="font-sans text-[15px] font-medium text-ink">
+                          {m.label}
+                        </span>
+                      )}
+                      {wordmark && <span className="sr-only">{m.label}</span>}
+                    </span>
+
+                    {/* Names the MECHANISM, and says "demo" on every single
+                        tile. One banner at the top of the section is not
+                        enough on a screen where the reader is deciding whether
+                        to part with money — the reassurance has to be where
+                        the choice is. */}
+                    <span className="font-sans text-[12px] leading-snug text-ui-faint">
+                      {m.settlement === "manual_review"
+                        ? t("pro.tagVerified")
+                        : t("pro.tagSandbox")}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+        ))}
+      </div>
     </div>
+  );
+}
+
+/**
+ * The restatement before the button.
+ *
+ * The "total" line is the one number a payer checks twice, so it gets the
+ * weight — and the line under it saying the number is hypothetical gets to
+ * sit in the same box rather than three sections away.
+ */
+function OrderSummary({
+  planLabel,
+  methodLabel,
+  total,
+  t,
+}: {
+  planLabel: string;
+  methodLabel: string;
+  total: string;
+  t: Translate;
+}) {
+  return (
+    <section
+      aria-labelledby="pro-summary"
+      className="mt-4 rounded-xl border border-ui-line bg-cream p-4"
+    >
+      <h3
+        id="pro-summary"
+        className="font-sans text-[13px] font-semibold text-ui-muted"
+      >
+        {t("pro.summaryHeading")}
+      </h3>
+
+      <dl className="mt-2.5 space-y-1.5">
+        <div className="flex items-baseline justify-between gap-3">
+          <dt className="font-sans text-[14px] text-ui-muted">
+            {t("pro.summaryPlan")}
+          </dt>
+          <dd className="font-sans text-[14px] text-ink">{planLabel}</dd>
+        </div>
+        <div className="flex items-baseline justify-between gap-3">
+          <dt className="font-sans text-[14px] text-ui-muted">
+            {t("pro.summaryMethod")}
+          </dt>
+          <dd className="font-sans text-[14px] text-ink">{methodLabel}</dd>
+        </div>
+        <div className="flex items-baseline justify-between gap-3 border-t border-ui-line pt-2.5">
+          <dt className="font-sans text-[14px] font-semibold text-ink">
+            {t("pro.summaryTotal")}
+          </dt>
+          <dd className="font-sans text-[18px] font-semibold text-ink tabular">
+            {total}
+          </dd>
+        </div>
+      </dl>
+
+      <p className="mt-2.5 font-sans text-[12px] leading-relaxed text-ui-faint">
+        {t("pro.summaryNoCharge")}
+      </p>
+    </section>
   );
 }
 
@@ -563,34 +705,32 @@ function ManualPayForm({
   t: Translate;
 }) {
   return (
-    <div className="rounded-lg border border-ui-lineStrong bg-paper p-4 shadow-pixel-sm">
-      <p className="font-pixel text-[13px] text-ink">
-        {t("pro.manualHeading")}
-      </p>
+    <div className="rounded-xl border border-ui-line bg-paper p-4">
+      <div className="flex items-center gap-2.5">
+        <MethodMark id={method.id} height={22} />
+        <p className="font-sans text-[15px] font-semibold text-ink">
+          {t("pro.manualHeading")}
+        </p>
+      </div>
 
       {/* The three steps, numbered, because this is a task performed in a
           different app and then returned from. */}
-      <ol className="mt-3 space-y-2.5">
+      <ol className="mt-3.5 space-y-3">
         <Step n={1}>
-          {t("pro.manualStep1")}{" "}
-          <span className="font-bold">{method.label}</span>
+          {t("pro.manualStep1")} <span className="font-semibold">{method.label}</span>
         </Step>
         <Step n={2}>
           {t("pro.manualStep2")}
-          <span className="mt-1.5 flex flex-wrap items-center gap-2">
-            <code className="rounded border border-ui-lineStrong bg-cream px-2 py-1 font-code text-[14px] font-bold tracking-wider text-ui-muted line-through tabular">
+          <span className="mt-2 flex flex-wrap items-center gap-2">
+            <code className="rounded-md border border-ui-lineStrong bg-cream px-2 py-1 font-code text-[14px] font-semibold tracking-wider text-ui-muted line-through tabular">
               {method.merchant_number}
             </code>
-            <span className="font-mono text-[12px] text-ui-muted">
-              · {amount}
-            </span>
+            <span className="font-sans text-[14px] text-ui-muted">· {amount}</span>
             {/* Struck through AND labelled. Someone skimming a payment screen
                 sees a number next to an amount and reaches for their wallet;
                 the number itself has to look unusable. */}
             {method.is_demo && (
-              <span className="font-mono text-[11px] font-bold text-amberInk">
-                {t("pro.demoNumberWarning")}
-              </span>
+              <PixelBadge tone="urgent">{t("pro.demoNumberWarning")}</PixelBadge>
             )}
           </span>
         </Step>
@@ -617,7 +757,7 @@ function ManualPayForm({
       </div>
 
       {/* Stated on the screen that collects the number, not only in the docs. */}
-      <p className="mt-3 border-t border-ui-line pt-3 font-mono text-[11px] leading-relaxed text-ui-muted">
+      <p className="mt-3.5 border-t border-ui-line pt-3 font-sans text-[13px] leading-relaxed text-ui-muted">
         {t("pro.manualSecurity")}
       </p>
     </div>
@@ -626,14 +766,14 @@ function ManualPayForm({
 
 function Step({ n, children }: { n: number; children: React.ReactNode }) {
   return (
-    <li className="flex gap-2.5">
+    <li className="flex gap-3">
       <span
         aria-hidden="true"
-        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink font-mono text-[10px] font-bold text-cream"
+        className="mt-[1px] flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-ink font-sans text-[12px] font-semibold text-white"
       >
         {n}
       </span>
-      <span className="font-mono text-[12px] leading-relaxed text-ink">
+      <span className="font-sans text-[14px] leading-relaxed text-ink">
         {children}
       </span>
     </li>
@@ -642,14 +782,11 @@ function Step({ n, children }: { n: number; children: React.ReactNode }) {
 
 function SandboxNotice({ t }: { t: Translate }) {
   return (
-    <div
-      role="status"
-      className="rounded-lg border border-amber bg-amber/5 p-3.5"
-    >
-      <p className="font-pixel text-[13px] text-ink">
+    <div role="status" className="rounded-xl border border-amber bg-amber/5 p-4">
+      <p className="font-sans text-[14px] font-semibold text-ink">
         {t("pro.sandboxHeading")}
       </p>
-      <p className="mt-1.5 font-mono text-[12px] leading-relaxed text-ui-muted">
+      <p className="mt-1 font-sans text-[14px] leading-relaxed text-ui-muted">
         {t("pro.sandboxBody")}
       </p>
     </div>
@@ -667,10 +804,10 @@ function PaymentRowItem({
 }) {
   const tone =
     row.status === "succeeded"
-      ? "text-mint"
+      ? "qualify"
       : row.status === "failed"
-        ? "text-alert"
-        : "text-ui-muted";
+        ? "alert"
+        : "borderline";
 
   const label =
     row.status === "succeeded"
@@ -684,19 +821,17 @@ function PaymentRowItem({
           : t("pro.stPending");
 
   return (
-    <li className="rounded-lg border border-ui-line bg-paper p-3">
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="font-mono text-[12px] font-bold text-ink tabular">
-          {formatMoney({
-            amountMinor: row.amount_minor,
-            currency: row.currency,
-          })}
+    <li className="rounded-xl border border-ui-line bg-paper p-3.5">
+      <div className="flex items-center justify-between gap-3">
+        <span className="flex min-w-0 items-center gap-2.5">
+          <MethodMark id={row.method} height={18} />
+          <span className="font-sans text-[15px] font-semibold text-ink tabular">
+            {formatMoney({ amountMinor: row.amount_minor, currency: row.currency })}
+          </span>
         </span>
-        <span className={cx("font-mono text-[11px] font-bold", tone)}>
-          {label}
-        </span>
+        <PixelBadge tone={tone}>{label}</PixelBadge>
       </div>
-      <p className="mt-1 font-mono text-[11px] text-ui-muted">
+      <p className="mt-1.5 font-sans text-[13px] text-ui-muted">
         {formatDate(row.created_at, lang)} · {row.method}
         {row.is_sandbox && ` · ${t("pro.tagSandbox")}`}
         {row.payer_reference && ` · ${row.payer_reference}`}
@@ -704,7 +839,7 @@ function PaymentRowItem({
       {/* A rejection the payer cannot read the reason for is indistinguishable
           from their money vanishing. */}
       {row.review_status === "rejected" && row.review_note && (
-        <p className="mt-1.5 rounded border border-alert/30 bg-alert/5 p-2 font-mono text-[11px] leading-relaxed text-ink">
+        <p className="mt-2 rounded-lg border border-alert/30 bg-alert/5 p-2.5 font-sans text-[13px] leading-relaxed text-ink">
           {row.review_note}
         </p>
       )}

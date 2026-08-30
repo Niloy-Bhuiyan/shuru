@@ -136,19 +136,19 @@ export default function RegisterPage() {
         <div className="mb-5 flex items-end gap-3">
           <PixelSun width={44} />
           <div>
-            <h1 className="font-pixel text-sm text-ink">{t("auth.register")}</h1>
-            <p className="mt-1 font-mono text-xs text-grey">{t("tagline")}</p>
+            <h1 className="font-sans text-[22px] font-semibold tracking-[-0.01em] text-ink">{t("auth.register")}</h1>
+            <p className="mt-1 font-sans text-[13px] text-ui-muted">{t("tagline")}</p>
           </div>
         </div>
 
         {notice && (
-          <p className="mb-4 border-3 border-ink bg-amber p-3 font-mono text-xs font-bold text-ink shadow-pixel-sm">
+          <p className="mb-4 rounded-xl border border-amber bg-amber/5 p-3.5 font-sans text-[14px] leading-relaxed text-ink">
             {notice}
           </p>
         )}
 
         <div className="space-y-4">
-          <OAuthButtons next="/radar" />
+          <OAuthButtons />
 
           <PixelInput label={t("auth.name")} name="name" value={name} onChange={setName} required error={errors.name} placeholder="Rafid Hasan" />
 
@@ -166,7 +166,7 @@ export default function RegisterPage() {
             {busy ? "…" : t("auth.register")}
           </PixelButton>
 
-          <p className="text-center font-mono text-xs text-ink">
+          <p className="text-center font-sans text-[14px] text-ui-muted">
             {t("auth.haveAccount")}{" "}
             <Link href="/login" className="font-bold text-amberInk underline">
               {t("auth.login")}

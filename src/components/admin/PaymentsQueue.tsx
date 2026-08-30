@@ -15,6 +15,11 @@
  * can read next to a phone screen, with the sending number and the amount
  * beside it. Everything that is not needed for a match is smaller or absent.
  *
+ * The wallet's own mark sits on the row for the same reason. A reviewer with
+ * three merchant statements open is choosing WHICH statement before they look
+ * for anything in it, and a logo is faster to sort by than the lowercase word
+ * "nagad" in a list of metadata.
+ *
  * The queue is OLDEST FIRST — the opposite of every other list in this product.
  * Someone is waiting for money they have already sent; the person who has been
  * waiting longest is served first, not the newest arrival.
@@ -30,7 +35,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
 import { LoadingBlock } from "@/components/LoadingBlock";
-import { PixelIcon } from "@/components/pixel/PixelIcon";
+import { PixelButton } from "@/components/pixel/PixelButton";
+import { PixelBadge } from "@/components/pixel/PixelBadge";
+import { MethodMark } from "@/components/brand/MethodMark";
 import { cx } from "@/lib/cx";
 import { formatMoney } from "@/lib/subscription";
 import { useLang } from "@/lib/i18n";
@@ -125,17 +132,23 @@ export function PaymentsQueue({
     view === "pending" ? pending : view === "decided" ? decided : automatic;
 
   return (
-    <section className="mb-6 mt-4">
-      <div className="border-3 border-ink bg-paper p-3 shadow-pixel-sm">
-        <p className="font-pixel text-[11px] text-ink">
+    <section className="mb-6">
+      <div className="rounded-xl border border-ui-line bg-paper p-4">
+        <p className="font-sans text-[15px] font-medium text-ink">
           {t("adminPay.title")}
         </p>
-        <p className="mt-1 font-mono text-[10px] leading-relaxed text-ui-muted">
+        <p className="mt-1 max-w-prose font-sans text-[13px] leading-relaxed text-ui-muted">
           {t("adminPay.hint")}
         </p>
       </div>
 
-      <div className="no-scrollbar mt-3 flex gap-1.5 overflow-x-auto">
+      {/* One segmented control rather than three loose bordered buttons: these
+          are three views of one table, and a joined control says so. */}
+      <div
+        role="group"
+        aria-label={t("adminPay.title")}
+        className="mt-3 inline-flex overflow-hidden rounded-lg border border-ui-lineStrong"
+      >
         {VIEWS.map((v) => (
           <button
             key={v.id}
@@ -143,12 +156,16 @@ export function PaymentsQueue({
             onClick={() => setView(v.id)}
             aria-pressed={view === v.id}
             className={cx(
-              "shrink-0 border-2 border-ink px-2 py-1 font-mono text-[10px] font-bold",
-              view === v.id ? "bg-ink text-cream" : "bg-paper text-ink"
+              "min-h-[38px] px-3.5 font-sans text-[13px] font-medium transition-colors",
+              view === v.id
+                ? "bg-ink text-white"
+                : "bg-paper text-ui-muted hover:bg-cream hover:text-ink"
             )}
           >
             {v.label}
-            {v.count > 0 && ` (${v.count})`}
+            {v.count > 0 && (
+              <span className="ml-1.5 tabular opacity-70">{v.count}</span>
+            )}
           </button>
         ))}
       </div>
@@ -156,7 +173,7 @@ export function PaymentsQueue({
       {error && (
         <p
           role="alert"
-          className="mt-3 border-3 border-ink bg-alert p-2 font-mono text-[11px] leading-relaxed text-cream"
+          className="mt-3 rounded-lg border border-alert bg-alert/5 p-3 font-sans text-[13px] leading-relaxed text-alert"
         >
           {error}
         </p>
@@ -174,19 +191,22 @@ export function PaymentsQueue({
           />
         </div>
       ) : (
-        <ul className="mt-3 space-y-2">
+        <ul className="mt-3 space-y-2.5">
           {rows.map((row) => (
             <li
               key={row.id}
-              className="border-3 border-ink bg-cream p-3 shadow-pixel-sm"
+              className="rounded-xl border border-ui-line bg-paper p-4 transition-colors hover:border-ui-lineStrong"
             >
               {/* The match line: everything needed to find this in a merchant
                   statement, and nothing else. */}
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <code className="font-code text-[15px] font-bold tracking-wider text-ink tabular">
-                  {row.payer_reference ?? "—"}
-                </code>
-                <span className="font-mono text-[13px] font-bold text-ink tabular">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                <span className="flex min-w-0 items-center gap-2.5">
+                  <MethodMark id={row.method} height={20} />
+                  <code className="font-code text-[16px] font-semibold tracking-wider text-ink tabular">
+                    {row.payer_reference ?? "—"}
+                  </code>
+                </span>
+                <span className="font-sans text-[16px] font-semibold text-ink tabular">
                   {formatMoney({
                     amountMinor: row.amount_minor,
                     currency: row.currency,
@@ -194,7 +214,7 @@ export function PaymentsQueue({
                 </span>
               </div>
 
-              <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 font-mono text-[11px] text-ui-muted">
+              <dl className="mt-2.5 flex flex-wrap gap-x-5 gap-y-1 font-sans text-[13px]">
                 <Pair label={t("adminPay.method")} value={row.method} />
                 <Pair
                   label={t("adminPay.from")}
@@ -215,7 +235,7 @@ export function PaymentsQueue({
                 <>
                   <label
                     htmlFor={`note-${row.id}`}
-                    className="mt-2.5 block font-mono text-[10px] font-bold tracking-[0.12em] text-ui-muted"
+                    className="mt-3 block font-sans text-[12px] font-medium text-ui-muted"
                   >
                     {t("adminPay.noteLabel")}
                   </label>
@@ -225,58 +245,54 @@ export function PaymentsQueue({
                     onChange={(e) =>
                       setNote((m) => ({ ...m, [row.id]: e.target.value }))
                     }
-                    className="mt-1 w-full border-2 border-ink bg-paper px-2 py-1.5 font-mono text-[11px] text-ink focus:outline-none"
+                    className="mt-1 min-h-[40px] w-full rounded-lg border border-ui-lineStrong bg-paper px-3 font-sans text-[14px] text-ink placeholder:text-ui-faint focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink"
                   />
 
-                  <div className="mt-2 flex gap-1.5">
-                    <button
-                      type="button"
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <PixelButton
+                      size="sm"
+                      variant="positive"
                       disabled={busyId === row.id}
                       onClick={() => void decide(row, true)}
-                      className="min-h-[36px] flex-1 border-2 border-ink bg-mint px-2 py-1 font-mono text-[10px] font-bold text-ink disabled:opacity-50"
                     >
                       {busyId === row.id
                         ? t("pro.working")
                         : t("adminPay.approve")}
-                    </button>
-                    <button
-                      type="button"
+                    </PixelButton>
+                    <PixelButton
+                      size="sm"
+                      variant="danger"
                       disabled={busyId === row.id}
                       onClick={() => void decide(row, false)}
-                      className="min-h-[36px] flex-1 border-2 border-ink bg-alert px-2 py-1 font-mono text-[10px] font-bold text-cream disabled:opacity-50"
                     >
                       {t("adminPay.reject")}
-                    </button>
+                    </PixelButton>
                   </div>
                 </>
               ) : (
-                <p
-                  className={cx(
-                    "mt-2 flex items-center gap-1.5 font-mono text-[11px] font-bold",
-                    row.status === "succeeded" ? "text-mint" : "text-alert"
-                  )}
-                >
-                  <PixelIcon
-                    name={row.status === "succeeded" ? "check" : "warn"}
-                    size={12}
-                  />
-                  {row.review_status === "approved"
-                    ? t("adminPay.wasApproved")
-                    : row.review_status === "rejected"
-                      ? t("adminPay.wasRejected")
-                      : row.status === "succeeded"
-                        ? t("adminPay.settledAuto")
-                        : t("pro.stPending")}
+                <p className="mt-3 flex flex-wrap items-center gap-2">
+                  <PixelBadge
+                    tone={row.status === "succeeded" ? "qualify" : "alert"}
+                    icon={row.status === "succeeded" ? "check" : "warn"}
+                  >
+                    {row.review_status === "approved"
+                      ? t("adminPay.wasApproved")
+                      : row.review_status === "rejected"
+                        ? t("adminPay.wasRejected")
+                        : row.status === "succeeded"
+                          ? t("adminPay.settledAuto")
+                          : t("pro.stPending")}
+                  </PixelBadge>
                   {row.reviewed_at && (
-                    <span className="font-normal text-ui-muted">
-                      · {formatWhen(row.reviewed_at, lang)}
+                    <span className="font-sans text-[13px] text-ui-muted">
+                      {formatWhen(row.reviewed_at, lang)}
                     </span>
                   )}
                 </p>
               )}
 
               {row.review_note && row.review_status !== "pending" && (
-                <p className="mt-1.5 border-t-2 border-ink/15 pt-1.5 font-mono text-[11px] leading-relaxed text-ink">
+                <p className="mt-2.5 border-t border-ui-line pt-2.5 font-sans text-[13px] leading-relaxed text-ink">
                   {row.review_note}
                 </p>
               )}

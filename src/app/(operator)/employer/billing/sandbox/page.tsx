@@ -11,15 +11,27 @@
  * Confirming does not flip a flag. It asks the server to deliver a signed
  * webhook to the real payment handler, which verifies the signature and grants
  * the entitlement. The flow is genuine; only the money is not.
+ *
+ * It now LOOKS like the hosted checkout it stands in for — a narrow centred
+ * column, an order summary, the accepted-scheme marks, and one primary action
+ * with the decline path demoted beneath it. That is not decoration: the whole
+ * point of this page is to exercise the shape of a real provider handoff, and
+ * a stand-in that looks nothing like the thing it stands in for tests the
+ * mechanism while proving nothing about the experience.
  */
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PixelButton } from "@/components/pixel/PixelButton";
-import { PixelCard } from "@/components/pixel/PixelCard";
+import { PixelIcon } from "@/components/pixel/PixelIcon";
 import { EmptyState } from "@/components/EmptyState";
 import { LoadingBlock } from "@/components/LoadingBlock";
+import {
+  GooglePayMark,
+  MastercardMark,
+  VisaMark,
+} from "@/components/brand/PaymentMarks";
 import { useLang } from "@/lib/i18n";
 
 type Outcome = "succeeded" | "failed";
@@ -82,11 +94,11 @@ function SandboxCheckout() {
 
   if (!sessionId) {
     return (
-      <main className="px-4 py-6">
+      <main className="mx-auto w-full max-w-md px-4 py-8">
         <EmptyState title={t("pay.checkoutTitle")} hint={t("pay.error")} />
         <Link
           href="/employer"
-          className="mt-3 inline-block font-mono text-[11px] underline"
+          className="mt-4 inline-block font-sans text-[14px] text-amberInk underline"
         >
           {t("pay.back")}
         </Link>
@@ -95,50 +107,77 @@ function SandboxCheckout() {
   }
 
   return (
-    <main className="px-4 py-6">
+    <main className="mx-auto w-full max-w-md px-4 py-8">
       {/* Not a footnote. The first thing on the screen. */}
       <div
         role="status"
-        className="mb-4 border-3 border-ink bg-amber p-3 shadow-pixel-sm"
+        className="flex gap-3 rounded-xl border border-amber bg-amber/5 p-4"
       >
-        <p className="font-pixel text-[11px] text-ink">
-          ⚠ {t("pay.sandboxTag")}
-        </p>
-        <p className="mt-1 font-mono text-[11px] leading-relaxed text-ink">
-          {t("pay.sandboxBanner")}
-        </p>
+        <span className="mt-[2px] shrink-0 text-amberInk" aria-hidden="true">
+          <PixelIcon name="warn" size={15} />
+        </span>
+        <div className="min-w-0">
+          <p className="font-sans text-[14px] font-semibold text-ink">
+            {t("pay.sandboxTag")}
+          </p>
+          <p className="mt-1 font-sans text-[14px] leading-relaxed text-ui-muted">
+            {t("pay.sandboxBanner")}
+          </p>
+        </div>
       </div>
 
-      <h1 className="font-pixel text-xs text-ink">
+      <h1 className="mt-6 font-sans text-[22px] font-semibold leading-tight tracking-[-0.01em] text-ink">
         {t("pay.checkoutTitle")}
       </h1>
-      <p className="mt-2 font-mono text-[11px] leading-relaxed text-ink/80">
+      <p className="mt-2 font-sans text-[14px] leading-relaxed text-ui-muted">
         {t("pay.checkoutBody")}
       </p>
 
-      <PixelCard className="mt-4 p-3">
-        <dl className="font-mono text-[11px] text-ink">
-          <div className="flex justify-between">
-            <dt>{t("pay.price")}</dt>
+      <section
+        aria-label={t("pay.checkoutTitle")}
+        className="mt-5 rounded-xl border border-ui-line bg-paper p-4"
+      >
+        <dl className="space-y-2">
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="font-sans text-[14px] text-ui-muted">{t("pay.price")}</dt>
             {/* Shown struck through: it is a figure, not a charge. */}
-            <dd className="line-through opacity-60">৳ 500.00</dd>
+            <dd className="font-sans text-[16px] font-semibold text-ui-muted line-through tabular">
+              ৳ 500.00
+            </dd>
           </div>
-          <div className="mt-1 flex justify-between">
-            <dt>{t("pay.duration")}</dt>
-            <dd>30 {t("pay.days")}</dd>
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="font-sans text-[14px] text-ui-muted">
+              {t("pay.duration")}
+            </dt>
+            <dd className="font-sans text-[14px] text-ink tabular">
+              30 {t("pay.days")}
+            </dd>
           </div>
         </dl>
-        <p className="mt-2 border-t-2 border-ink/20 pt-2 font-mono text-[10px] leading-relaxed text-ink/70">
+
+        {/* The marks a hosted checkout would show. They are the reason this
+            page is recognisable as a checkout at a glance, and they are
+            aria-hidden because they name nothing the payer has to choose —
+            there is no scheme selection on this screen. */}
+        <div className="mt-3.5 flex items-center gap-2.5 border-t border-ui-line pt-3.5">
+          <VisaMark height={20} />
+          <MastercardMark height={20} />
+          <GooglePayMark height={20} />
+        </div>
+
+        <p className="mt-3.5 border-t border-ui-line pt-3 font-sans text-[13px] leading-relaxed text-ui-muted">
           {t("pay.whatIsPromotion")}
         </p>
-      </PixelCard>
+      </section>
 
       {phase === "done" ? (
         <div
           role="status"
           aria-live="polite"
-          className={`mt-4 border-3 border-ink p-3 font-mono text-[11px] shadow-pixel-sm ${
-            outcome === "succeeded" ? "bg-mint text-ink" : "bg-alert text-cream"
+          className={`mt-5 rounded-xl border p-4 font-sans text-[14px] leading-relaxed ${
+            outcome === "succeeded"
+              ? "border-mint bg-mint/5 text-ink"
+              : "border-alert bg-alert/5 text-ink"
           }`}
         >
           {outcome === "succeeded" ? t("pay.succeeded") : t("pay.failed")}
@@ -146,25 +185,28 @@ function SandboxCheckout() {
       ) : phase === "error" ? (
         <div
           role="alert"
-          className="mt-4 border-3 border-ink bg-alert p-3 font-mono text-[11px] text-cream shadow-pixel-sm"
+          className="mt-5 rounded-xl border border-alert bg-alert/5 p-4 font-sans text-[14px] leading-relaxed text-alert"
         >
           {t("pay.error")}
         </div>
       ) : (
-        <div className="mt-4 space-y-2">
+        <div className="mt-5 space-y-2.5">
           <PixelButton
+            full
+            size="lg"
             onClick={() => confirm("succeeded")}
             disabled={phase === "working"}
-            className="w-full"
           >
             {phase === "working" ? t("pay.working") : t("pay.confirm")}
           </PixelButton>
-          {/* A payment path with no failure branch is untested by definition. */}
+          {/* A payment path with no failure branch is untested by definition.
+              Demoted to `ghost`: it is a testing affordance, not a choice the
+              payer is being offered alongside paying. */}
           <PixelButton
-            variant="secondary"
+            full
+            variant="ghost"
             onClick={() => confirm("failed")}
             disabled={phase === "working"}
-            className="w-full"
           >
             {t("pay.decline")}
           </PixelButton>
@@ -173,7 +215,7 @@ function SandboxCheckout() {
 
       <Link
         href="/employer"
-        className="mt-4 inline-block font-mono text-[11px] underline"
+        className="mt-5 inline-block font-sans text-[14px] text-amberInk underline"
       >
         {t("pay.back")}
       </Link>
