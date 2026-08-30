@@ -84,7 +84,7 @@ function ProCheckout() {
         <EmptyState title={t("pro.checkoutTitle")} hint={t("pro.errGeneric")} />
         <Link
           href="/pro"
-          className="mt-3 inline-block font-mono text-[12px] underline"
+          className="mt-4 inline-block text-[14px] text-amberInk underline"
         >
           {t("pro.backToPro")}
         </Link>
@@ -93,27 +93,29 @@ function ProCheckout() {
   }
 
   return (
-    <main className="px-4 py-6">
+    <main className="mx-auto w-full max-w-md px-4 py-8">
       {/* Not a footnote. The first thing on the screen, before the price. */}
       <div
         role="status"
-        className="mb-4 rounded-lg border border-amber bg-amber/5 p-3.5"
+        className="mb-6 rounded-xl border border-amber bg-amber/5 p-4"
       >
-        <p className="font-pixel text-[13px] text-ink">
+        <p className="text-[14px] font-semibold text-ink">
           {t("pro.sandboxHeading")}
         </p>
-        <p className="mt-1.5 font-mono text-[12px] leading-relaxed text-ui-muted">
+        <p className="mt-1 text-[14px] leading-relaxed text-ui-muted">
           {t("pro.sandboxBody")}
         </p>
       </div>
 
-      <h1 className="font-pixel text-base text-ink">{t("pro.checkoutTitle")}</h1>
-      <p className="mt-2 font-mono text-[12px] leading-relaxed text-ui-muted">
+      <h1 className="text-[22px] font-semibold leading-tight tracking-[-0.01em] text-ink">
+        {t("pro.checkoutTitle")}
+      </h1>
+      <p className="mt-2 text-[14px] leading-relaxed text-ui-muted">
         {t("pro.checkoutBody")}
       </p>
 
-      <PixelCard className="mt-4 p-3.5">
-        <p className="font-mono text-[12px] leading-relaxed text-ink">
+      <PixelCard className="mt-5">
+        <p className="text-[14px] leading-relaxed text-ink">
           {t("pro.checkoutNoCard")}
         </p>
       </PixelCard>
@@ -124,18 +126,18 @@ function ProCheckout() {
           aria-live="polite"
           className={
             outcome === "succeeded"
-              ? "mt-4 rounded-lg border border-mint bg-mint/5 p-3.5"
-              : "mt-4 rounded-lg border border-alert bg-alert/5 p-3.5"
+              ? "mt-5 rounded-xl border border-mint bg-mint/5 p-4"
+              : "mt-5 rounded-xl border border-alert bg-alert/5 p-4"
           }
         >
-          <p className="font-pixel text-[13px] text-ink">
+          <p className="text-[14px] font-semibold text-ink">
             {outcome === "succeeded"
               ? t("pro.checkoutSucceeded")
               : t("pro.checkoutDeclined")}
           </p>
           <Link
             href="/pro"
-            className="mt-2.5 inline-block font-mono text-[12px] font-bold underline"
+            className="mt-2.5 inline-block text-[14px] font-medium text-amberInk underline"
           >
             {t("pro.backToPro")}
           </Link>
@@ -143,9 +145,9 @@ function ProCheckout() {
       ) : phase === "error" ? (
         <div
           role="alert"
-          className="mt-4 rounded-lg border border-alert bg-alert/5 p-3.5"
+          className="mt-5 rounded-xl border border-alert bg-alert/5 p-4"
         >
-          <p className="font-mono text-[12px] leading-relaxed text-alert">
+          <p className="text-[14px] leading-relaxed text-alert">
             {t("pro.errServer")}
           </p>
           {/* An error with no way forward is a dead end. */}
@@ -180,7 +182,7 @@ function ProCheckout() {
 
       <Link
         href="/pro"
-        className="mt-4 inline-block font-mono text-[12px] underline"
+        className="mt-5 inline-block text-[14px] text-amberInk underline"
       >
         {t("pro.backToPro")}
       </Link>

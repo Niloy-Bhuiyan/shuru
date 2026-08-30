@@ -149,6 +149,19 @@ export function nextPeriodEnd(
   return new Date(base.getTime() + days * 24 * 60 * 60 * 1000);
 }
 
+/**
+ * ৳299 — the same amount with the empty decimals dropped, for a PRICE on a
+ * pricing card as opposed to an AMOUNT on a receipt.
+ *
+ * The distinction is worth two functions. "৳ 299.00" set at 38px reads as a
+ * transaction total someone is being charged; a plan's headline price is a
+ * label for a tier, and every pricing page in the world writes it short. A
+ * figure with real paisa still prints them, so nothing is ever rounded away.
+ */
+export function formatPriceCompact(money: Money): string {
+  return formatMoney(money).replace(/\.00$/, "").replace("৳ ", "৳");
+}
+
 /** ৳ 299.00 — for display. Minor units in, formatted string out. */
 export function formatMoney({ amountMinor, currency }: Money): string {
   const major = (amountMinor / 100).toFixed(2);

@@ -27,6 +27,23 @@
 
 import React, { useId } from "react";
 
+/**
+ * -- A note on the viewBoxes -------------------------------------------------
+ *
+ * Every one of these was retightened to the mark's actual ink. The source
+ * assets ship a viewBox that is roughly a third empty padding, measured with
+ * getBBox() in a browser: bKash drew into 48% of its declared height and the
+ * rest into 67%. At a shared `height` prop that makes the logos render at
+ * about two thirds the size they are asked for, and by different amounts each
+ * -- so a row of them looks both undersized and unevenly aligned, which is
+ * exactly what it looked like.
+ *
+ * Visa's box could not be measured the same way: getBBox() on a clipped
+ * element reports the geometry BEFORE the clip, so it returned bounds larger
+ * than the visible mark. Its box is the clip path's own extent put through the
+ * matrix transform below it.
+ */
+
 type MarkProps = {
   /** Rendered height in px. Width follows the mark's own aspect ratio. */
   height?: number;
@@ -62,7 +79,7 @@ export function VisaMark({ height = 20, className }: MarkProps) {
 
   return (
     <svg
-      {...svgProps(height, "-74.7 -40.204 647.4 241.224", className)}
+      {...svgProps(height, "8 -3 501 173", className)}
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
@@ -101,7 +118,7 @@ export function VisaMark({ height = 20, className }: MarkProps) {
 export function MastercardMark({ height = 20, className }: MarkProps) {
   return (
     <svg
-      {...svgProps(height, "-96 -98.908 832 593.448", className)}
+      {...svgProps(height, "-8 -8 656 412", className)}
       xmlns="http://www.w3.org/2000/svg"
     >
       <path fill="#ff5f00" d="M224.833 42.298h190.416v311.005H224.833z" />
@@ -125,7 +142,7 @@ export function MastercardMark({ height = 20, className }: MarkProps) {
 export function GooglePayMark({ height = 20, className }: MarkProps) {
   return (
     <svg
-      {...svgProps(height, "-65.4 -43.284 566.796 259.703", className)}
+      {...svgProps(height, "-6 -6 448 185", className)}
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
@@ -156,7 +173,7 @@ export function GooglePayMark({ height = 20, className }: MarkProps) {
 export function BkashMark({ height = 20, className }: MarkProps) {
   return (
     <svg
-      {...svgProps(height, "-37.06 -39.18 321.217 235.095", className)}
+      {...svgProps(height, "-4 -4 255 121", className)}
       xmlns="http://www.w3.org/2000/svg"
     >
       <path fill="#d12053" d="M223.66 62.45l-53.03-8.31 7.03 31.6z" />
@@ -195,7 +212,7 @@ export function BkashMark({ height = 20, className }: MarkProps) {
 export function NagadMark({ height = 20, className }: MarkProps) {
   return (
     <svg
-      {...svgProps(height, "-45 -32.758 390 196.55", className)}
+      {...svgProps(height, "-5 -5 310 141", className)}
       xmlns="http://www.w3.org/2000/svg"
     >
       <g transform="translate(-1266.194 -110.295) scale(2.59472)">
