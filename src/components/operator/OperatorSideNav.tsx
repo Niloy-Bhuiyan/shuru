@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * OperatorSideNav — the console's own navigation.
+ * OperatorSideNav -- the console's own navigation.
  *
  * The operator area previously reused the student chrome with a darker
  * header and a row of tabs, which is why it read as "a student page with an
@@ -10,12 +10,14 @@
  * the same person, and its primary axis is a list of queues.
  *
  * So: a persistent dark rail with the queues on it, counts where a count
- * means "there is work here", and a permanent way back to the student app —
+ * means "there is work here", and a permanent way back to the student app --
  * an operator is also a person with their own radar.
  *
  * Visible at every width. The student app hides its sidebar below `lg` and
  * swaps in a bottom bar; this one collapses to icons instead, because an
- * operator screen without its queue list is not usable at all.
+ * operator screen without its queue list is not usable at all. At the
+ * collapsed width the count becomes a dot on the icon: the number will not
+ * fit, but "there is something here" still has to survive.
  */
 
 import React from "react";
@@ -46,19 +48,22 @@ export function OperatorSideNav({
   return (
     <nav
       aria-label={t("op.workspace")}
-      className="sticky top-0 flex h-dvh w-[64px] shrink-0 flex-col border-r-3 border-ink bg-ink sm:w-[210px]"
+      className="sticky top-0 flex h-dvh w-[64px] shrink-0 flex-col bg-ink sm:w-[212px]"
     >
-      <div className="border-b-3 border-cream/15 px-3 py-3 sm:px-4">
-        <span className="font-pixel text-[15px] leading-none text-amber">Shuru</span>
-        <p className="mt-1.5 hidden font-mono text-[10px] font-bold tracking-[0.18em] text-cream/50 sm:block">
+      <div className="border-b border-white/10 px-3 py-4 sm:px-4">
+        <span className="font-sans text-[17px] font-semibold leading-none tracking-[-0.01em] text-white">
+          Shuru
+        </span>
+        <p className="mt-1.5 hidden font-sans text-[12px] text-white/55 sm:block">
           {role === "admin" ? t("admin.title") : t("emp.title")} · {t("op.workspace")}
         </p>
       </div>
 
-      <ul className="flex flex-1 flex-col gap-1 overflow-y-auto p-2 sm:p-3">
+      <ul className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2 sm:p-3">
         {items.map((item) => {
           const active =
             pathname === item.href || pathname.startsWith(item.href + "/");
+          const hasWork = item.count !== undefined && item.count > 0;
           return (
             <li key={item.href}>
               <Link
@@ -66,25 +71,38 @@ export function OperatorSideNav({
                 aria-current={active ? "page" : undefined}
                 title={t(item.key)}
                 className={cx(
-                  "flex items-center gap-2.5 border-2 px-2 py-2 font-mono text-[11px] font-bold sm:px-2.5",
+                  "relative flex min-h-[40px] items-center gap-2.5 rounded-lg px-2.5 font-sans text-[14px]",
+                  "transition-colors duration-150",
                   active
-                    ? "border-amber bg-amber text-ink"
-                    : "border-transparent text-cream/75 hover:border-cream/30 hover:text-cream"
+                    ? "bg-white/12 font-medium text-white"
+                    : "text-white/65 hover:bg-white/[0.07] hover:text-white"
                 )}
               >
-                <PixelIcon name={item.icon} size={14} />
+                {/* The active marker is a rule, not a fill. A saturated amber
+                    block behind the current item made the rail's loudest
+                    element the one thing the operator already knows. */}
+                {active && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-y-1.5 left-0 w-[3px] rounded-r bg-amber"
+                  />
+                )}
+                <span className="relative flex shrink-0 items-center">
+                  <PixelIcon name={item.icon} size={15} />
+                  {/* Collapsed rail: the numeral has nowhere to go, so the
+                      fact that there IS work becomes a dot on the icon. */}
+                  {hasWork && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-amber sm:hidden"
+                    />
+                  )}
+                </span>
                 <span className="hidden min-w-0 flex-1 truncate sm:inline">
                   {t(item.key)}
                 </span>
-                {item.count !== undefined && item.count > 0 && (
-                  <span
-                    className={cx(
-                      "ml-auto hidden shrink-0 border-2 px-1.5 font-pixel text-[9px] sm:inline-block",
-                      active
-                        ? "border-ink bg-ink text-amber"
-                        : "border-amber/60 bg-transparent text-amber"
-                    )}
-                  >
+                {hasWork && (
+                  <span className="ml-auto hidden shrink-0 rounded-md bg-amber px-1.5 py-0.5 font-sans text-[12px] font-semibold leading-none text-white tabular sm:inline-block">
                     {item.count}
                   </span>
                 )}
@@ -94,13 +112,13 @@ export function OperatorSideNav({
         })}
       </ul>
 
-      <div className="border-t-3 border-cream/15 p-2 sm:p-3">
+      <div className="border-t border-white/10 p-2 sm:p-3">
         <Link
           href="/radar"
           title={t("op.exit")}
-          className="flex items-center gap-2 border-2 border-cream/40 px-2 py-2 font-mono text-[10px] font-bold text-cream hover:border-cream sm:px-2.5"
+          className="flex min-h-[40px] items-center gap-2.5 rounded-lg px-2.5 font-sans text-[13px] text-white/65 transition-colors hover:bg-white/[0.07] hover:text-white"
         >
-          <PixelIcon name="radar" size={13} />
+          <PixelIcon name="radar" size={14} />
           <span className="hidden sm:inline">{t("op.exit")}</span>
         </Link>
       </div>

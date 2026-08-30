@@ -22,6 +22,7 @@ import type { OperatorNavItem } from "@/components/operator/OperatorSideNav";
 import { EmptyState } from "@/components/EmptyState";
 import { PixelButton } from "@/components/pixel/PixelButton";
 import { PixelInput } from "@/components/pixel/PixelInput";
+import { PixelBadge } from "@/components/pixel/PixelBadge";
 import {
   createCompany,
   getMyCompany,
@@ -44,11 +45,22 @@ const LISTING_STATUS_KEY: Record<ListingStatus, StringKey> = {
   expired: "emp.expired",
 };
 
-const LISTING_STATUS_TONE: Record<ListingStatus, string> = {
-  pending: "bg-amber",
-  approved: "bg-mint",
-  rejected: "bg-alert text-cream",
-  expired: "bg-grey text-cream",
+/**
+ * Status colour, expressed as a PixelBadge tone rather than a raw fill.
+ *
+ * These were saturated blocks -- solid amber, solid mint, white-on-red. One
+ * per listing row, down a list, is a column of traffic lights shouting at an
+ * employer about listings that are mostly just fine. The badge tones carry the
+ * same four meanings as tints, which is the volume a status label warrants.
+ */
+const LISTING_STATUS_TONE: Record<
+  ListingStatus,
+  React.ComponentProps<typeof PixelBadge>["tone"]
+> = {
+  pending: "urgent",
+  approved: "qualify",
+  rejected: "alert",
+  expired: "borderline",
 };
 
 const VERIFY_KEY = {
@@ -227,13 +239,46 @@ export default function EmployerPage() {
       subtitle={t("emp.dashSubtitle")}
     >
 
+      {/*
+        The overview row this console has always needed.
+
+        `StatTile` was imported here and never rendered -- the employer
+        dashboard borrowed the admin console's tile and then made an employer
+        read their own pipeline out of a strip of "status: n" chips further
+        down the page. These are the four numbers an employer opens the
+        dashboard to see, so they go at the top, in the same component the
+        admin console uses for the same job.
+      */}
+      <section aria-label={t("op.overview")} className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        <StatTile label={t("emp.listings")} value={listings.length} />
+        <StatTile label={t("emp.applicants")} value={applicants.length} />
+        <StatTile
+          label={t("emp.applied")}
+          value={pipeline.applied}
+          tone="action"
+          hint={t("emp.tileNew")}
+        />
+        <StatTile label={t("emp.interview")} value={pipeline.interview} />
+      </section>
+
       {/* verification is admin-owned: reported, never editable here */}
-      <p className="mt-2 inline-block border-2 border-ink bg-paper px-2 py-1 font-mono text-[10px] font-bold text-ink">
-        {t("emp.verification")}: {t(VERIFY_KEY[company.verification_status])}
+      <p className="mt-4 flex flex-wrap items-center gap-2 font-sans text-[13px] text-ui-muted">
+        {t("emp.verification")}:
+        <PixelBadge
+          tone={
+            company.verification_status === "approved"
+              ? "qualify"
+              : company.verification_status === "rejected"
+                ? "alert"
+                : "urgent"
+          }
+        >
+          {t(VERIFY_KEY[company.verification_status])}
+        </PixelBadge>
       </p>
 
       {/* ── company profile ── */}
-      <section className="mt-4 border-3 border-ink bg-paper p-3 shadow-pixel">
+      <section className="mt-4 rounded-xl border border-ui-line bg-paper p-4">
         <div className="space-y-3">
           <PixelInput
             label={t("emp.companyName")}
@@ -277,45 +322,51 @@ export default function EmployerPage() {
       </section>
 
       {/* ── listings ── */}
-      <section className="mt-5">
-        <div className="flex items-center justify-between">
-          <h2 className="font-mono text-xs font-bold text-ink">
-            {t("emp.listings")} ({listings.length})
+      <section className="mt-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-sans text-[16px] font-semibold tracking-[-0.01em] text-ink">
+            {t("emp.listings")}{" "}
+            <span className="font-normal text-ui-faint tabular">
+              {listings.length}
+            </span>
           </h2>
           <Link
             href="/employer/listings/new"
-            className="border-2 border-ink bg-amber px-2 py-1 font-mono text-[11px] font-bold text-ink shadow-pixel-sm"
+            className="inline-flex min-h-[36px] items-center rounded-lg bg-ink px-3 font-sans text-[13px] font-medium text-white transition-opacity hover:opacity-90"
           >
             + {t("emp.newListing")}
           </Link>
         </div>
 
         {listings.length === 0 ? (
-          <p className="mt-2 font-mono text-[11px] text-grey">{t("emp.noListings")}</p>
+          <p className="mt-3 font-sans text-[14px] text-ui-muted">
+            {t("emp.noListings")}
+          </p>
         ) : (
-          <ul className="mt-2 space-y-2">
+          <ul className="mt-3 space-y-2.5">
             {listings.map((l) => (
               <li
                 key={l.id}
-                className="border-3 border-ink bg-cream p-2.5 shadow-pixel-sm"
+                className="rounded-xl border border-ui-line bg-paper p-4 transition-colors hover:border-ui-lineStrong"
               >
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate font-mono text-xs font-bold text-ink">
+                    <p className="truncate font-sans text-[15px] font-medium text-ink">
                       {l.role}
                     </p>
-                    <p className="truncate font-mono text-[11px] text-ink/70">
+                    <p className="mt-0.5 truncate font-sans text-[13px] text-ui-muted">
                       {l.location} · {l.duration}
                     </p>
                   </div>
-                  <span
-                    className={`shrink-0 border-2 border-ink px-1.5 py-0.5 font-mono text-[9px] font-bold ${LISTING_STATUS_TONE[l.status ?? "pending"]}`}
+                  <PixelBadge
+                    tone={LISTING_STATUS_TONE[l.status ?? "pending"]}
+                    className="shrink-0"
                   >
                     {t(LISTING_STATUS_KEY[l.status ?? "pending"])}
-                  </span>
+                  </PixelBadge>
                 </div>
                 {l.rejection_reason && (
-                  <p className="mt-1.5 border-2 border-ink bg-alert p-1.5 font-mono text-[10px] text-cream">
+                  <p className="mt-2.5 rounded-lg border border-alert/30 bg-alert/5 p-2.5 font-sans text-[13px] leading-relaxed text-ink">
                     {l.rejection_reason}
                   </p>
                 )}
@@ -326,22 +377,25 @@ export default function EmployerPage() {
                   checkout page, so the flow is never entered by someone who
                   thinks they are about to be charged.
                 */}
-                {l.status === "approved" &&
-                  (isPromoted(l) ? (
-                    <p className="mt-1.5 inline-block border-2 border-ink bg-amber px-1.5 py-0.5 font-mono text-[10px] font-bold text-ink">
-                      {t("pay.promoted")} · {t("pay.promotedUntil")}{" "}
-                      {new Date(l.featured_until!).toLocaleDateString()}
-                    </p>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => startPromotion(l.id)}
-                      disabled={promoting === l.id}
-                      className="mt-1.5 border-2 border-ink bg-paper px-1.5 py-1 font-mono text-[10px] font-bold text-ink shadow-pixel-sm disabled:opacity-50"
-                    >
-                      {t("pay.promote")} · {t("pay.sandboxTag")}
-                    </button>
-                  ))}
+                {l.status === "approved" && (
+                  <div className="mt-3">
+                    {isPromoted(l) ? (
+                      <PixelBadge tone="urgent" icon="spark">
+                        {t("pay.promoted")} · {t("pay.promotedUntil")}{" "}
+                        {new Date(l.featured_until!).toLocaleDateString()}
+                      </PixelBadge>
+                    ) : (
+                      <PixelButton
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => startPromotion(l.id)}
+                        disabled={promoting === l.id}
+                      >
+                        {t("pay.promote")} · {t("pay.sandboxTag")}
+                      </PixelButton>
+                    )}
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -349,65 +403,95 @@ export default function EmployerPage() {
       </section>
 
       {/* ── applicant pipeline ── */}
-      <section className="mb-6 mt-5">
-        <h2 className="font-mono text-xs font-bold text-ink">
-          {t("emp.applicants")} ({applicants.length})
+      <section className="mb-6 mt-7">
+        <h2 className="font-sans text-[16px] font-semibold tracking-[-0.01em] text-ink">
+          {t("emp.applicants")}{" "}
+          <span className="font-normal text-ui-faint tabular">
+            {applicants.length}
+          </span>
         </h2>
 
-        <div className="mt-2 flex flex-wrap gap-1.5">
+        {/* The pipeline counts. The four that matter are already in the tiles
+            at the top of the page; this is the full breakdown, so it reads as
+            a legend rather than as a second set of headline figures. */}
+        <dl className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1">
           {EMPLOYER_SET_STATUSES.map((s) => (
-            <span
-              key={s}
-              className="border-2 border-ink bg-paper px-1.5 py-0.5 font-mono text-[10px] font-bold text-ink"
-            >
-              {s}: {pipeline[s]}
-            </span>
+            <div key={s} className="flex items-baseline gap-1.5">
+              <dt className="font-sans text-[13px] text-ui-faint">{s}</dt>
+              <dd className="font-sans text-[13px] font-medium text-ink tabular">
+                {pipeline[s]}
+              </dd>
+            </div>
           ))}
-        </div>
+        </dl>
 
         {applicants.length === 0 ? (
-          <p className="mt-3 font-mono text-[11px] text-grey">{t("emp.noApplicants")}</p>
+          <p className="mt-3 font-sans text-[14px] text-ui-muted">
+            {t("emp.noApplicants")}
+          </p>
         ) : (
-          <ul className="mt-3 space-y-2">
+          <ul className="mt-3 space-y-2.5">
             {applicants.map(({ application, opportunity, profile }) => (
               <li
                 key={application.id}
-                className="border-3 border-ink bg-cream p-2.5 shadow-pixel-sm"
+                className="rounded-xl border border-ui-line bg-paper p-4 transition-colors hover:border-ui-lineStrong"
               >
-                <p className="font-mono text-xs font-bold text-ink">
+                <p className="font-sans text-[15px] font-medium text-ink">
                   {profile?.name ?? t("emp.noProfile")}
                 </p>
-                <p className="font-mono text-[11px] text-ink/70">
+                <p className="mt-0.5 font-sans text-[13px] text-ui-muted">
                   {opportunity.role}
                   {profile &&
                     ` · ${profile.department} · ${t("emp.cgpa")} ${Number(profile.cgpa).toFixed(2)}`}
                 </p>
                 {profile && profile.skills.length > 0 && (
-                  <p className="mt-1 font-mono text-[10px] text-grey">
+                  <p className="mt-1.5 font-sans text-[13px] leading-relaxed text-ui-faint">
                     {profile.skills.join(", ")}
                   </p>
                 )}
 
-                <div className="mt-2 flex flex-wrap gap-1.5 border-t-2 border-ink/20 pt-2">
-                  {EMPLOYER_SET_STATUSES.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      disabled={busy || application.status === s}
-                      onClick={async () => {
-                        setBusy(true);
-                        try {
-                          await setApplicationStatus(application.id, s);
-                          await load();
-                        } finally {
-                          setBusy(false);
-                        }
-                      }}
-                      className="border-2 border-ink bg-paper px-1.5 py-0.5 font-mono text-[10px] font-bold text-ink active:translate-x-[1px] active:translate-y-[1px] disabled:bg-ink disabled:text-cream disabled:opacity-100"
-                    >
-                      {s}
-                    </button>
-                  ))}
+                <div className="mt-3 border-t border-ui-line pt-3">
+                  <p className="font-sans text-[12px] font-medium text-ui-muted">
+                    {t("emp.moveTo")}
+                  </p>
+                  {/* A segmented control, because these are one setting with
+                      six values -- not six independent buttons. The current
+                      value is the pressed segment rather than a disabled
+                      button, which previously made "where this applicant IS"
+                      look like "what you may not do". */}
+                  <div
+                    role="group"
+                    aria-label={t("emp.moveTo")}
+                    className="mt-1.5 flex flex-wrap gap-1.5"
+                  >
+                    {EMPLOYER_SET_STATUSES.map((s) => {
+                      const current = application.status === s;
+                      return (
+                        <button
+                          key={s}
+                          type="button"
+                          aria-pressed={current}
+                          disabled={busy || current}
+                          onClick={async () => {
+                            setBusy(true);
+                            try {
+                              await setApplicationStatus(application.id, s);
+                              await load();
+                            } finally {
+                              setBusy(false);
+                            }
+                          }}
+                          className={`min-h-[32px] rounded-lg border px-2.5 font-sans text-[13px] font-medium transition-colors ${
+                            current
+                              ? "border-ink bg-ink text-white"
+                              : "border-ui-lineStrong bg-paper text-ui-muted hover:bg-cream hover:text-ink disabled:opacity-50"
+                          }`}
+                        >
+                          {s}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </li>
             ))}

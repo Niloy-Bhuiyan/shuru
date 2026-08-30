@@ -1,17 +1,23 @@
 "use client";
 
 /**
- * OperatorShell — sidebar rail + working area.
+ * OperatorShell -- sidebar rail + working area.
  *
  * Replaces the earlier header-plus-tabs arrangement. That version separated
  * the operator area from the student app but kept its shape, so admin still
  * read as a mode of the student product rather than as its own tool.
  *
  * The split is deliberate: a dark rail for navigation, a light working area
- * for the rows an operator actually reads. Moderation is reading — listings,
- * companies, reports — and long stretches of small text on a dark surface is
+ * for the rows an operator actually reads. Moderation is reading -- listings,
+ * companies, reports -- and long stretches of small text on a dark surface is
  * the wrong trade for that. The chrome carries the "different product"
  * signal; the content stays legible.
+ *
+ * The chrome was rebuilt on the product token set (`ui-line`, `paper`,
+ * `cream`, rounded corners, real type sizes). It had been left behind on the
+ * retired pixel vocabulary -- 3px ink borders, offset shadows, 10px tracked
+ * mono -- so the console looked like a different, older application than
+ * every screen an operator reaches from it.
  */
 
 import React from "react";
@@ -42,15 +48,18 @@ export function OperatorShell({
       <OperatorSideNav items={items} role={role} />
 
       <div className="min-w-0 flex-1">
-        {/* Page header. The title is a real heading here — in the previous
-            version it was 12px and lost next to the button beside it. */}
-        <header className="flex items-start justify-between gap-3 border-b-3 border-ink bg-paper px-4 py-4 sm:px-6">
+        {/*
+          Sticky. An operator works down a queue by scrolling, and the header
+          carries the one line that says whether anything is still waiting --
+          which is worth nothing if it scrolls away on the first item.
+        */}
+        <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-ui-line bg-paper/95 px-4 py-4 backdrop-blur sm:px-6">
           <div className="min-w-0">
-            <h1 className="font-pixel text-base leading-tight text-ink sm:text-lg">
+            <h1 className="font-sans text-[19px] font-semibold leading-tight tracking-[-0.01em] text-ink sm:text-[22px]">
               {title}
             </h1>
             {subtitle && (
-              <p className="mt-1.5 font-mono text-[11px] leading-relaxed text-ink/70">
+              <p className="mt-1 font-sans text-[13px] leading-relaxed text-ui-muted">
                 {subtitle}
               </p>
             )}
@@ -58,7 +67,11 @@ export function OperatorShell({
 
           <div className="flex shrink-0 items-center gap-2">
             {actions}
-            <div className="flex border-2 border-ink" role="group" aria-label="Language">
+            <div
+              className="flex overflow-hidden rounded-lg border border-ui-lineStrong"
+              role="group"
+              aria-label="Language"
+            >
               {(["en", "bn"] as const).map((l) => (
                 <button
                   key={l}
@@ -66,9 +79,11 @@ export function OperatorShell({
                   onClick={() => setLang(l)}
                   aria-pressed={lang === l}
                   className={cx(
-                    "px-2 py-1 text-[11px] font-bold",
-                    l === "bn" ? "font-bangla" : "font-mono",
-                    lang === l ? "bg-ink text-cream" : "bg-paper text-ink"
+                    "min-h-[36px] px-2.5 text-[13px] font-medium transition-colors",
+                    l === "bn" ? "font-bangla" : "font-sans",
+                    lang === l
+                      ? "bg-ink text-white"
+                      : "bg-paper text-ui-muted hover:bg-cream hover:text-ink"
                   )}
                 >
                   {l === "en" ? "EN" : "বাং"}
@@ -87,49 +102,84 @@ export function OperatorShell({
 /**
  * A number that means something, with the word for what it counts.
  *
- * `tone` marks a figure that represents WORK WAITING rather than a fact
- * about the system — pending reviews are actionable, total listings are not.
- * An operator should be able to tell those apart at a glance.
+ * `tone="action"` marks a figure that represents WORK WAITING rather than a
+ * fact about the system -- pending reviews are actionable, total listings are
+ * not. An operator should be able to tell those apart at a glance.
+ *
+ * That distinction used to be drawn by flooding the whole tile with amber.
+ * Five saturated tiles side by side is a warning strip, not a hierarchy: when
+ * everything shouts, the count that matters is no easier to find than the one
+ * that doesn't. The signal now sits on the numeral and a single dot, so a row
+ * of tiles reads as a row of numbers with some of them lit.
+ *
+ * Passing `onClick` turns the tile into the queue selector as well as its
+ * summary -- see the note in the admin page about why the console has one
+ * navigation for the queues rather than two.
  */
 export function StatTile({
   label,
   value,
   hint,
   tone = "neutral",
+  selected,
+  onClick,
 }: {
   label: string;
   value: number | string;
   hint?: string;
   tone?: "neutral" | "action";
+  /** Marks this tile as the queue currently on screen. */
+  selected?: boolean;
+  onClick?: () => void;
 }) {
   const needsAction = tone === "action" && typeof value === "number" && value > 0;
-  return (
-    <div
-      className={cx(
-        "border-3 border-ink p-3 shadow-pixel-sm",
-        needsAction ? "bg-amber" : "bg-paper"
-      )}
-    >
+  const interactive = typeof onClick === "function";
+
+  const body = (
+    <>
+      <div className="flex items-center gap-1.5">
+        {needsAction && (
+          <span
+            aria-hidden="true"
+            className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber"
+          />
+        )}
+        <p className="min-w-0 truncate font-sans text-[12px] font-medium text-ui-muted">
+          {label}
+        </p>
+      </div>
       <p
         className={cx(
-          "font-mono text-[10px] font-bold tracking-[0.15em]",
-          needsAction ? "text-ink/80" : "text-ink/60"
+          "mt-1.5 font-sans text-[26px] font-semibold leading-none tabular",
+          needsAction ? "text-amberInk" : "text-ink"
         )}
       >
-        {label}
+        {value}
       </p>
-      <p className="mt-1 font-pixel text-xl leading-none text-ink">{value}</p>
       {hint && (
-        <p
-          className={cx(
-            "mt-1.5 font-mono text-[10px] leading-relaxed",
-            needsAction ? "text-ink/70" : "text-ink/50"
-          )}
-        >
+        <p className="mt-1.5 font-sans text-[12px] leading-snug text-ui-faint">
           {hint}
         </p>
       )}
-    </div>
+    </>
+  );
+
+  const surface = cx(
+    "rounded-xl border p-3.5 text-left transition-colors",
+    selected
+      ? "border-ink bg-paper ring-1 ring-ink"
+      : "border-ui-line bg-paper",
+    interactive && !selected && "hover:border-ui-lineStrong hover:bg-cream"
+  );
+
+  if (!interactive) {
+    return <div className={surface}>{body}</div>;
+  }
+
+  return (
+    <button type="button" onClick={onClick} aria-pressed={selected} className={surface}>
+      {body}
+    </button>
   );
 }
 

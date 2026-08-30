@@ -13,10 +13,19 @@
  * screen decides what to show, never what is permitted.
  *
  * The role check here only decides what to render. The real boundary is in
- * the database — `moderateListing`/`verifyCompany` re-read the row after
+ * the database -- `moderateListing`/`verifyCompany` re-read the row after
  * writing and raise `ModerationRejected` if the guard trigger reverted it, so
  * a non-admin who reaches this screen gets an honest error rather than a
  * moderation action that silently did nothing.
+ *
+ * ── The console has ONE navigation for the queues ─────────────────────────
+ *
+ * There used to be two, stacked: a row of five stat tiles carrying the counts,
+ * and directly beneath it a row of six tab buttons carrying the same counts
+ * again. Two controls, one axis, identical numbers -- and only the lower one
+ * did anything. The tiles ARE the selector now. That removes the duplication,
+ * gives the counts a job, and means the number an operator reads and the
+ * thing they click are the same object.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -26,6 +35,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { SourceHealthPanel } from "@/components/admin/SourceHealthPanel";
 import { PaymentsQueue } from "@/components/admin/PaymentsQueue";
 import { OperatorShell, StatTile } from "@/components/operator/OperatorShell";
+import { PixelButton } from "@/components/pixel/PixelButton";
+import { PixelBadge } from "@/components/pixel/PixelBadge";
 import type { OperatorNavItem } from "@/components/operator/OperatorSideNav";
 import {
   inviteByEmail,
@@ -50,8 +61,7 @@ import {
   verifyCompany,
 } from "@/lib/data/admin";
 import { useRole } from "@/hooks/useRole";
-import type { IconName } from "@/components/pixel/PixelIcon";
-import { useLang } from "@/lib/i18n";
+import { useLang, type StringKey } from "@/lib/i18n";
 import type { Company, ListingReport, Opportunity } from "@/lib/types";
 
 type Tab = "queue" | "companies" | "reports" | "access" | "payments" | "sources";
@@ -150,15 +160,27 @@ export default function AdminPage() {
     });
   }
 
-  // The queues double as the console's navigation, so the counts are built
-  // once and used in both places.
-  const TABS: { id: Tab; label: string; icon: IconName; count: number | null }[] = [
-    { id: "queue", label: t("admin.queue"), icon: "clock", count: pending.length },
-    { id: "companies", label: t("admin.companies"), icon: "check", count: companies.length },
-    { id: "reports", label: t("admin.reports"), icon: "warn", count: reports.length },
-    { id: "access", label: t("op.access"), icon: "user", count: access.length },
-    { id: "payments", label: t("adminPay.tab"), icon: "check", count: paymentCount },
-    { id: "sources", label: t("admin.sources"), icon: "signal", count: null },
+  /*
+   * The queues, defined once. They drive the tiles (which are the selector),
+   * the panel heading, and the rail badge -- so a count can never appear as
+   * one number in one place and a different number two inches away.
+   *
+   * `count: null` means "this queue has no backlog to count". Source health is
+   * a status, not a pile of work; giving it a 0 would file it under "nothing
+   * to do here" alongside the queues that are genuinely clear.
+   */
+  const QUEUES: {
+    id: Tab;
+    label: string;
+    hint: StringKey;
+    count: number | null;
+  }[] = [
+    { id: "queue", label: t("admin.queue"), hint: "op.tileQueue", count: pending.length },
+    { id: "companies", label: t("admin.companies"), hint: "op.tileCompanies", count: companies.length },
+    { id: "reports", label: t("admin.reports"), hint: "op.tileReports", count: reports.length },
+    { id: "access", label: t("op.access"), hint: "op.tileAccess", count: access.length },
+    { id: "payments", label: t("adminPay.tab"), hint: "op.tilePayments", count: paymentCount },
+    { id: "sources", label: t("admin.sources"), hint: "op.tileSources", count: null },
   ];
 
   // Everything an admin can act on right now. Drives the header subtitle and
@@ -175,7 +197,7 @@ export default function AdminPage() {
 
   // Admin destinations ONLY. The rail used to carry a link into the employer
   // workspace, which meant the maintenance console offered a hop into a
-  // different product — three roles smeared into one navigation. An admin who
+  // different product -- three roles smeared into one navigation. An admin who
   // genuinely needs the employer view can type the URL; it should not be a
   // casual click from the moderation queue.
   const NAV: OperatorNavItem[] = [
@@ -199,283 +221,287 @@ export default function AdminPage() {
     );
   }
 
+  const active = QUEUES.find((q) => q.id === tab)!;
+
   return (
     <OperatorShell
       items={NAV}
       role="admin"
       title={t("admin.title")}
-      subtitle={
-        workWaiting > 0 ? t("op.workWaiting") : t("op.allClear")
-      }
+      subtitle={workWaiting > 0 ? t("op.workWaiting") : t("op.allClear")}
       actions={
         <Link
           href="/admin/listings/new"
-          className="border-2 border-ink bg-amber px-2.5 py-1.5 font-mono text-[11px] font-bold text-ink shadow-pixel-sm active:translate-x-[1px] active:translate-y-[1px]"
+          className="inline-flex min-h-[36px] items-center rounded-lg bg-ink px-3 font-sans text-[13px] font-medium text-white transition-opacity hover:opacity-90"
         >
           + {t("admin.addListing")}
         </Link>
       }
     >
-      {/* Overview. The tiles that represent WORK go amber when non-zero, so
-          "is there anything to do" is answered before anything is read. */}
-      {/* Five tiles now. Three columns rather than five: the rail already
-          takes 210px, and five tiles across the remainder truncates every
-          label at the width an operator console is actually used at. */}
-      <section aria-label={t("op.overview")} className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        <StatTile label={t("admin.queue")} value={pending.length} tone="action" hint={t("op.tileQueue")} />
-        <StatTile label={t("admin.companies")} value={companies.length} tone="action" hint={t("op.tileCompanies")} />
-        <StatTile label={t("admin.reports")} value={reports.length} tone="action" hint={t("op.tileReports")} />
-        <StatTile label={t("op.access")} value={access.length} tone="action" hint={t("op.tileAccess")} />
-        <StatTile label={t("adminPay.tab")} value={paymentCount} tone="action" hint={t("op.tilePayments")} />
+      {/* ── overview, and the queue selector ─────────────────────────────
+          One control doing both jobs. See the header note. */}
+      <section aria-label={t("op.selectQueue")}>
+        <h2 className="sr-only">{t("op.overview")}</h2>
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
+          {QUEUES.map((q) => (
+            <StatTile
+              key={q.id}
+              label={q.label}
+              value={q.count ?? "—"}
+              hint={t(q.hint)}
+              tone="action"
+              selected={tab === q.id}
+              onClick={() => setTab(q.id)}
+            />
+          ))}
+        </div>
       </section>
 
-      <div className="no-scrollbar mt-5 flex gap-1.5 overflow-x-auto border-b-3 border-ink/20 pb-3">
-        {TABS.map((x) => (
-          <button
-            key={x.id}
-            type="button"
-            onClick={() => setTab(x.id)}
-            aria-pressed={tab === x.id}
-            className={`shrink-0 border-3 border-ink px-2 py-1 font-mono text-[10px] font-bold ${
-              tab === x.id ? "bg-ink text-cream" : "bg-paper text-ink"
-            }`}
-          >
-            {x.label}
-            {x.count !== null && x.count > 0 && ` (${x.count})`}
-          </button>
-        ))}
-      </div>
-
       {error && (
-        <p className="mt-3 border-3 border-ink bg-alert p-2 font-mono text-[11px] text-cream">
+        <p
+          role="alert"
+          className="mt-5 rounded-lg border border-alert bg-alert/5 p-3 font-sans text-[13px] leading-relaxed text-alert"
+        >
           {error}
         </p>
       )}
 
+      {/* The panel gets its own heading rather than relying on the pressed
+          tile. "Which queue am I looking at" should not require reading a
+          selection state six tiles wide. */}
+      <div className="mt-6 flex items-baseline gap-2.5">
+        <h2 className="font-sans text-[16px] font-semibold tracking-[-0.01em] text-ink">
+          {active.label}
+        </h2>
+        {active.count !== null && active.count > 0 && (
+          <PixelBadge tone="urgent">{active.count}</PixelBadge>
+        )}
+      </div>
+
       {/* ── listing queue ── */}
       {tab === "queue" && (
-        <section className="mb-6 mt-4 space-y-2">
-          {pending.length === 0 ? (
-            <EmptyState icon="check" title={t("admin.noPending")} />
-          ) : (
-            pending.map((l) => (
-              <article
-                key={l.id}
-                className="border-3 border-ink bg-cream p-2.5 shadow-pixel-sm"
-              >
-                <Link href={`/opportunity/${l.id}`} className="block">
-                  <p className="font-mono text-xs font-bold text-ink">{l.role}</p>
-                  <p className="font-mono text-[11px] text-ink/70">
-                    {l.company} · {l.location}
-                  </p>
-                </Link>
+        <QueueList
+          empty={pending.length === 0}
+          emptyLabel={t("admin.noPending")}
+        >
+          {pending.map((l) => (
+            <QueueRow key={l.id}>
+              <Link href={`/opportunity/${l.id}`} className="block hover:underline">
+                <p className="font-sans text-[15px] font-medium text-ink">{l.role}</p>
+                <p className="mt-0.5 font-sans text-[13px] text-ui-muted">
+                  {l.company} · {l.location}
+                </p>
+              </Link>
 
-                <input
-                  value={reason[l.id] ?? ""}
-                  onChange={(e) =>
-                    setReason((p) => ({ ...p, [l.id]: e.target.value }))
+              <ReasonField
+                id={`reason-${l.id}`}
+                label={t("admin.rejectReason")}
+                value={reason[l.id] ?? ""}
+                onChange={(v) => setReason((p) => ({ ...p, [l.id]: v }))}
+              />
+
+              <RowActions>
+                <PixelButton
+                  size="sm"
+                  variant="positive"
+                  disabled={busy}
+                  onClick={() => guarded(() => moderateListing(l.id, "approved"))}
+                >
+                  {t("admin.approve")}
+                </PixelButton>
+                <PixelButton
+                  size="sm"
+                  variant="danger"
+                  disabled={busy}
+                  onClick={() =>
+                    guarded(() =>
+                      moderateListing(l.id, "rejected", reason[l.id] || undefined)
+                    )
                   }
-                  placeholder={t("admin.rejectReason")}
-                  className="mt-2 w-full border-2 border-ink bg-paper px-2 py-1 font-mono text-[11px] text-ink focus:outline-none"
-                />
-
-                <div className="mt-2 flex gap-1.5">
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => guarded(() => moderateListing(l.id, "approved"))}
-                    className="flex-1 border-2 border-ink bg-mint px-2 py-1 font-mono text-[10px] font-bold text-ink disabled:opacity-50"
-                  >
-                    {t("admin.approve")}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() =>
-                      guarded(() =>
-                        moderateListing(l.id, "rejected", reason[l.id] || undefined)
-                      )
-                    }
-                    className="flex-1 border-2 border-ink bg-alert px-2 py-1 font-mono text-[10px] font-bold text-cream disabled:opacity-50"
-                  >
-                    {t("admin.reject")}
-                  </button>
-                </div>
-              </article>
-            ))
-          )}
-        </section>
+                >
+                  {t("admin.reject")}
+                </PixelButton>
+              </RowActions>
+            </QueueRow>
+          ))}
+        </QueueList>
       )}
 
       {/* ── company verification ── */}
       {tab === "companies" && (
-        <section className="mb-6 mt-4 space-y-2">
-          {companies.length === 0 ? (
-            <EmptyState icon="check" title={t("admin.noPending")} />
-          ) : (
-            companies.map((c) => (
-              <article
-                key={c.id}
-                className="border-3 border-ink bg-cream p-2.5 shadow-pixel-sm"
-              >
-                <p className="font-mono text-xs font-bold text-ink">{c.name}</p>
-                {c.website && (
-                  <a
-                    href={c.website}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-mono text-[11px] text-amberInk underline"
-                  >
-                    {c.website} ↗
-                  </a>
-                )}
-                <p className="font-mono text-[11px] text-ink/70">{c.location}</p>
+        <QueueList
+          empty={companies.length === 0}
+          emptyLabel={t("admin.noPending")}
+        >
+          {companies.map((c) => (
+            <QueueRow key={c.id}>
+              <p className="font-sans text-[15px] font-medium text-ink">{c.name}</p>
+              <p className="mt-0.5 font-sans text-[13px] text-ui-muted">{c.location}</p>
+              {c.website && (
+                <a
+                  href={c.website}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="mt-1 inline-block break-all font-sans text-[13px] text-amberInk underline"
+                >
+                  {c.website} ↗
+                </a>
+              )}
 
-                <div className="mt-2 flex gap-1.5">
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => guarded(() => verifyCompany(c.id, "approved"))}
-                    className="flex-1 border-2 border-ink bg-mint px-2 py-1 font-mono text-[10px] font-bold text-ink disabled:opacity-50"
-                  >
-                    {t("admin.verify")}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => guarded(() => verifyCompany(c.id, "rejected"))}
-                    className="flex-1 border-2 border-ink bg-alert px-2 py-1 font-mono text-[10px] font-bold text-cream disabled:opacity-50"
-                  >
-                    {t("admin.reject")}
-                  </button>
-                </div>
-              </article>
-            ))
-          )}
-        </section>
+              <RowActions>
+                <PixelButton
+                  size="sm"
+                  variant="positive"
+                  disabled={busy}
+                  onClick={() => guarded(() => verifyCompany(c.id, "approved"))}
+                >
+                  {t("admin.verify")}
+                </PixelButton>
+                <PixelButton
+                  size="sm"
+                  variant="danger"
+                  disabled={busy}
+                  onClick={() => guarded(() => verifyCompany(c.id, "rejected"))}
+                >
+                  {t("admin.reject")}
+                </PixelButton>
+              </RowActions>
+            </QueueRow>
+          ))}
+        </QueueList>
       )}
 
       {/* ── reports ── */}
       {tab === "reports" && (
-        <section className="mb-6 mt-4 space-y-2">
-          {reports.length === 0 ? (
-            <EmptyState icon="check" title={t("admin.noPending")} />
-          ) : (
-            reports.map((r) => (
-              <article
-                key={r.id}
-                className="border-3 border-ink bg-cream p-2.5 shadow-pixel-sm"
-              >
-                <p className="font-mono text-xs font-bold text-ink">
-                  {r.reason}
+        <QueueList empty={reports.length === 0} emptyLabel={t("admin.noPending")}>
+          {reports.map((r) => (
+            <QueueRow key={r.id}>
+              <p className="font-sans text-[15px] font-medium text-ink">{r.reason}</p>
+              {r.details && (
+                <p className="mt-0.5 font-sans text-[13px] leading-relaxed text-ui-muted">
+                  {r.details}
                 </p>
-                {r.details && (
-                  <p className="mt-1 font-mono text-[11px] text-ink/70">{r.details}</p>
-                )}
-                <Link
-                  href={`/opportunity/${r.opportunity_id}`}
-                  className="font-mono text-[11px] text-amberInk underline"
-                >
-                  {t("admin.action")} ↗
-                </Link>
+              )}
+              <Link
+                href={`/opportunity/${r.opportunity_id}`}
+                className="mt-1 inline-block font-sans text-[13px] text-amberInk underline"
+              >
+                {t("admin.action")} ↗
+              </Link>
 
-                <div className="mt-2 flex gap-1.5">
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => guarded(() => resolveReport(r.id, "actioned"))}
-                    className="flex-1 border-2 border-ink bg-mint px-2 py-1 font-mono text-[10px] font-bold text-ink disabled:opacity-50"
-                  >
-                    {t("admin.action")}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => guarded(() => resolveReport(r.id, "dismissed"))}
-                    className="flex-1 border-2 border-ink bg-grey px-2 py-1 font-mono text-[10px] font-bold text-cream disabled:opacity-50"
-                  >
-                    {t("admin.dismiss")}
-                  </button>
-                </div>
-              </article>
-            ))
-          )}
-        </section>
+              <RowActions>
+                <PixelButton
+                  size="sm"
+                  variant="positive"
+                  disabled={busy}
+                  onClick={() => guarded(() => resolveReport(r.id, "actioned"))}
+                >
+                  {t("admin.action")}
+                </PixelButton>
+                <PixelButton
+                  size="sm"
+                  variant="secondary"
+                  disabled={busy}
+                  onClick={() => guarded(() => resolveReport(r.id, "dismissed"))}
+                >
+                  {t("admin.dismiss")}
+                </PixelButton>
+              </RowActions>
+            </QueueRow>
+          ))}
+        </QueueList>
       )}
 
       {/* ── mobile-money transaction review ──
           Always mounted so its count is known before the tab is opened; the
-          component hides its own body when it is not the active tab would be
-          the alternative, and then the badge would only appear after a click. */}
-      <div className={tab === "payments" ? "" : "hidden"}>
+          alternative is a component that hides its own body, and then the
+          badge would only appear after a click. */}
+      <div className={tab === "payments" ? "mt-3" : "hidden"}>
         <PaymentsQueue onCountChange={setPaymentCount} />
       </div>
 
       {/* ── employer access requests + referrals ── */}
       {tab === "access" && (
-        <section className="mb-6 mt-4 space-y-2">
+        <section className="mb-6 mt-3 space-y-3">
           {/* Referral. Keyed to an address, never a shareable code: see
               migration 0017 for why that choice removes the need for a
               privilege-escalation RPC entirely. */}
-          <div className="border-3 border-ink bg-paper p-3 shadow-pixel-sm">
-            <p className="font-pixel text-[10px] text-ink">
+          <div className="rounded-xl border border-ui-line bg-paper p-4">
+            <p className="font-sans text-[15px] font-medium text-ink">
               {t("op.inviteTitle")}
             </p>
-            <p className="mt-1 font-mono text-[10px] leading-relaxed text-grey">
+            <p className="mt-1 max-w-prose font-sans text-[13px] leading-relaxed text-ui-muted">
               {t("op.inviteHint")}
             </p>
-            <div className="mt-2 flex flex-col gap-2">
-              <input
-                type="email"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                placeholder={t("op.inviteEmail")}
-                aria-label={t("op.inviteEmail")}
-                className="w-full border-3 border-ink bg-cream px-2 py-1.5 font-mono text-[11px] text-ink placeholder:text-grey focus:outline-none"
-              />
-              <div className="flex gap-1.5">
+
+            <div className="mt-3 flex flex-col gap-2.5 sm:flex-row sm:items-end">
+              <label className="min-w-0 flex-1">
+                <span className="mb-1 block font-sans text-[13px] font-medium text-ink">
+                  {t("op.inviteEmail")}
+                </span>
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="name@company.com"
+                  className="min-h-[40px] w-full rounded-lg border border-ui-lineStrong bg-paper px-3 font-sans text-[14px] text-ink placeholder:text-ui-faint focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink"
+                />
+              </label>
+
+              <div
+                role="group"
+                aria-label={t("op.inviteTitle")}
+                className="flex shrink-0 overflow-hidden rounded-lg border border-ui-lineStrong"
+              >
                 {(["employer", "admin"] as const).map((r) => (
                   <button
                     key={r}
                     type="button"
                     onClick={() => setInviteRole(r)}
                     aria-pressed={inviteRole === r}
-                    className={`flex-1 border-2 border-ink px-2 py-1 font-mono text-[10px] font-bold ${
-                      inviteRole === r ? "bg-ink text-cream" : "bg-paper text-ink"
+                    className={`min-h-[40px] px-3 font-sans text-[13px] font-medium transition-colors ${
+                      inviteRole === r
+                        ? "bg-ink text-white"
+                        : "bg-paper text-ui-muted hover:bg-cream hover:text-ink"
                     }`}
                   >
                     {r === "admin" ? t("admin.title") : t("emp.title")}
                   </button>
                 ))}
               </div>
-              <button
-                type="button"
+
+              <PixelButton
+                className="shrink-0"
                 disabled={busy || !inviteEmail.includes("@")}
                 onClick={sendInvite}
-                className="border-2 border-ink bg-amber px-2 py-1 font-mono text-[10px] font-bold text-ink disabled:opacity-50"
               >
                 {t("op.inviteSend")}
-              </button>
+              </PixelButton>
             </div>
 
             {invites.length > 0 && (
-              <ul className="mt-3 space-y-1 border-t-2 border-ink/20 pt-2">
+              <ul className="mt-4 space-y-1 border-t border-ui-line pt-3">
                 {invites.map((i) => (
-                  <li key={i.id} className="flex items-center justify-between gap-2">
-                    <span className="min-w-0 truncate font-mono text-[11px] text-ink">
-                      {i.email}
-                      <span className="ml-1.5 text-grey">
-                        {i.role === "admin" ? t("admin.title") : t("emp.title")}
+                  <li
+                    key={i.id}
+                    className="flex items-center justify-between gap-3 py-1"
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="min-w-0 truncate font-sans text-[14px] text-ink">
+                        {i.email}
                       </span>
+                      <PixelBadge tone="borderline">
+                        {i.role === "admin" ? t("admin.title") : t("emp.title")}
+                      </PixelBadge>
                     </span>
-                    <button
-                      type="button"
+                    <PixelButton
+                      size="sm"
+                      variant="ghost"
                       disabled={busy}
                       onClick={() => guarded(() => revokeInvite(i.id))}
-                      className="shrink-0 border-2 border-ink bg-paper px-1.5 py-0.5 font-mono text-[9px] font-bold text-ink disabled:opacity-50"
                     >
                       {t("op.inviteRevoke")}
-                    </button>
+                    </PixelButton>
                   </li>
                 ))}
               </ul>
@@ -486,12 +512,14 @@ export default function AdminPage() {
             <EmptyState icon="check" title={t("op.accessEmpty")} />
           ) : (
             access.map((r) => (
-              <article key={r.id} className="border-3 border-ink bg-paper p-3 shadow-pixel-sm">
-                <p className="font-mono text-xs font-bold text-ink">{r.company_name}</p>
-                <dl className="mt-1 space-y-0.5 font-mono text-[11px] text-ink/80">
+              <QueueRow key={r.id}>
+                <p className="font-sans text-[15px] font-medium text-ink">
+                  {r.company_name}
+                </p>
+                <dl className="mt-1 space-y-0.5 font-sans text-[13px] text-ui-muted">
                   {r.company_website && (
-                    <div className="flex gap-1.5">
-                      <dt className="text-grey">web</dt>
+                    <div className="flex gap-2">
+                      <dt className="shrink-0 text-ui-faint">web</dt>
                       {/* Untrusted: an applicant typed this. Opened with
                           noreferrer and never auto-fetched. */}
                       <dd className="min-w-0 break-all">
@@ -507,48 +535,127 @@ export default function AdminPage() {
                     </div>
                   )}
                   {r.contact_role && (
-                    <div className="flex gap-1.5">
-                      <dt className="text-grey">role</dt>
+                    <div className="flex gap-2">
+                      <dt className="shrink-0 text-ui-faint">role</dt>
                       <dd>{r.contact_role}</dd>
                     </div>
                   )}
                 </dl>
 
-                <label className="mt-2 block">
-                  <span className="sr-only">{t("op.accessNotes")}</span>
-                  <input
-                    value={reason[r.id] ?? ""}
-                    onChange={(e) => setReason((m) => ({ ...m, [r.id]: e.target.value }))}
-                    placeholder={t("op.accessNotes")}
-                    className="w-full border-3 border-ink bg-cream px-2 py-1.5 font-mono text-[11px] text-ink placeholder:text-grey focus:outline-none"
-                  />
-                </label>
+                <ReasonField
+                  id={`access-${r.id}`}
+                  label={t("op.accessNotes")}
+                  value={reason[r.id] ?? ""}
+                  onChange={(v) => setReason((m) => ({ ...m, [r.id]: v }))}
+                />
 
-                <div className="mt-2 flex gap-1.5">
-                  <button
-                    type="button"
+                <RowActions>
+                  <PixelButton
+                    size="sm"
+                    variant="positive"
                     disabled={busy}
                     onClick={() => decide(r.id, true)}
-                    className="flex-1 border-2 border-ink bg-mint px-2 py-1 font-mono text-[10px] font-bold text-ink disabled:opacity-50"
                   >
                     {t("op.accessApprove")}
-                  </button>
-                  <button
-                    type="button"
+                  </PixelButton>
+                  <PixelButton
+                    size="sm"
+                    variant="danger"
                     disabled={busy}
                     onClick={() => decide(r.id, false)}
-                    className="flex-1 border-2 border-ink bg-alert px-2 py-1 font-mono text-[10px] font-bold text-cream disabled:opacity-50"
                   >
                     {t("op.accessReject")}
-                  </button>
-                </div>
-              </article>
+                  </PixelButton>
+                </RowActions>
+              </QueueRow>
             ))
           )}
         </section>
       )}
 
-      {tab === "sources" && <SourceHealthPanel />}
+      {tab === "sources" && (
+        <div className="mt-3">
+          <SourceHealthPanel />
+        </div>
+      )}
     </OperatorShell>
   );
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
+
+/** The list body for a queue, or its cleared state. */
+function QueueList({
+  empty,
+  emptyLabel,
+  children,
+}: {
+  empty: boolean;
+  emptyLabel: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="mb-6 mt-3 space-y-2.5">
+      {empty ? <EmptyState icon="check" title={emptyLabel} /> : children}
+    </section>
+  );
+}
+
+/** One item awaiting a decision. */
+function QueueRow({ children }: { children: React.ReactNode }) {
+  return (
+    <article className="rounded-xl border border-ui-line bg-paper p-4 transition-colors hover:border-ui-lineStrong">
+      {children}
+    </article>
+  );
+}
+
+/**
+ * The free-text note attached to a decision.
+ *
+ * It has a real visible label now. It was a bare placeholder before, and a
+ * placeholder is not a label: it disappears the moment anyone types into it,
+ * which on this screen means the field that gets QUOTED BACK to an employer
+ * loses the only thing saying so exactly when it is being filled in.
+ */
+function ReasonField({
+  id,
+  label,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="mt-3">
+      <label
+        htmlFor={id}
+        className="mb-1 block font-sans text-[12px] font-medium text-ui-muted"
+      >
+        {label}
+      </label>
+      <input
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="min-h-[40px] w-full rounded-lg border border-ui-lineStrong bg-paper px-3 font-sans text-[14px] text-ink placeholder:text-ui-faint focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink"
+      />
+    </div>
+  );
+}
+
+/**
+ * The decision buttons.
+ *
+ * They are sized to their words rather than stretched half-and-half across
+ * the row. Two equal-width fills, one green and one red, is the layout of a
+ * confirmation dialog -- it reads as though the pair is a single question
+ * with a default, and it puts "reject" at the same visual weight as
+ * "approve" on every row an operator scrolls past.
+ */
+function RowActions({ children }: { children: React.ReactNode }) {
+  return <div className="mt-3 flex flex-wrap gap-2">{children}</div>;
 }
