@@ -367,7 +367,11 @@ export function CheckoutPanel({
                   <label
                     key={m.id}
                     className={cx(
-                      "flex min-h-[60px] cursor-pointer items-center gap-3 px-4 py-3 transition-colors",
+                      // WRAPS. At 375px the card row carries three scheme
+                      // marks, the word "Card" and the settlement note, and a
+                      // single non-wrapping line put Google Pay straight on
+                      // top of both of them. Nothing here may assume it fits.
+                      "flex min-h-[60px] cursor-pointer flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3 transition-colors",
                       active ? "bg-cream" : "bg-paper hover:bg-cream/60",
                       "focus-within:outline-none focus-within:ring-2 focus-within:ring-inset focus-within:ring-amber"
                     )}
@@ -395,7 +399,7 @@ export function CheckoutPanel({
                       {active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
                     </span>
 
-                    <span className="flex min-w-0 flex-1 items-center gap-2.5">
+                    <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2.5 gap-y-1">
                       <MethodMark id={m.id} height={22} />
                       {markIsWordmark(m.id) ? (
                         <span className="sr-only">{m.label}</span>
@@ -406,7 +410,15 @@ export function CheckoutPanel({
                       )}
                     </span>
 
-                    <span className="shrink-0 text-[12px] text-ui-faint">
+                    {/*
+                      Rendered ONCE and allowed to move, rather than as a
+                      mobile copy plus a desktop copy — two elements with the
+                      same words is the same sentence read twice to a screen
+                      reader. Below `sm` it takes a full line of its own,
+                      indented to clear the radio; from `sm` it returns to the
+                      end of the row.
+                    */}
+                    <span className="w-full shrink-0 pl-[30px] text-[12px] text-ui-faint sm:w-auto sm:pl-0">
                       {m.settlement === "manual_review"
                         ? t("pro.tagVerified")
                         : t("pro.tagSandbox")}

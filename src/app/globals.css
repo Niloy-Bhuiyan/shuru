@@ -481,3 +481,16 @@ body {
     transform: none !important;
   }
 }
+
+/*
+ * The operator console escapes the student app's mobile frame.
+ *
+ * `[data-app-frame]` is the 480px column the root layout wraps everything in.
+ * The admin and employer consoles set `data-operator` (see
+ * src/app/(operator)/layout.tsx) and opt out of it entirely: below `lg` the
+ * frame was squeezing a 212px sidebar plus its content into 480px.
+ */
+[data-app-frame]:has([data-operator]) {
+  max-width: none;
+  border-inline-width: 0;
+}

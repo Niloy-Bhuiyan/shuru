@@ -68,7 +68,7 @@ export function AgentDock() {
           type="button"
           onClick={() => setOpen(true)}
           aria-label={t("agent.open")}
-          className="fixed bottom-24 right-4 z-50 flex h-14 w-14 items-center justify-center border-3 border-ink bg-amber shadow-pixel active:translate-x-[2px] active:translate-y-[2px] active:shadow-pixel-none lg:bottom-6 lg:right-6"
+          className="fixed bottom-24 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-ink shadow-lg ring-1 ring-black/5 transition-transform hover:scale-105 active:scale-95 lg:bottom-6 lg:right-6"
         >
           <AgentAvatar size={30} />
         </button>
@@ -79,7 +79,7 @@ export function AgentDock() {
           {/* Scrim. Click-outside closes; it is also what stops the page
               behind from being interacted with by mistake on mobile. */}
           <div
-            className="fixed inset-0 z-40 bg-ink/40"
+            className="fixed inset-0 z-40 bg-ink/30 backdrop-blur-[2px]"
             onClick={() => setOpen(false)}
             aria-hidden
           />
@@ -89,11 +89,11 @@ export function AgentDock() {
             role="dialog"
             aria-modal="true"
             aria-label={t("agent.title")}
-            className="fixed inset-x-0 bottom-0 z-50 flex h-[78dvh] flex-col border-t-3 border-ink bg-cream shadow-pixel-lg sm:inset-x-auto sm:bottom-6 sm:right-6 sm:h-[560px] sm:max-h-[80dvh] sm:w-[400px] sm:border-3"
+            className="fixed inset-x-0 bottom-0 z-50 flex h-[78dvh] flex-col overflow-hidden rounded-t-2xl border border-ui-line bg-paper shadow-2xl sm:inset-x-auto sm:bottom-6 sm:right-6 sm:h-[560px] sm:max-h-[80dvh] sm:w-[400px] sm:rounded-2xl"
           >
-            <div className="flex shrink-0 items-center justify-between gap-2 border-b-3 border-ink bg-ink px-3 py-2">
-              <span className="flex items-center gap-2 font-pixel text-[10px] text-amber">
-                <AgentAvatar size={20} />
+            <div className="flex shrink-0 items-center justify-between gap-2 border-b border-ui-line bg-paper px-3.5 py-3">
+              <span className="flex items-center gap-2.5 text-[15px] font-semibold text-ink">
+                <AgentAvatar size={22} />
                 {t("agent.title")}
               </span>
               <div className="flex items-center gap-1">
@@ -102,7 +102,7 @@ export function AgentDock() {
                   onClick={() => setOpen(false)}
                   aria-label={t("agent.expand")}
                   title={t("agent.expand")}
-                  className="flex h-7 w-7 items-center justify-center border-2 border-cream/50 text-cream active:translate-x-[1px] active:translate-y-[1px]"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-ui-muted transition-colors hover:bg-cream hover:text-ink"
                 >
                   <PixelIcon name="spark" size={12} />
                 </Link>
@@ -110,7 +110,7 @@ export function AgentDock() {
                   type="button"
                   onClick={() => setOpen(false)}
                   aria-label={t("agent.close")}
-                  className="flex h-7 w-7 items-center justify-center border-2 border-cream/50 text-cream active:translate-x-[1px] active:translate-y-[1px]"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-ui-muted transition-colors hover:bg-cream hover:text-ink"
                 >
                   <PixelIcon name="x" size={12} />
                 </button>

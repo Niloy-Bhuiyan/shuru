@@ -53,7 +53,7 @@ export function OperatorShell({
           carries the one line that says whether anything is still waiting --
           which is worth nothing if it scrolls away on the first item.
         */}
-        <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-ui-line bg-paper/95 px-4 py-4 backdrop-blur sm:px-6">
+        <header className="sticky top-0 z-10 flex flex-col gap-3 border-b border-ui-line bg-paper/95 px-4 py-4 backdrop-blur sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:px-6">
           <div className="min-w-0">
             <h1 className="font-sans text-[19px] font-semibold leading-tight tracking-[-0.01em] text-ink sm:text-[22px]">
               {title}
@@ -137,14 +137,17 @@ export function StatTile({
 
   const body = (
     <>
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-start gap-1.5">
         {needsAction && (
           <span
             aria-hidden="true"
-            className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber"
+            className="mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full bg-amber"
           />
         )}
-        <p className="min-w-0 truncate font-sans text-[12px] font-medium text-ui-muted">
+        {/* Wraps. `truncate` turned "Listing queue" into "Li..." the moment
+            the console was narrow, which is a label that has stopped being a
+            label. Two lines is fine; two letters is not. */}
+        <p className="min-w-0 font-sans text-[12px] font-medium leading-tight text-ui-muted">
           {label}
         </p>
       </div>

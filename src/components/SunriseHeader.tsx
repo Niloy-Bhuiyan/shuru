@@ -27,7 +27,7 @@ export function SunriseHeader() {
       <div className="flex items-center justify-between px-4 py-2.5">
         <Link href="/radar" className="flex items-center gap-2">
           <PixelSun width={26} withHorizon={false} />
-          <span className="font-pixel text-[15px] leading-none text-ink">Shuru</span>
+          <span className="font-sans text-[17px] font-semibold leading-none tracking-[-0.01em] text-ink">Shuru</span>
           <span className="font-bangla text-sm font-bold leading-none text-amberInk">
             শুরু
           </span>
@@ -36,7 +36,7 @@ export function SunriseHeader() {
         <div className="flex items-center gap-2">
           <NotificationBell />
           <div
-            className="flex border-2 border-ink shadow-pixel-sm"
+            className="flex overflow-hidden rounded-lg border border-ui-lineStrong"
             role="group"
             aria-label="Language"
           >

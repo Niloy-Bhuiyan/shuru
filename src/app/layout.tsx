@@ -161,7 +161,7 @@ export default function RootLayout({
           */}
           <div
             data-app-frame
-            className="relative mx-auto min-h-dvh max-w-app bg-cream lg:max-w-[1120px] lg:border-x-3 lg:border-ink"
+            className="relative mx-auto min-h-dvh max-w-app bg-cream lg:max-w-[1120px] lg:border-x lg:border-ui-line"
           >
             {children}
           </div>

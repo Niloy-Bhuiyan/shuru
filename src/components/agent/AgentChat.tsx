@@ -335,9 +335,11 @@ export function AgentChat({
         )}
       >
         {bubbles.length === 0 && !busy && (
-          <div className="flex items-start gap-2 border-3 border-ink bg-paper p-3 shadow-pixel-sm">
-            <AgentAvatar size={24} materialize={materialize} />
-            <p className="font-mono text-xs leading-relaxed text-ink">{t("agent.hello")}</p>
+          <div className="flex items-start gap-2.5">
+            <AgentAvatar size={26} materialize={materialize} />
+            <p className="rounded-2xl rounded-tl-sm bg-cream px-3.5 py-2.5 text-[14px] leading-relaxed text-ink">
+              {t("agent.hello")}
+            </p>
           </div>
         )}
 
@@ -345,7 +347,7 @@ export function AgentChat({
           b.kind === "system" ? (
             <p
               key={i}
-              className="mx-auto w-fit border-2 border-ink bg-mint px-2 py-1 font-mono text-[10px] font-bold text-ink"
+              className="mx-auto w-fit rounded-full bg-mint/10 px-3 py-1 text-[12px] font-medium text-[#047857]"
             >
               {b.text}
             </p>
@@ -353,20 +355,22 @@ export function AgentChat({
             <div
               key={i}
               className={cx(
-                "max-w-[85%] border-3 border-ink p-3 shadow-pixel-sm",
-                b.kind === "user" ? "ml-auto bg-ink" : "mr-auto bg-paper"
+                "max-w-[85%] px-3.5 py-2.5 text-[14px] leading-relaxed",
+                b.kind === "user"
+                  ? "ml-auto rounded-2xl rounded-br-sm bg-ink"
+                  : "mr-auto rounded-2xl rounded-bl-sm bg-cream"
               )}
             >
               {b.kind === "user" && b.attachment && (
-                <span className="mb-1 flex w-fit items-center gap-1 border-2 border-cream/40 bg-ink px-1.5 py-0.5 font-mono text-[9px] font-bold text-cream">
+                <span className="mb-1.5 flex w-fit items-center gap-1 rounded-md bg-white/15 px-2 py-0.5 text-[12px] font-medium text-white">
                   <PixelIcon name="upload" size={9} /> {b.attachment}
                 </span>
               )}
               <p
                 className={cx(
-                  "whitespace-pre-line text-xs leading-relaxed",
-                  b.kind === "user" ? "text-cream" : "text-ink",
-                  lang === "bn" ? "font-bangla" : "font-mono"
+                  "whitespace-pre-line",
+                  b.kind === "user" ? "text-white" : "text-ink",
+                  lang === "bn" && "font-bangla"
                 )}
               >
                 {b.text}
@@ -379,11 +383,11 @@ export function AgentChat({
         {busy && draft && (
           <div className="mr-auto flex max-w-[85%] items-start gap-2">
             <AgentAvatar size={24} thinking />
-            <div className="border-3 border-ink bg-paper p-3 shadow-pixel-sm">
+            <div className="rounded-2xl rounded-bl-sm bg-cream px-3.5 py-2.5">
               <p
                 className={cx(
-                  "whitespace-pre-line text-xs leading-relaxed text-ink",
-                  lang === "bn" ? "font-bangla" : "font-mono"
+                  "whitespace-pre-line text-[14px] leading-relaxed text-ink",
+                  lang === "bn" && "font-bangla"
                 )}
               >
                 {draft}
@@ -395,9 +399,9 @@ export function AgentChat({
 
         {/* thinking (no draft yet) */}
         {busy && !draft && (
-          <div className="mr-auto flex w-fit items-center gap-2 border-3 border-ink bg-paper p-3 shadow-pixel-sm">
+          <div className="mr-auto flex w-fit items-center gap-2.5 rounded-2xl rounded-bl-sm bg-cream px-3.5 py-2.5">
             <AgentAvatar size={22} thinking />
-            <span className="pixel-blink font-mono text-[10px] font-bold text-grey">
+            <span className="pixel-blink text-[13px] text-ui-muted">
               {t("agent.thinking")}
             </span>
           </div>
@@ -410,19 +414,19 @@ export function AgentChat({
         className={cx(
           "pb-2 pt-2",
           compact
-            ? "shrink-0 border-t-3 border-ink bg-cream px-3"
+            ? "shrink-0 border-t border-ui-line bg-paper px-3"
             : "sticky bottom-20 bg-cream"
         )}
       >
         {/* attachment chip */}
         {attachment && (
-          <div className="mb-2 flex w-fit items-center gap-2 border-2 border-ink bg-paper px-2 py-1 shadow-pixel-sm">
+          <div className="mb-2 flex w-fit items-center gap-2 rounded-lg border border-ui-line bg-cream px-2.5 py-1.5">
             <PixelIcon
               name={attachment.kind === "resume" ? "upload" : "edit"}
               size={11}
               className="text-amberInk"
             />
-            <span className="font-mono text-[11px] font-bold text-ink">
+            <span className="text-[13px] font-medium text-ink">
               {attachment.kind === "resume"
                 ? `${t("agent.attachedResume")} · ${attachment.name}`
                 : t("agent.attachedJd")}
@@ -431,7 +435,7 @@ export function AgentChat({
               type="button"
               aria-label={t("agent.remove")}
               onClick={() => setAttachment(null)}
-              className="text-grey active:translate-x-[1px] active:translate-y-[1px]"
+              className="text-ui-faint transition-colors hover:text-ink"
             >
               <PixelIcon name="x" size={11} />
             </button>
@@ -439,24 +443,23 @@ export function AgentChat({
         )}
 
         {attachErr && (
-          <p className="mb-2 font-mono text-[11px] font-bold text-alert">! {attachErr}</p>
+          <p role="alert" className="mb-2 text-[13px] text-alert">{attachErr}</p>
         )}
 
         {/* quick actions — only while the conversation is empty; once there is
             a transcript they are noise competing with the real answer. */}
+        {/* They WRAP rather than scroll. A horizontal strip inside a 400px
+            dock cut the last chip in half at its right edge, with no scrollbar
+            and no fade to say there was more, so it read as a broken layout
+            rather than as something you could swipe. */}
         {bubbles.length === 0 && (
-          <div
-            className={cx(
-              "no-scrollbar mb-2 flex gap-2 overflow-x-auto",
-              compact ? "" : "-mx-4 px-4"
-            )}
-          >
+          <div className={cx("mb-2.5 flex flex-wrap gap-2", compact ? "" : "-mx-4 px-4")}>
             {QUICK_ACTIONS.map((k) => (
               <button
                 key={k}
                 type="button"
                 onClick={() => prefill(t(k))}
-                className="shrink-0 border-2 border-ink bg-paper px-2 py-1 font-mono text-[11px] font-bold text-ink shadow-pixel-sm active:translate-x-[1px] active:translate-y-[1px]"
+                className="rounded-full border border-ui-lineStrong bg-paper px-3 py-1.5 text-left text-[13px] text-ink transition-colors hover:bg-cream"
               >
                 {t(k)}
               </button>
@@ -471,7 +474,7 @@ export function AgentChat({
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={attaching}
-              className="flex items-center gap-1.5 border-2 border-ink bg-paper px-2 py-1 font-mono text-[11px] font-bold text-ink shadow-pixel-sm active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-lg border border-ui-lineStrong bg-paper px-3 py-1.5 text-[13px] font-medium text-ink transition-colors hover:bg-cream disabled:opacity-50"
             >
               <PixelIcon name="upload" size={11} />{" "}
               {attaching ? t("agent.attaching") : t("agent.attachResume")}
@@ -483,7 +486,7 @@ export function AgentChat({
                 setJdText(attachment?.kind === "jd" ? attachment.text : "");
                 setJdOpen(true);
               }}
-              className="flex items-center gap-1.5 border-2 border-ink bg-paper px-2 py-1 font-mono text-[11px] font-bold text-ink shadow-pixel-sm active:translate-x-[1px] active:translate-y-[1px]"
+              className="flex items-center gap-1.5 rounded-lg border border-ui-lineStrong bg-paper px-3 py-1.5 text-[13px] font-medium text-ink transition-colors hover:bg-cream"
             >
               <PixelIcon name="edit" size={11} /> {t("agent.attachJd")}
             </button>
@@ -496,7 +499,7 @@ export function AgentChat({
             aria-label={t("agent.attach")}
             onClick={() => setAttachMenu((v) => !v)}
             disabled={busy || limited}
-            className="flex items-center justify-center border-3 border-ink bg-paper px-2 text-ink shadow-pixel-sm active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-50"
+            className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg border border-ui-lineStrong bg-paper text-ui-muted transition-colors hover:bg-cream hover:text-ink disabled:opacity-50"
           >
             <PixelIcon name="upload" size={14} />
           </button>
@@ -508,7 +511,7 @@ export function AgentChat({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && send(input)}
             disabled={busy || limited}
-            className="w-full border-3 border-ink bg-paper px-3 py-2 font-mono text-xs text-ink placeholder:text-grey focus:shadow-pixel-sm focus:outline-none disabled:opacity-50"
+            className="h-[42px] w-full rounded-lg border border-ui-lineStrong bg-paper px-3.5 text-[14px] text-ink placeholder:text-ui-faint focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink disabled:opacity-50"
           />
           <PixelButton
             size="sm"
@@ -520,7 +523,7 @@ export function AgentChat({
         </div>
 
         {remaining !== null && (
-          <p className="mt-1.5 font-mono text-[10px] font-bold text-grey">
+          <p className="mt-2 text-[12px] text-ui-faint">
             {remaining} {t("agent.left")}
           </p>
         )}
@@ -542,14 +545,14 @@ export function AgentChat({
       {/* JD paste sheet */}
       {jdOpen && (
         <div className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/60 p-4">
-          <div className="w-full max-w-[400px] border-3 border-ink bg-paper p-3 shadow-pixel-lg">
-            <p className="font-pixel text-[10px] text-ink">{t("agent.jdTitle")}</p>
+          <div className="w-full max-w-[420px] rounded-2xl border border-ui-line bg-paper p-4 shadow-xl">
+            <p className="text-[15px] font-semibold text-ink">{t("agent.jdTitle")}</p>
             <textarea
               value={jdText}
               onChange={(e) => setJdText(e.target.value)}
               placeholder={t("agent.jdPlaceholder")}
               rows={6}
-              className="mt-2 w-full resize-none border-3 border-ink bg-cream px-2 py-1.5 font-mono text-xs text-ink placeholder:text-grey focus:outline-none"
+              className="mt-3 w-full resize-none rounded-lg border border-ui-lineStrong bg-paper px-3 py-2 text-[14px] text-ink placeholder:text-ui-faint focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink"
             />
             <div className="mt-2 flex gap-2">
               <PixelButton

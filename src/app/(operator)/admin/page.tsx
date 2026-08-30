@@ -233,7 +233,7 @@ export default function AdminPage() {
           One control doing both jobs. See the header note. */}
       <section aria-label={t("op.selectQueue")}>
         <h2 className="sr-only">{t("op.overview")}</h2>
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-6">
           {QUEUES.map((q) => (
             <StatTile
               key={q.id}
