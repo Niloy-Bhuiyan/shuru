@@ -40,7 +40,6 @@ import { PixelBadge } from "@/components/pixel/PixelBadge";
 import type { OperatorNavItem } from "@/components/operator/OperatorSideNav";
 import {
   inviteByEmail,
-  InviteDenied,
   listOpenInvites,
   revokeInvite,
   type InvitableRole,
@@ -48,7 +47,6 @@ import {
 } from "@/lib/data/roleInvites";
 import {
   decideEmployerRequest,
-  EmployerAccessDenied,
   listEmployerRequests,
   type EmployerAccessRequest,
 } from "@/lib/data/employerAccess";
@@ -62,6 +60,7 @@ import {
 } from "@/lib/data/admin";
 import { useRole } from "@/hooks/useRole";
 import { useLang, type StringKey } from "@/lib/i18n";
+import { toUserMessage } from "@/lib/errors";
 import type { Company, ListingReport, Opportunity } from "@/lib/types";
 
 type Tab = "queue" | "companies" | "reports" | "access" | "payments" | "sources";
@@ -113,7 +112,7 @@ export default function AdminPage() {
       return;
     }
     load().catch((e) => {
-      setError((e as Error).message);
+      setError(toUserMessage(e, t));
       setReady(true);
     });
   }, [role, roleLoading, load]);
@@ -125,37 +124,29 @@ export default function AdminPage() {
       await fn();
       await load();
     } catch (e) {
-      setError((e as Error).message);
+      setError(toUserMessage(e, t));
     } finally {
       setBusy(false);
     }
   }
 
   /**
-   * Approve or reject. A 42501 comes back as EmployerAccessDenied and is
-   * shown as such: an admin who has lost the role should see why, not a
-   * generic failure.
+   * Approve or reject. A 42501 comes back as EmployerAccessDenied, which
+   * lib/errors.ts maps by name to "you do not have permission" — an admin who
+   * has lost the role should see why, not a generic failure.
    */
   async function decide(id: string, approve: boolean) {
     await guarded(async () => {
-      try {
-        await decideEmployerRequest(id, approve, reason[id]);
-      } catch (e) {
-        if (e instanceof EmployerAccessDenied) throw new Error(t("op.accessDenied"));
-        throw e;
-      }
+      // EmployerAccessDenied and InviteDenied are recognised by name in
+      // lib/errors.ts, so neither needs unwrapping here any more.
+      await decideEmployerRequest(id, approve, reason[id]);
       setReason((m) => ({ ...m, [id]: "" }));
     });
   }
 
   async function sendInvite() {
     await guarded(async () => {
-      try {
-        await inviteByEmail(inviteEmail, inviteRole);
-      } catch (e) {
-        if (e instanceof InviteDenied) throw new Error(e.message);
-        throw e;
-      }
+      await inviteByEmail(inviteEmail, inviteRole);
       setInviteEmail("");
     });
   }

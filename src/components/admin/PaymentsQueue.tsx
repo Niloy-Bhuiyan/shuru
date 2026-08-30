@@ -41,8 +41,8 @@ import { MethodMark } from "@/components/brand/MethodMark";
 import { cx } from "@/lib/cx";
 import { formatMoney } from "@/lib/subscription";
 import { useLang } from "@/lib/i18n";
+import { toUserMessage } from "@/lib/errors";
 import {
-  DecisionRejected,
   decidePayment,
   listAutomaticPayments,
   listPaymentsForReview,
@@ -90,7 +90,7 @@ export function PaymentsQueue({
 
   useEffect(() => {
     load().catch((e) => {
-      setError((e as Error).message);
+      setError(toUserMessage(e, t));
       setReady(true);
     });
   }, [load]);
@@ -112,9 +112,9 @@ export function PaymentsQueue({
       setNote((m) => ({ ...m, [row.id]: "" }));
       await load();
     } catch (e) {
-      setError(
-        e instanceof DecisionRejected ? e.message : (e as Error).message
-      );
+      // DecisionRejected carries a sentence written for a reviewer and marks
+      // itself `explained`, so toUserMessage lets it through unchanged.
+      setError(toUserMessage(e, t));
     } finally {
       setBusyId(null);
     }

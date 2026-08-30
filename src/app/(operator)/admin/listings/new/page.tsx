@@ -23,6 +23,7 @@ import { PixelInput } from "@/components/pixel/PixelInput";
 import { createCuratedListing } from "@/lib/data/admin";
 import { useRole } from "@/hooks/useRole";
 import { useLang } from "@/lib/i18n";
+import { toUserMessage } from "@/lib/errors";
 import type { WorkMode } from "@/lib/types";
 
 const WORK_MODES: WorkMode[] = ["onsite", "remote", "hybrid"];
@@ -104,7 +105,7 @@ export default function AdminNewListingPage() {
             setDone(true);
             router.push("/radar");
           } catch (err) {
-            setError((err as Error).message);
+            setError(toUserMessage(err, t));
           } finally {
             setBusy(false);
           }

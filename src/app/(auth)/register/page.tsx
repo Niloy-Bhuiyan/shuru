@@ -81,7 +81,19 @@ export default function RegisterPage() {
       const sb = supabaseBrowser();
       const { data, error } = await sb.auth.signUp({ email, password });
       if (error) {
-        setErrors({ email: error.message });
+        /*
+         * Never the provider's own sentence. Supabase returns strings written
+         * for a developer reading a log ("AuthApiError: ..."), and putting one
+         * under an email field tells a student nothing they can act on.
+         *
+         * Rate limiting is the single case worth naming, because the response
+         * is "wait", not "fix something" — same rule as /forgot-password.
+         */
+        setErrors({
+          email: /rate|limit|too many/i.test(error.message)
+            ? t("auth.errRateLimit")
+            : t("auth.errGeneric"),
+        });
         return;
       }
       /*

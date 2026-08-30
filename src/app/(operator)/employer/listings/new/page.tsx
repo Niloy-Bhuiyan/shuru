@@ -21,6 +21,7 @@ import { PixelInput } from "@/components/pixel/PixelInput";
 import { createListing, getMyCompany } from "@/lib/data/employer";
 import { useRole } from "@/hooks/useRole";
 import { useLang } from "@/lib/i18n";
+import { toUserMessage } from "@/lib/errors";
 import type { Company, WorkMode } from "@/lib/types";
 
 const WORK_MODES: WorkMode[] = ["onsite", "remote", "hybrid"];
@@ -108,7 +109,7 @@ export default function NewListingPage() {
             });
             router.push("/employer");
           } catch (err) {
-            setError((err as Error).message);
+            setError(toUserMessage(err, t));
           } finally {
             setBusy(false);
           }

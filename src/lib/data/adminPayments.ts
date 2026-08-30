@@ -85,7 +85,17 @@ export async function listAutomaticPayments(): Promise<ReviewablePayment[]> {
 }
 
 export class DecisionRejected extends Error {
-  constructor(readonly code: string, message: string) {
+  /**
+   * `explained` marks a message written for a reviewer to READ, which is what
+   * lets it past lib/errors.ts instead of being replaced by a generic string.
+   * It is false for a code we have no sentence for, because the alternative
+   * is rendering a raw slug like "decision_failed" at a person.
+   */
+  constructor(
+    readonly code: string,
+    message: string,
+    readonly explained = false
+  ) {
     super(message);
     this.name = "DecisionRejected";
   }
@@ -113,7 +123,7 @@ export async function decidePayment(
 
   const body = (await res.json().catch(() => ({}))) as { error?: string };
   const code = body.error ?? "decision_failed";
-  throw new DecisionRejected(code, MESSAGES[code] ?? code);
+  throw new DecisionRejected(code, MESSAGES[code] ?? code, code in MESSAGES);
 }
 
 /**
