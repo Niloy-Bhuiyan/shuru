@@ -4,10 +4,20 @@
 top to bottom before touching anything. It records verified state only: every
 "pass" / "done" below was observed, not assumed.
 
-**Last updated:** 2026-08-29 — session 3. **PRODUCTION IS LIVE. AUTH WORKS END TO
-END, INCLUDING PASSWORD RESET. THE EMPLOYER PRODUCT IS REACHABLE. THE PIXEL
-DESIGN SYSTEM HAS BEEN REPLACED BY A CONVENTIONAL PRODUCT UI, AND `/` IS NOW A
-REAL LANDING PAGE INSTEAD OF A REDIRECT.**
+**Last updated:** 2026-08-30 — session 6, at `bd46d2f`. **PRODUCTION IS LIVE.
+AUTH WORKS END TO END, INCLUDING PASSWORD RESET AND ROLE-BASED LANDING ON BOTH
+SIGN-IN PATHS. THE EMPLOYER PRODUCT IS REACHABLE. THE PIXEL DESIGN SYSTEM HAS
+BEEN REPLACED BY A CONVENTIONAL PRODUCT UI ACROSS THE STUDENT APP, THE OPERATOR
+CONSOLE AND THE PAYMENT SCREENS, AND `/` IS A REAL LANDING PAGE.**
+
+**One thing is knowingly broken in production:** the GitHub sign-in button is
+visible and returns `provider is not enabled` until the Supabase dashboard step
+in §11 item 3 is done. That is §9's next step.
+
+**If you are reading this after a gap:** sessions 4 and 5 went unrecorded for a
+day and §9 was five commits out of date, which is how the OAuth landing bug in
+§8d survived — §8a claimed role-based landing was done, and it was, on one of
+the two paths. Prefer `git log` over any claim in this file that is not dated.
 
 ---
 
@@ -285,11 +295,14 @@ nothing for `anon`, **no write policy at all**).
 
 ## 6. Gates and their latest observed results
 
+All re-run 2026-08-30 (session 6). Where a row still cites an older figure it is
+because that gate has not been re-run since; the four code gates below were.
+
 | Gate | Baseline (start of session) | Now |
 |---|---|---|
 | `npm run typecheck` | pass | **pass** |
-| `npm run lint` | pass | **pass — 0 errors**, 22 warnings (18 in §12 + 3 unused symbols in §9 + 1 stale disable directive) |
-| `npm test` | pass — 210/210, 26 files | **pass — 290/290, 34 files** |
+| `npm run lint` | pass | **pass — 0 errors**, 24 warnings (21 `set-state-in-effect` per §12 + 2 unused `router` symbols per §9 + 1 stale disable directive in `public/sw.js`) |
+| `npm test` | pass — 210/210, 26 files | **pass — 376/376, 38 files** |
 | `npm run build` | not run | **pass**, exit 0, prints `ƒ Proxy (Middleware)` |
 | `npm run test:e2e` | not run | **pass — 128/128** (mobile 390px + desktop 1440px, production build) |
 | `npm audit` | 7 vulns (6 high, 1 moderate) | **0 vulnerabilities** |
@@ -539,16 +552,24 @@ verified there.**
    should live in a separate Supabase project rather than production.
 5. ~~Accessibility audit~~ **DONE** — see §7.10 and `e2e/a11y.spec.ts`.
    Still outstanding: visual QA of the *authenticated* screens, which the
-   browser tooling could not reach without a session.
+   browser tooling could not reach without a session. **Session 6 enlarged
+   this**: the operator console and both payment screens were rebuilt and
+   none of them has been seen rendered. See §9 item 2.
 6. **`docs/ARCHITECTURE.md` is stale** and not yet fixed: it describes
    `lib/match/` (actually `lib/matching.ts`), `app/employer/` and `app/admin/`
-   (actually under `app/(main)/`), `/api/cron/*` (actually `/api/cron`), says
+   (actually under `app/(operator)/` since `4efd28d` — this line itself said
+   `app/(main)/` and was already stale when written), `/api/cron/*` (actually
+   `/api/cron`), says
    push / email delivery is "architecture ready — delivery not enabled" when
    both were later wired, and predates both the Next 16 upgrade and the Python
    service. `docs/DEPLOYMENT.md` also needs the two new services' variables and
    the Python deployment steps.
-7. **Migrate the 18 `set-state-in-effect` sites** and restore that rule to
-   `error` in `eslint.config.mjs` (§12).
+7. **Migrate the `set-state-in-effect` sites** and restore that rule to
+   `error` in `eslint.config.mjs` (§12). **21 sites now**, not 18.
+
+8. **Enable the GitHub auth provider in Supabase** — added 2026-08-30 and now
+   the top item in §9, because the button is live in production and failing.
+   Full steps in §11 item 3.
 
 ---
 
@@ -588,7 +609,14 @@ All committed as `Niloy-Bhuiyan`, merged to `main`, deployed and verified live.
 
 4. **`090347a` role-based landing + README architecture.** Sign-in lands admin
    on /admin, employer on /employer, student on /radar; an explicit `?next=`
-   still wins. Deliberately not separate login pages per role — a role is a
+   still wins.
+
+   > **This was only half true for a day, and this entry is why nobody looked.**
+   > `090347a` wired role-based landing into the PASSWORD form only. OAuth and
+   > email links go through `/auth/callback`, which ignored the role entirely
+   > until `bd46d2f`. See §8d. An unqualified "sign-in lands admin on /admin"
+   > read as "both paths", so the bug was documented as fixed before it was.
+ Deliberately not separate login pages per role — a role is a
    property of an account and nobody has one until they authenticate, so three
    forms would be three identical forms, and an `/admin/login` that exists
    tells an attacker which addresses are worth attacking.
@@ -697,40 +725,166 @@ palette change and the least constrained against overflow. It is in both lists
 now, and adding it is what failed. A gate that does not cover the newest page
 is not covering the risk.
 
-### Still uncommitted at handoff
+### Committed after that handoff
 
-The working tree carries the design-system replacement itself (~57 modified
-files) plus `src/components/landing/`, `scripts/generate-brand-assets.mjs`,
-`public/manifest.webmanifest` and the generated icons. All gates above were run
-against exactly this tree.
+The design-system replacement described above landed as **`b1d3240`** — "replace
+the pixel design system with a product ui, and give / a real front door". The
+section previously said it was still in the working tree; it is not, and has not
+been since.
+
+---
+
+## 8c. Sessions 4-5 (2026-08-29) — payments finished, discovery rebuilt
+
+Three commits that landed after §8b was written and were never recorded here.
+`6f77b28` (the doc update for the 0018 subscription work) is described in the
+"Pro subscriptions" note in §2.
+
+```
+e3347d9 make every payment method a demonstration, wallets included
+34adc91 show the payment section to admins too
+cba50bb find internships by searching the live web, and verify every one
+```
+
+- **`e3347d9`** made bKash / Nagad / Rocket real *paths* rather than switched-off
+  options: `manual_review` settlement, a placeholder merchant number that is
+  struck through and labelled, and an admin review queue that grants the
+  entitlement. The rule that outlives the demo is stated at the top of
+  `src/lib/payments/methods.ts` — **no credential is ever collected**, not a
+  card number, not a CVV, not a wallet PIN, not an OTP.
+- **`34adc91`** stopped hiding the payment section from admins. It was gated on
+  `isPro`, which is true for an administrator by role — so the one account most
+  likely to be *testing* the payment flow was the only account that could not
+  see it.
+- **`cba50bb`** replaced fixed-source ingestion with live web search plus
+  per-listing verification.
+
+## 8d. Session 6 (2026-08-30) — operator console, checkout UI, and a real auth bug
+
+Four commits, `cba50bb..bd46d2f`, pushed to `main` and deployed.
+
+```
+898c697 show the github button, and give both providers their real marks
+6fd6447 rebuild the operator console on the product design system
+b29f2a4 make the payment screens look like the checkout they already are
+bd46d2f land an oauth sign-in in the workspace its role belongs to
+```
+
+### The bug worth reading twice: `bd46d2f`
+
+Reported as "signing in only ever opens /radar, and /admin cannot be reached."
+
+Role-based landing was implemented once and applied to **one of the two sign-in
+paths**. The password form reads `user_roles` and calls `homeForRole`, so
+`homeForRole` looked wired up and §8a item 4 recorded it as done. OAuth and
+email links do not go through that form — they go through `/auth/callback`,
+which honoured whatever `?next=` it was handed, and `OAuthButtons` handed it a
+hardcoded `"/radar"` on every click.
+
+That is invisible until it matters, and here it mattered completely. The owner's
+admin account was created through Google, and `60546c0` deliberately removed the
+operator entry points from the student app — so role-based landing is the ONLY
+route into the console. **An admin signing in with Google could not reach /admin
+through the UI at all.**
+
+What hid it was a type collapse. `safeNext()` returned `"/radar"` for a missing
+param, which made "no preference" and "explicitly wants radar" the same value —
+leaving no state in which the role could get a say. `explicitNext()` returns
+`null` now, and the destination resolves *after* the code exchange, which is the
+earliest point the role is knowable and the one place every provider and every
+email link passes through. An explicit `?next=` still wins; the open-redirect
+guard is unchanged and still tested. Confirmed to FAIL against the broken
+version before the fix went back in.
+
+**The general lesson, which is not about OAuth:** a fallback that turns "absent"
+into a concrete default destroys the distinction a later feature needs. The rule
+was not missing — it was unreachable.
+
+### The console and checkout work
+
+- **`6fd6447`** — the operator area had never had the `b1d3240` design pass and
+  was still on the retired pixel vocabulary, so it read as an older, separate
+  application. Beyond that: the admin console had **two navigations for one
+  axis** (five stat tiles carrying the queue counts, and six tab buttons
+  carrying the same counts again, only the lower row functional) — the tiles are
+  the selector now. Stat tiles no longer flood solid amber when non-zero. The
+  rejection-reason field got a real `<label>`; it was placeholder-only, so the
+  field whose text is quoted back to an employer lost its only explanation on
+  first keystroke. The employer dashboard's unused `StatTile` import was the
+  missing stat row §9 suspected, and is now rendered.
+- **`b29f2a4`** — presentation only, no payment logic touched. Plan selection is
+  two comparison cards instead of a toggle plus a price card elsewhere; method
+  tiles carry real scheme marks resolved through one `MethodMark` module; an
+  order summary was added, because the last thing before an irreversible-looking
+  button should restate what is about to happen — here including the line saying
+  it isn't. Both pickers are real radio inputs rather than buttons with
+  `aria-pressed`.
+- **`898c697`** — brand marks live in `src/components/brand/`, inline SVG
+  because the CSP blocks external hosts. `VisaMark` generates its clip-path and
+  gradient ids with `useId`: two instances would emit duplicate ids, and
+  `url(#a)` resolves to whichever came first, so the second would silently
+  borrow the first one's geometry. **No official Rocket asset exists** — it
+  renders as a plainly typographic lettermark on purpose, because a
+  nearly-right logo is what a payer half-recognises and trusts.
+
+### Deployment, and a mistake made doing it
+
+`NEXT_PUBLIC_OAUTH_GITHUB_ENABLED` was set to `true` in **Vercel** (it lives in
+`.env.local` locally, which is gitignored, so the local flip alone changed
+nothing in production). `NEXT_PUBLIC_*` is inlined at build time, so the
+variable needs a **rebuild**, not just a redeploy of the alias.
+
+**`vercel ls --prod` is not newest-first.** Its top five rows were all two days
+old and the current deployment was absent entirely. Redeploying its first row
+rebuilt two-day-old source and rolled `shuru-ten.vercel.app` back to the retired
+pixel design for about three minutes. Use plain `vercel ls` (newest-first, shows
+Age) and confirm with `vercel inspect <url> | grep created` before redeploying.
+
+Also: env vars on this project are marked **Sensitive**, so `vercel env pull`
+returns empty strings for them. They can be overwritten (`env rm` then
+`env add`) but never read back.
 
 ---
 
 ## 9. Exact next step
 
-**Deploy the Python retrieval service** (§8 P2-3b). It is implemented, tested
-and indexed, and it is not hosted, so `/api/ask` reports itself unavailable in
-production — the one subsystem that is finished and switched off. Everything
-else outstanding in §8 is verification or documentation debt.
+**Enable the GitHub auth provider in Supabase** (§11 item 3). This is the only
+item blocking something a user can already see: `898c697` shipped the GitHub
+button, and `NEXT_PUBLIC_OAUTH_GITHUB_ENABLED=true` is set in Vercel, so the
+button is live on production **and currently returns
+`validation_failed: Unsupported provider: provider is not enabled`** to anyone
+who clicks it. There is no API path — it needs a GitHub OAuth App and a paste
+into the Supabase dashboard. Steps in §11.
 
-Two smaller things, in the order they are worth doing:
+Then, in order:
 
-- **Authenticated visual QA has still never happened.** §8b redesigned the
-  signed-in screens, but every gate that ran against them is unit-level or
-  signed-out. `.local-scripts/visual-qa.mjs` exists and needs a session: the
-  owner signs in once in a headed browser to save `state.json`, after which it
-  screenshots every screen at both viewports. Nothing automated can reach
-  those screens without that one manual step, which is also why §8 P2-4
-  (authenticated E2E journeys) is still open.
-- **Three unused-symbol warnings predate this session** and are not part of
-  the documented 18-warning backlog in §12: `router` in
-  `src/app/(auth)/login/page.tsx` and `src/app/(auth)/reset-password/page.tsx`
-  (both pages navigate with a full document load instead — see the comment at
-  `login/page.tsx:115`), and an unused `StatTile` import in
-  `src/app/(operator)/employer/page.tsx`. The employer dashboard imports the
-  tile the admin console uses and never renders it, which is probably a
-  missing stat row rather than a stray import — decide which before deleting
-  the line.
+1. **Deploy the Python retrieval service** (§8 P2-3b). Implemented, tested and
+   indexed, but not hosted, so `/api/ask` reports itself unavailable in
+   production — the one subsystem that is finished and switched off.
+2. **Authenticated visual QA has still never happened**, and session 6 made the
+   gap larger: `8d` rebuilt the entire operator console and both payment
+   screens, and every gate that ran against them is unit-level or signed-out.
+   The browser could reach `/login` and `/register` only; `/admin`, `/pro` and
+   the checkout screens bounced to login. Brand marks were verified by injecting
+   them into the live DOM (a broken SVG path fails silently — Visa's clip-path
+   especially), but **the assembled screens are still unseen by anyone but the
+   owner.** `.local-scripts/visual-qa.mjs` needs one manual step: sign in once
+   in a headed browser to save `state.json`. That same missing session is why
+   §8 P2-4 (authenticated E2E journeys) is still open.
+3. **`docs/ARCHITECTURE.md` is stale** — see §8 P2-6. Session 6 did not touch
+   it, and added to it: the brand marks, `MethodMark`, and the callback's role
+   resolution are all undocumented there.
+4. **Migrate the `set-state-in-effect` sites** and restore the rule to `error`
+   (§12). The count is 21 now, not the 18 that section records — the backlog
+   grew with the app, not with any single change.
+
+**Two unused-symbol warnings remain** (down from three): `router` in
+`src/app/(auth)/login/page.tsx` and `src/app/(auth)/reset-password/page.tsx`.
+Both pages navigate with a full document load instead — see the comment at
+`login/page.tsx:115` and `lib/auth/postSignIn.ts`, which explains why that is
+deliberate and not a mistake to be tidied away. The third, the unused `StatTile`
+in the employer dashboard, is **resolved**: it was the missing stat row this
+section previously guessed at, and `6fd6447` renders it.
 
 ---
 
@@ -824,9 +978,51 @@ machine. All three were checked, not assumed.
    length raised from 6, plus character-class requirements. A 6-character
    minimum was the larger real risk.
 
+3. **Enable the GitHub provider — OPEN, and currently user-visible.**
+   Added 2026-08-30. This is §9's next step.
+
+   The button is live on production (`898c697`, plus
+   `NEXT_PUBLIC_OAUTH_GITHUB_ENABLED=true` in Vercel) and clicking it returns:
+
+   > {"code":400,"error_code":"validation_failed",
+   > "msg":"Unsupported provider: provider is not enabled"}
+
+   Two steps, both by hand. **Neither can be automated from this machine** —
+   the same wall as item 1: the Supabase MCP exposes no auth-config surface,
+   only a service-role key exists (it governs users and data, not provider
+   configuration), enabling a provider needs the Management API and a personal
+   access token, and there is no `supabase/config.toml` to put it in.
+
+   a. **github.com → Settings → Developer settings → OAuth Apps → New**
+
+      | Field | Value |
+      |---|---|
+      | Homepage URL | `https://shuru-ten.vercel.app` |
+      | Authorization callback URL | `https://lciujpypigtbzhjawghf.supabase.co/auth/v1/callback` |
+
+      That callback is **Supabase's, not the app's**. GitHub hands the code to
+      Supabase before it ever reaches Shuru. Getting this wrong is the usual
+      cause of a `redirect_uri` mismatch on the next step.
+
+   b. Paste the Client ID and Secret at
+      `https://supabase.com/dashboard/project/lciujpypigtbzhjawghf/auth/providers`
+
+   **No redeploy is needed after.** The env var is already set and both
+   callback URLs — production and `http://localhost:3000/auth/callback` — were
+   allowlisted under item 1.
+
+   **Known follow-on:** GitHub only releases a verified email when the account
+   has one, and Supabase needs it to create the user. A *different* error after
+   enabling most likely means that, not a misconfiguration of the above.
+
+   To hide the button again instead, set `NEXT_PUBLIC_OAUTH_GITHUB_ENABLED` to
+   `false` in Vercel and rebuild — `OAuthButtons` renders nothing for a
+   disabled provider, by design.
+
 ## 12. Accepted residual risks
 
-- **18 `react-hooks/set-state-in-effect` warnings.** The rule is new in
+- **21 `react-hooks/set-state-in-effect` warnings** (was 18 when this was
+  written; the backlog grew with the app, not with any single change). The rule is new in
   `eslint-config-next` 16 and fires on the ordinary load-on-mount /
   reset-on-dependency-change idiom. It is set to `warn` in
   `eslint.config.mjs` with the reasoning written inline — **not disabled**, and
