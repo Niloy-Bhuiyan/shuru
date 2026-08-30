@@ -7,6 +7,7 @@
  * they trust the page.
  */
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { homeForRole, safeInternalPath } from "@/lib/auth/postSignIn";
 
 describe("safeInternalPath", () => {
@@ -63,5 +64,55 @@ describe("homeForRole", () => {
     expect(homeForRole(null)).toBe("/radar");
     expect(homeForRole(undefined)).toBe("/radar");
     expect(homeForRole("wat")).toBe("/radar");
+  });
+});
+
+/**
+ * Role-based landing has to hold on BOTH sign-in paths.
+ *
+ * It did not. The password form resolved its own destination with
+ * `homeForRole`, so the rule looked implemented — but OAuth and email links go
+ * through src/app/auth/callback/route.ts instead, which honoured whatever
+ * `next` it was handed, and the sign-in buttons handed it a hardcoded
+ * "/radar". An admin who signed in with Google therefore always landed on the
+ * student feed, and since the operator entry points were removed from the
+ * student app in 60546c0, /admin was unreachable through the UI entirely.
+ *
+ * Asserted against the source rather than by importing the route: the module
+ * pulls in next/server and @supabase/ssr, which is a lot of machinery to stand
+ * up in order to check that one function is consulted.
+ */
+describe("OAuth callback landing", () => {
+  const ROUTE = readFileSync("src/app/auth/callback/route.ts", "utf8");
+
+  it("consults homeForRole when no destination was requested", () => {
+    expect(ROUTE).toContain("homeForRole");
+    // The role lookup has to actually happen, not just be imported.
+    expect(ROUTE).toMatch(/from\(\s*["']user_roles["']\s*\)/);
+  });
+
+  it("does not default a missing ?next= to a fixed route", () => {
+    // This is the specific collapse that hid the bug: when "absent" and
+    // "explicitly /radar" become the same value, the role can never decide.
+    expect(ROUTE).not.toMatch(/if\s*\(!raw\)\s*return\s*["']\/radar["']/);
+  });
+
+  it("still refuses an off-origin destination", () => {
+    // Loosening the open-redirect guard while fixing the landing would trade
+    // one bug for a much worse one.
+    expect(ROUTE).toContain('raw.startsWith("//")');
+    expect(ROUTE).toContain('!raw.startsWith("/")');
+  });
+});
+
+/**
+ * The buttons must not pre-answer the question for the callback.
+ */
+describe("OAuth sign-in buttons", () => {
+  const BUTTONS = readFileSync("src/components/auth/OAuthButtons.tsx", "utf8");
+
+  it("omits ?next= entirely when nothing was requested", () => {
+    expect(BUTTONS).not.toMatch(/next\s*=\s*["']\/radar["']/);
+    expect(BUTTONS).toContain("/auth/callback`");
   });
 });
