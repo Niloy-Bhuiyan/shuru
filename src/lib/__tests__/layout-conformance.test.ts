@@ -37,6 +37,14 @@ const DESKTOP_SHELL = [
   "src/app/(main)/layout.tsx", // sidebar + content columns
   "src/components/pixel/PixelNav.tsx", // hidden from lg
   "src/components/pixel/PixelSideNav.tsx", // shown from lg
+  /*
+   * The student top bar. It carries the Upgrade pill, which is the ONLY
+   * persistent route to /pro on a phone — the desktop rail has its own entry
+   * and the mobile bottom bar is full at five destinations. The single `lg:`
+   * here hides the pill from the width where the rail already shows it, so
+   * the two never appear at once. No second layout is being maintained.
+   */
+  "src/components/SunriseHeader.tsx",
   "src/app/(main)/radar/page.tsx", // feed becomes two columns
   // Fixed chrome: the launcher clears the mobile bottom nav, then drops to a
   // plain corner offset from lg where that nav no longer exists.

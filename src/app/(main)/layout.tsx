@@ -41,7 +41,7 @@ export default function MainLayout({
 
   return (
     <ForgePortal>
-      <SunriseHeader />
+      <SunriseHeader upgrade />
       {/*
         One shell, two shapes. Mobile stacks content above the fixed bottom
         nav (pb-20 clears it); from `lg` the sidebar takes the left column and

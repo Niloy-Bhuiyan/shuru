@@ -35,29 +35,29 @@ export function PlanCard() {
     <section
       aria-labelledby="plan-card"
       className={cx(
-        "rounded-lg border p-3.5",
-        isPro ? "border-mint bg-mint/5" : "border-ui-lineStrong bg-cream"
+        "rounded-xl border p-4",
+        isPro ? "border-mint bg-mint/5" : "border-ui-line bg-paper"
       )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2
             id="plan-card"
-            className="flex items-center gap-1.5 font-pixel text-[13px] text-ink"
+            className="flex items-center gap-1.5 font-sans text-[15px] font-semibold text-ink"
           >
             {!isPro && (
-              <span aria-hidden="true" className="text-ui-muted">
-                <PixelIcon name="lock" size={12} />
+              <span aria-hidden="true" className="text-amberInk">
+                <PixelIcon name="spark" size={13} />
               </span>
             )}
             {isPro ? t("plan.pro") : t("plan.free")}
           </h2>
 
-          <p className="mt-1.5 font-mono text-[11px] leading-relaxed text-ui-muted">
+          <p className="mt-1.5 font-sans text-[14px] leading-relaxed text-ui-muted">
             {isPro ? (
               <>
                 {canceled ? t("plan.endsOn") : t("plan.renewsOn")}{" "}
-                <span className="font-bold text-ink tabular">
+                <span className="font-semibold text-ink tabular">
                   {endsAt ? formatDate(endsAt, lang) : "—"}
                 </span>
               </>
@@ -73,10 +73,10 @@ export function PlanCard() {
             // 36px is the floor for a secondary control in this shell; the
             // whole row is comfortably past the 44px target once padding and
             // the text beside it are counted.
-            "inline-flex min-h-[36px] shrink-0 items-center rounded-lg px-3 font-mono text-[11px] font-bold",
+            "inline-flex min-h-[40px] shrink-0 items-center rounded-lg px-4 font-sans text-[14px] font-medium transition-colors",
             isPro
               ? "border border-ui-lineStrong bg-paper text-ink hover:bg-cream"
-              : "bg-ink text-cream hover:bg-ink/90"
+              : "bg-ink text-white hover:opacity-90"
           )}
         >
           {isPro ? t("plan.manage") : t("plan.seePro")}
