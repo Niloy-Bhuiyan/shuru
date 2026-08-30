@@ -768,7 +768,37 @@ Four commits, `cba50bb..bd46d2f`, pushed to `main` and deployed.
 6fd6447 rebuild the operator console on the product design system
 b29f2a4 make the payment screens look like the checkout they already are
 bd46d2f land an oauth sign-in in the workspace its role belongs to
+f27a5e2 rebuild the pro screens as a real pricing page and checkout
 ```
+
+### How to look at a guarded screen without a session
+
+`f27a5e2` exists because `b29f2a4` was rejected on sight, and it was rejected
+because it was designed by someone who had never seen it: `/pro` is behind the
+student route guard, so the browser could only ever reach `/login`.
+
+**The technique that fixed that is worth reusing.** `middleware.ts` guards
+listed prefixes only, so a route in no list is reachable signed out. Put the
+presentational components — props in, no fetching — behind a temporary route
+like `src/app/design-preview/page.tsx`, feed them fixed data, look at it,
+then delete the route before committing. `components/pro/ProUpgrade.tsx` is
+shaped for exactly this and the real page is now a thin data container.
+
+Three defects came out of one look, none of which reading the code would have
+found:
+
+- **Every brand mark was drawing at roughly two thirds its requested size, by
+  a different amount each.** The source assets ship a viewBox that is about a
+  third empty padding — bKash drew into 48% of its declared height, the rest
+  into 67% — so a row of logos looked both undersized and unevenly aligned.
+  Measured with `getBBox()` and retightened to the real ink. **Visa had to be
+  computed by hand:** `getBBox()` on a clipped element reports geometry BEFORE
+  the clip, so it returns bounds larger than the visible mark.
+- **"Pro covers the three features that call a language model"** — there are
+  four, and have been since `discover` was added. Wrong in both languages.
+- **Prices rendered as `৳ 0.00` and `৳ 299.00`.** A plan's headline price is a
+  label for a tier, not a transaction total. `formatPriceCompact` drops empty
+  decimals; a figure with real paisa still prints them.
 
 ### The bug worth reading twice: `bd46d2f`
 
@@ -861,9 +891,11 @@ Then, in order:
 1. **Deploy the Python retrieval service** (§8 P2-3b). Implemented, tested and
    indexed, but not hosted, so `/api/ask` reports itself unavailable in
    production — the one subsystem that is finished and switched off.
-2. **Authenticated visual QA has still never happened**, and session 6 made the
-   gap larger: `8d` rebuilt the entire operator console and both payment
-   screens, and every gate that ran against them is unit-level or signed-out.
+2. **Authenticated visual QA is still mostly undone.** `/pro` HAS now been
+   seen, through the unguarded-preview technique in §8d — and that one look
+   found three defects. The operator console (`/admin`, `/employer`) and the
+   two sandbox checkouts have still never been rendered in front of anyone;
+   the same technique applies to them and is the cheapest way to close it.
    The browser could reach `/login` and `/register` only; `/admin`, `/pro` and
    the checkout screens bounced to login. Brand marks were verified by injecting
    them into the live DOM (a broken SVG path fails silently — Visa's clip-path
