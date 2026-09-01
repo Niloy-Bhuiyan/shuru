@@ -23,3 +23,9 @@ playwright-report/
 
 # Supabase CLI scratch
 supabase/.temp/
+
+# local agent tooling
+.mcp.json
+.claude/
+CLAUDE.md
+AGENTS.md
